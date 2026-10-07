@@ -4,10 +4,10 @@ services:
     container_name: ptconnect-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-ptconnect}
+      MYSQL_USER: ${MYSQL_USER:-ptuser}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-ptpassword}
       TZ: Asia/Ho_Chi_Minh
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     ports:
@@ -31,9 +31,9 @@ services:
     environment:
       DB_HOST: mysql
       DB_PORT: 3306
-      DB_NAME: ${MYSQL_DATABASE}
-      DB_USER: ${MYSQL_USER}
-      DB_PASSWORD: ${MYSQL_PASSWORD}
+      DB_NAME: ${MYSQL_DATABASE:-ptconnect}
+      DB_USER: ${MYSQL_USER:-ptuser}
+      DB_PASSWORD: ${MYSQL_PASSWORD:-ptpassword}
     ports:
       - "8080:8080"
     depends_on:
