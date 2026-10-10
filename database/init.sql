@@ -95,7 +95,7 @@ BEGIN
 END$$
 DELIMITER ;
 
--- 3. DỮ LIỆU MỒI (SEED DATA)
+-- 3. DỮ LIỆU 
 INSERT INTO users (id, full_name, email, password, phone, role, status) VALUES
 (1, 'Hệ thống Quản Trị', 'admin@ptconnect.vn', '$2a$10$wN1xG7jKqXWvR6p5u2vNyeoB/ePq9z1eA6f4L9gT2eD3wY1mH7r.S', '0900000001', 'ADMIN', 'ACTIVE'),
 (2, 'Nguyễn Văn Hùng (Coach Hùng)', 'hung.pt@gmail.com', '$2a$10$wN1xG7jKqXWvR6p5u2vNyeoB/ePq9z1eA6f4L9gT2eD3wY1mH7r.S', '0912345678', 'PT', 'ACTIVE'),
