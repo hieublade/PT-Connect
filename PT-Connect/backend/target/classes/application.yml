@@ -1,0 +1,12 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3307}/${DB_NAME:ptconnect}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Ho_Chi_Minh
+    username: ${DB_USER:ptuser}
+    password: ${DB_PASSWORD:ptpassword}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
