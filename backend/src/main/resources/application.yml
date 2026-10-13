@@ -1,0 +1,14 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: pt-connect-backend
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:ptconnect}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Ho_Chi_Minh
+    username: ${DB_USER:ptuser}
+    password: ${DB_PASSWORD:ptpassword}
+  jpa:
+    hibernate:
+      ddl-auto: none      # schema do init.sql tạo, Hibernate không tự sửa
+    open-in-view: false
