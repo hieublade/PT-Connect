@@ -1,0 +1,63 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: ptconnect-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-ptconnect}
+      MYSQL_USER: ${MYSQL_USER:-ptuser}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-ptpassword}
+      TZ: Asia/Ho_Chi_Minh
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: [ "CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent" ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    networks:
+      - ptconnect-net
+
+  backend:
+    build: ./backend
+    container_name: ptconnect-backend
+    restart: unless-stopped
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ${MYSQL_DATABASE:-ptconnect}
+      DB_USER: ${MYSQL_USER:-ptuser}
+      DB_PASSWORD: ${MYSQL_PASSWORD:-ptpassword}
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - ptconnect-net
+
+  frontend:
+    build: ./frontend
+    container_name: ptconnect-frontend
+    restart: unless-stopped
+    environment:
+      BACKEND_URL: http://backend:8080
+    ports:
+      - "8501:8501"
+    depends_on:
+      - backend
+    networks:
+      - ptconnect-net
+
+volumes:
+  mysql_data:
+
+networks:
+  ptconnect-net:
+    driver: bridge
