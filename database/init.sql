@@ -1,6 +1,6 @@
 -- =====================================================================
--- CSDL hệ thống PT Marketplace (bản chuẩn hóa hoàn chỉnh cho Milestone 2)
--- Yêu cầu: MySQL 8.0.16+ (để CHECK constraint và GENERATED STORED có hiệu lực)
+-- CSDL hệ thống PT Marketplace (Bản đã sửa lỗi & tối ưu hoàn chỉnh)
+-- Yêu cầu: MySQL 8.0.16+ 
 -- =====================================================================
 
 SET NAMES utf8mb4;
@@ -20,16 +20,16 @@ CREATE TABLE `users` (
   `avatar_url` varchar(500) COMMENT 'URL ảnh đại diện qua CDN công khai',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='1. Quản lý tài khoản và định danh người dùng';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Quản lý tài khoản và định danh người dùng';
 
 CREATE TABLE `pt_profiles` (
   `id` bigint PRIMARY KEY AUTO_INCREMENT,
   `user_id` bigint UNIQUE NOT NULL,
   `bio` text,
   `experience_years` integer NOT NULL DEFAULT 0,
-  `available_locations` text NOT NULL COMMENT 'Mô tả các địa điểm PT có thể nhận dạy (vd: Cali Cầu Giấy, FitZone Thanh Xuân, hoặc tại nhà học viên)',
-  `location_pricing_note` text COMMENT 'Mô tả chính sách điều chỉnh giá (vd: Tại phòng tập giá chuẩn; tại nhà học viên phụ thu 20%)',
-  `certificate_urls` json COMMENT 'Mảng JSON danh sách URL chứng chỉ (S3 Private/Presigned), pt có thể có nhiều chứng chỉ nên dùng json để định dạng',
+  `available_locations` text NOT NULL COMMENT 'Mô tả các địa điểm PT có thể nhận dạy',
+  `location_pricing_note` text COMMENT 'Mô tả chính sách điều chỉnh giá',
+  `certificate_urls` json COMMENT 'Mảng JSON danh sách URL chứng chỉ',
   `average_rating` decimal(3,2) NOT NULL DEFAULT 0,
   `total_reviews` integer NOT NULL DEFAULT 0,
   `verification_status` ENUM ('PENDING', 'VERIFIED', 'REJECTED') NOT NULL DEFAULT 'PENDING',
@@ -37,7 +37,7 @@ CREATE TABLE `pt_profiles` (
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT `chk_pt_experience` CHECK (`experience_years` >= 0),
   CONSTRAINT `chk_pt_rating` CHECK (`average_rating` BETWEEN 0 AND 5)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='2. Hồ sơ năng lực của PT & khu vực nhận dạy';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Hồ sơ năng lực của PT & khu vực nhận dạy';
 
 CREATE TABLE `wallets` (
   `id` bigint PRIMARY KEY AUTO_INCREMENT,
@@ -49,14 +49,14 @@ CREATE TABLE `wallets` (
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT `chk_wallet_balance` CHECK (`balance` >= 0),
   CONSTRAINT `chk_wallet_locked` CHECK (`locked_balance` >= 0 AND `locked_balance` <= `balance`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='3. Ví điện tử nội bộ phục vụ thanh toán khóa học và xử lý đền bù';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Ví điện tử nội bộ phục vụ thanh toán khóa học và xử lý đền bù';
 
 CREATE TABLE `courses` (
   `id` bigint PRIMARY KEY AUTO_INCREMENT,
   `pt_id` bigint NOT NULL,
   `title` varchar(200) NOT NULL,
   `description` text,
-  `total_sessions` integer NOT NULL COMMENT 'Số buổi cố định của khóa (vd: 12, 24, 36 buổi)',
+  `total_sessions` integer NOT NULL COMMENT 'Số buổi cố định của khóa',
   `validity_days` integer NOT NULL COMMENT 'Hạn sử dụng khóa tập (ngày)',
   `base_price` decimal(12,2) NOT NULL COMMENT 'Giá gốc chuẩn của khóa tập',
   `status` ENUM ('ACTIVE', 'INACTIVE') NOT NULL DEFAULT 'ACTIVE',
@@ -64,26 +64,26 @@ CREATE TABLE `courses` (
   CONSTRAINT `chk_course_sessions` CHECK (`total_sessions` > 0),
   CONSTRAINT `chk_course_validity` CHECK (`validity_days` > 0),
   CONSTRAINT `chk_course_price` CHECK (`base_price` >= 0)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='4. Khóa học huấn luyện cố định (Không bán lẻ từng buổi)';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Khóa học huấn luyện cố định';
 
 CREATE TABLE `enrollments` (
   `id` bigint PRIMARY KEY AUTO_INCREMENT,
   `student_id` bigint NOT NULL,
   `course_id` bigint NOT NULL,
   `pt_id` bigint NOT NULL,
-  `training_location` varchar(255) NOT NULL COMMENT 'Địa điểm tập luyện CỐ ĐỊNH duy nhất được chốt trong hợp đồng',
-  `final_price` decimal(12,2) NOT NULL COMMENT 'Giá chốt thực tế của khóa tập theo địa điểm đã chọn',
+  `training_location` varchar(255) NOT NULL COMMENT 'Địa điểm tập luyện CỐ ĐỊNH duy nhất',
+  `final_price` decimal(12,2) NOT NULL COMMENT 'Giá chốt thực tế của khóa tập',
   `total_sessions` integer NOT NULL,
   `remaining_sessions` integer NOT NULL COMMENT 'Kho buổi tập khả dụng còn lại chưa dùng',
   `start_date` date NOT NULL,
   `end_date` date NOT NULL,
-  `contract_url` varchar(500) NOT NULL COMMENT 'URL file hợp đồng điện tử PDF (S3 Private/Presigned)',
+  `contract_url` varchar(500) NOT NULL COMMENT 'URL file hợp đồng điện tử PDF',
   `status` ENUM ('ACTIVE', 'EXPIRED', 'CANCELLED', 'COMPLETED') NOT NULL DEFAULT 'ACTIVE',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT `chk_enroll_sessions` CHECK (`remaining_sessions` >= 0 AND `remaining_sessions` <= `total_sessions`),
   CONSTRAINT `chk_enroll_dates` CHECK (`end_date` >= `start_date`),
   CONSTRAINT `chk_enroll_price` CHECK (`final_price` >= 0)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='5. Hợp đồng khóa tập đã ký và kho buổi tập khả dụng';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Hợp đồng khóa tập đã ký và kho buổi tập khả dụng';
 
 CREATE TABLE `availability_slots` (
   `id` bigint PRIMARY KEY AUTO_INCREMENT,
@@ -94,21 +94,20 @@ CREATE TABLE `availability_slots` (
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY `uq_slot_pt_start` (`pt_id`, `start_time`),
   CONSTRAINT `chk_slot_time` CHECK (`end_time` > `start_time`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='6. Khung giờ rảnh làm việc của PT';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Khung giờ rảnh làm việc của PT';
 
 CREATE TABLE `bookings` (
   `id` bigint PRIMARY KEY AUTO_INCREMENT,
-  `booking_type` ENUM ('TRIAL', 'PACKAGE') NOT NULL DEFAULT 'PACKAGE' COMMENT 'TRIAL: Tập thử 0đ; PACKAGE: Trừ từ khóa trong ENROLLMENTS',
-  `enrollment_id` bigint COMMENT 'NULL nếu là TRIAL; Bắt buộc có nếu là PACKAGE (Địa điểm tự động theo training_location)',
+  `booking_type` ENUM ('TRIAL', 'PACKAGE') NOT NULL DEFAULT 'PACKAGE',
+  `enrollment_id` bigint COMMENT 'NULL nếu là TRIAL; Bắt buộc có nếu là PACKAGE',
   `student_id` bigint NOT NULL,
   `pt_id` bigint NOT NULL,
-  `slot_id` bigint NOT NULL COMMENT 'Slot được đặt. Chống đặt trùng bằng active_slot_id',
-  `session_fee` decimal(12,2) NOT NULL COMMENT 'Giá trị quy đổi 1 buổi = final_price / total_sessions (TRIAL = 0)',
+  `slot_id` bigint NOT NULL,
+  `session_fee` decimal(12,2) NOT NULL,
   `status` ENUM ('PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED') NOT NULL DEFAULT 'PENDING',
   `student_note` varchar(255),
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  -- Chỉ có giá trị khi booking còn hiệu lực; booking đã hủy sẽ trả slot lại cho người khác đặt
   `active_slot_id` bigint GENERATED ALWAYS AS (
     IF(`status` IN ('PENDING', 'CONFIRMED', 'COMPLETED'), `slot_id`, NULL)
   ) STORED,
@@ -118,31 +117,31 @@ CREATE TABLE `bookings` (
     (`booking_type` = 'PACKAGE' AND `enrollment_id` IS NOT NULL)
   ),
   CONSTRAINT `chk_booking_fee` CHECK (`session_fee` >= 0)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='7. Đơn đặt lịch ca tập (Học thử hoặc trừ buổi từ hợp đồng)';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Đơn đặt lịch ca tập';
 
 CREATE TABLE `reviews` (
   `id` bigint PRIMARY KEY AUTO_INCREMENT,
-  `booking_id` bigint UNIQUE NOT NULL COMMENT 'Mỗi ca tập chỉ đánh giá 1 lần',
+  `booking_id` bigint UNIQUE NOT NULL,
   `student_id` bigint NOT NULL,
   `pt_id` bigint NOT NULL,
-  `rating` smallint NOT NULL COMMENT 'Đánh giá từ 1 đến 5 sao',
+  `rating` smallint NOT NULL,
   `comment` text,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT `chk_review_rating` CHECK (`rating` BETWEEN 1 AND 5)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='8. Đánh giá nhận xét của học viên sau khi ca tập hoàn thành';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Đánh giá nhận xét của học viên';
 
 CREATE TABLE `cancellations` (
   `id` bigint PRIMARY KEY AUTO_INCREMENT,
   `booking_id` bigint UNIQUE NOT NULL,
-  `cancelled_by_id` bigint NOT NULL,
-  `cancelled_by_role` ENUM ('STUDENT', 'PT', 'ADMIN') NOT NULL,
+  `cancelled_by_id` bigint NULL COMMENT 'Có thể NULL nếu do hệ thống tự động hủy',
+  `cancelled_by_role` ENUM ('STUDENT', 'PT', 'ADMIN', 'SYSTEM') NOT NULL DEFAULT 'STUDENT',
   `reason` varchar(500) NOT NULL,
   `cancelled_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `hours_before_session` decimal(5,2) NOT NULL COMMENT 'Số giờ từ lúc hủy đến lúc bắt đầu buổi tập',
-  `refund_amount` decimal(12,2) NOT NULL DEFAULT 0 COMMENT 'Quy đổi hoàn tiền hoặc khôi phục 1 buổi vào remaining_sessions',
-  `compensation_amount` decimal(12,2) NOT NULL DEFAULT 0 COMMENT 'Tiền đền bù thiệt hại cho bên bị hủy ca',
-  `penalty_amount` decimal(12,2) NOT NULL DEFAULT 0 COMMENT 'Tiền phạt bên vi phạm',
-  `evidence_url` varchar(500) COMMENT 'URL chứng từ bất khả kháng (Private S3)',
+  `hours_before_session` decimal(5,2) NOT NULL,
+  `refund_amount` decimal(12,2) NOT NULL DEFAULT 0,
+  `compensation_amount` decimal(12,2) NOT NULL DEFAULT 0,
+  `penalty_amount` decimal(12,2) NOT NULL DEFAULT 0,
+  `evidence_url` varchar(500),
   `status` ENUM ('PROCESSED', 'DISPUTED', 'RESOLVED') NOT NULL DEFAULT 'PROCESSED',
   CONSTRAINT `chk_cancel_amounts` CHECK (
     `refund_amount` >= 0 AND `compensation_amount` >= 0 AND `penalty_amount` >= 0
@@ -159,7 +158,7 @@ CREATE TABLE `workout_plans` (
   `end_date` date NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT `chk_plan_dates` CHECK (`end_date` >= `start_date`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='9. Giáo án huấn luyện cá nhân hóa theo hợp đồng khóa tập';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Giáo án huấn luyện cá nhân hóa';
 
 CREATE TABLE `workouts` (
   `id` bigint PRIMARY KEY AUTO_INCREMENT,
@@ -170,9 +169,9 @@ CREATE TABLE `workouts` (
   `reps` integer NOT NULL DEFAULT 10,
   `weight_kg` decimal(5,2),
   `rest_seconds` integer NOT NULL DEFAULT 60,
-  `video_demo_url` varchar(500) COMMENT 'URL video/ảnh kỹ thuật động tác qua CDN',
+  `video_demo_url` varchar(500),
   CONSTRAINT `chk_workout_values` CHECK (`sets` > 0 AND `reps` > 0 AND `rest_seconds` >= 0)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='10. Chi tiết từng bài tập trong giáo án';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Chi tiết từng bài tập trong giáo án';
 
 CREATE TABLE `attendance` (
   `id` bigint PRIMARY KEY AUTO_INCREMENT,
@@ -184,12 +183,12 @@ CREATE TABLE `attendance` (
   `pt_confirmed` boolean NOT NULL DEFAULT false,
   `status` ENUM ('PRESENT', 'ABSENT', 'LATE') NOT NULL DEFAULT 'PRESENT',
   CONSTRAINT `chk_attendance_time` CHECK (`check_out_time` IS NULL OR `check_out_time` >= `check_in_time`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='11. Điểm danh, chấm công xác thực hai phía';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Điểm danh, chấm công xác thực hai phía';
 
 CREATE TABLE `payments` (
   `id` bigint PRIMARY KEY AUTO_INCREMENT,
   `wallet_id` bigint NOT NULL,
-  `enrollment_id` bigint COMMENT 'Giao dịch thanh toán mua khóa học (NULL nếu nạp tiền TOPUP)',
+  `enrollment_id` bigint COMMENT 'NULL nếu nạp tiền TOPUP',
   `amount` decimal(14,2) NOT NULL,
   `payment_type` ENUM ('TOPUP', 'PURCHASE_PACKAGE', 'COMPENSATION', 'REFUND') NOT NULL,
   `payment_method` ENUM ('WALLET', 'BANK_TRANSFER', 'CREDIT_CARD', 'CASH') NOT NULL,
@@ -197,58 +196,47 @@ CREATE TABLE `payments` (
   `transaction_ref` varchar(100) UNIQUE,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT `chk_payment_amount` CHECK (`amount` > 0)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='12. Giao dịch tài chính (Mua khóa học, hoàn tiền, đền bù)';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Giao dịch tài chính';
 
 -- ---------------------------------------------------------------------
 -- 2. INDEXES
 -- ---------------------------------------------------------------------
 
 CREATE INDEX `idx_slots_pt_time` ON `availability_slots` (`pt_id`, `start_time`, `status`);
+CREATE INDEX `idx_bookings_student` ON `bookings` (`student_id`, `status`);
+CREATE INDEX `idx_bookings_pt` ON `bookings` (`pt_id`, `status`);
 
 -- ---------------------------------------------------------------------
--- 3. FOREIGN KEYS (khóa ngoại nằm ở bảng con, trỏ về bảng cha)
+-- 3. FOREIGN KEYS
 -- ---------------------------------------------------------------------
 
 ALTER TABLE `pt_profiles`        ADD FOREIGN KEY (`user_id`)         REFERENCES `users` (`id`);
 ALTER TABLE `wallets`            ADD FOREIGN KEY (`user_id`)         REFERENCES `users` (`id`);
-
 ALTER TABLE `courses`            ADD FOREIGN KEY (`pt_id`)           REFERENCES `pt_profiles` (`id`);
-
 ALTER TABLE `enrollments`        ADD FOREIGN KEY (`student_id`)      REFERENCES `users` (`id`);
 ALTER TABLE `enrollments`        ADD FOREIGN KEY (`course_id`)       REFERENCES `courses` (`id`);
 ALTER TABLE `enrollments`        ADD FOREIGN KEY (`pt_id`)           REFERENCES `pt_profiles` (`id`);
-
 ALTER TABLE `availability_slots` ADD FOREIGN KEY (`pt_id`)           REFERENCES `pt_profiles` (`id`);
-
 ALTER TABLE `bookings`           ADD FOREIGN KEY (`enrollment_id`)   REFERENCES `enrollments` (`id`);
 ALTER TABLE `bookings`           ADD FOREIGN KEY (`student_id`)      REFERENCES `users` (`id`);
 ALTER TABLE `bookings`           ADD FOREIGN KEY (`pt_id`)           REFERENCES `pt_profiles` (`id`);
 ALTER TABLE `bookings`           ADD FOREIGN KEY (`slot_id`)         REFERENCES `availability_slots` (`id`);
-
 ALTER TABLE `reviews`            ADD FOREIGN KEY (`booking_id`)      REFERENCES `bookings` (`id`);
 ALTER TABLE `reviews`            ADD FOREIGN KEY (`student_id`)      REFERENCES `users` (`id`);
 ALTER TABLE `reviews`            ADD FOREIGN KEY (`pt_id`)           REFERENCES `pt_profiles` (`id`);
-
 ALTER TABLE `cancellations`      ADD FOREIGN KEY (`booking_id`)      REFERENCES `bookings` (`id`);
 ALTER TABLE `cancellations`      ADD FOREIGN KEY (`cancelled_by_id`) REFERENCES `users` (`id`);
-
 ALTER TABLE `workout_plans`      ADD FOREIGN KEY (`enrollment_id`)   REFERENCES `enrollments` (`id`);
 ALTER TABLE `workout_plans`      ADD FOREIGN KEY (`pt_id`)           REFERENCES `pt_profiles` (`id`);
-
 ALTER TABLE `workouts`           ADD FOREIGN KEY (`plan_id`)         REFERENCES `workout_plans` (`id`);
-
 ALTER TABLE `attendance`         ADD FOREIGN KEY (`booking_id`)      REFERENCES `bookings` (`id`);
-
 ALTER TABLE `payments`           ADD FOREIGN KEY (`wallet_id`)       REFERENCES `wallets` (`id`);
 ALTER TABLE `payments`           ADD FOREIGN KEY (`enrollment_id`)   REFERENCES `enrollments` (`id`);
 
 -- ---------------------------------------------------------------------
--- 4. SAMPLE DATA (đúng thứ tự phụ thuộc, không cần tắt FOREIGN_KEY_CHECKS)
+-- 4. SAMPLE DATA
 -- ---------------------------------------------------------------------
 
--- Mật khẩu mặc định cho toàn bộ tài khoản mẫu là: 123456
--- Chuỗi hash BCrypt hợp lệ (cost factor 10, độ dài chuẩn 60 ký tự):
--- $2a$10$YtxtP0YdZ0Tm1vZ7lPA4reqqnz8OYXLITj7uAUgBSR3Dcz.xBWoFK
 INSERT INTO `users` (`id`, `full_name`, `email`, `password_hash`, `phone`, `role`, `status`) VALUES
   (1, 'Nguyen Van A', 'student.a@ptconnect.vn', '$2a$10$YtxtP0YdZ0Tm1vZ7lPA4reqqnz8OYXLITj7uAUgBSR3Dcz.xBWoFK', '0900000001', 'STUDENT', 'ACTIVE'),
   (2, 'Tran Thi B',   'student.b@ptconnect.vn', '$2a$10$YtxtP0YdZ0Tm1vZ7lPA4reqqnz8OYXLITj7uAUgBSR3Dcz.xBWoFK', '0900000002', 'STUDENT', 'ACTIVE'),
@@ -262,7 +250,6 @@ INSERT INTO `pt_profiles` (`id`, `user_id`, `experience_years`, `available_locat
   (2, 4, 3, 'Studio cá nhân tại Thanh Xuân; Nhận dạy quanh khu vực Đống Đa',
    'Tập tại Studio cá nhân giá chuẩn; Khác địa điểm thỏa thuận thêm phí di chuyển', 4.80, 5, 'VERIFIED');
 
--- Ví: Student 1 nạp sẵn 5.000.000 VNĐ; Student 2 ban đầu nạp 15.000.000 VNĐ, sau khi mua khóa 10.800.000 VNĐ còn 4.200.000 VNĐ
 INSERT INTO `wallets` (`id`, `user_id`, `balance`, `locked_balance`, `currency`, `status`) VALUES
   (1, 1, 5000000.00, 0, 'VND', 'ACTIVE'),
   (2, 2, 4200000.00, 0, 'VND', 'ACTIVE'),
@@ -278,7 +265,6 @@ INSERT INTO `enrollments` (`id`, `student_id`, `course_id`, `pt_id`, `training_l
   (1, 2, 1, 1, 'Cali Fitness Cầu Giấy', 10800000, 36, 35, '2026-10-01', '2026-12-30',
    'https://storage.ptconnect.vn/contracts/enrollment_1_signed.pdf', 'ACTIVE');
 
--- Lịch sử thanh toán nhất quán cho Enrollment 1 và Ví của Student 2
 INSERT INTO `payments` (`id`, `wallet_id`, `enrollment_id`, `amount`, `payment_type`, `payment_method`, `status`, `transaction_ref`) VALUES
   (1, 2, NULL, 15000000.00, 'TOPUP',            'BANK_TRANSFER', 'SUCCESS', 'TXN_TOPUP_20261001_0001'),
   (2, 2, 1,    10800000.00, 'PURCHASE_PACKAGE', 'WALLET',        'SUCCESS', 'TXN_BUY_20261001_0001');
@@ -293,17 +279,48 @@ INSERT INTO `bookings` (`id`, `booking_type`, `enrollment_id`, `student_id`, `pt
   (2, 'TRIAL',   NULL, 1, 1, 2, 0,      'CONFIRMED');
 
 -- ---------------------------------------------------------------------
--- 5. TRIGGERS (Cập nhật điểm đánh giá trung bình & tổng review cho PT)
+-- 5. TRIGGERS
 -- ---------------------------------------------------------------------
 
 DELIMITER $$
+
 CREATE TRIGGER `trg_reviews_after_insert`
 AFTER INSERT ON `reviews`
 FOR EACH ROW
 BEGIN
   UPDATE `pt_profiles`
-  SET `average_rating` = (SELECT ROUND(AVG(`rating`), 2) FROM `reviews` WHERE `pt_id` = NEW.`pt_id`),
-      `total_reviews`  = (SELECT COUNT(*)               FROM `reviews` WHERE `pt_id` = NEW.`pt_id`)
+  SET `average_rating` = COALESCE((SELECT ROUND(AVG(`rating`), 2) FROM `reviews` WHERE `pt_id` = NEW.`pt_id`), 0),
+      `total_reviews`  = (SELECT COUNT(*) FROM `reviews` WHERE `pt_id` = NEW.`pt_id`)
   WHERE `id` = NEW.`pt_id`;
 END$$
+
+CREATE TRIGGER `trg_reviews_after_update`
+AFTER UPDATE ON `reviews`
+FOR EACH ROW
+BEGIN
+  -- Cập nhật cho PT mới
+  UPDATE `pt_profiles`
+  SET `average_rating` = COALESCE((SELECT ROUND(AVG(`rating`), 2) FROM `reviews` WHERE `pt_id` = NEW.`pt_id`), 0),
+      `total_reviews`  = (SELECT COUNT(*) FROM `reviews` WHERE `pt_id` = NEW.`pt_id`)
+  WHERE `id` = NEW.`pt_id`;
+
+  -- Cập nhật cho PT cũ nếu có đổi pt_id
+  IF OLD.`pt_id` <> NEW.`pt_id` THEN
+    UPDATE `pt_profiles`
+    SET `average_rating` = COALESCE((SELECT ROUND(AVG(`rating`), 2) FROM `reviews` WHERE `pt_id` = OLD.`pt_id`), 0),
+        `total_reviews`  = (SELECT COUNT(*) FROM `reviews` WHERE `pt_id` = OLD.`pt_id`)
+    WHERE `id` = OLD.`pt_id`;
+  END IF;
+END$$
+
+CREATE TRIGGER `trg_reviews_after_delete`
+AFTER DELETE ON `reviews`
+FOR EACH ROW
+BEGIN
+  UPDATE `pt_profiles`
+  SET `average_rating` = COALESCE((SELECT ROUND(AVG(`rating`), 2) FROM `reviews` WHERE `pt_id` = OLD.`pt_id`), 0),
+      `total_reviews`  = (SELECT COUNT(*) FROM `reviews` WHERE `pt_id` = OLD.`pt_id`)
+  WHERE `id` = OLD.`pt_id`;
+END$$
+
 DELIMITER ;
