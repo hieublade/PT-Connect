@@ -2,7 +2,8 @@
 -- CSDL hệ thống PT Marketplace (Bản đã sửa lỗi & tối ưu hoàn chỉnh)
 -- Yêu cầu: MySQL 8.0.16+ 
 -- =====================================================================
-
+CREATE DATABASE IF NOT EXISTS ptconnect;
+USE ptconnect;
 SET NAMES utf8mb4;
 
 -- ---------------------------------------------------------------------
