@@ -1,0 +1,142 @@
+{
+  "info": {
+    "_postman_id": "b2c4e6a8-ptconnect-milestone3-auth",
+    "name": "PT-Connect - Milestone 3 (Authentication & Security)",
+    "description": "Collection test bộ API Xác thực (Register, Login, GetMe) với Spring Security + JWT + BCrypt (Milestone 3 - Hưng)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. POST /auth/register - Đăng ký Học viên (STUDENT)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fullName\": \"Nguyễn Văn Học Viên\",\n  \"email\": \"student.test1@ptconnect.vn\",\n  \"password\": \"Password123@\",\n  \"phone\": \"0911223344\",\n  \"role\": \"STUDENT\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/register",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "register"]
+        },
+        "description": "Đăng ký tài khoản Student. Hệ thống tự động mã hóa BCrypt và tạo Ví 0đ trong 1 transaction."
+      }
+    },
+    {
+      "name": "2. POST /auth/register - Đăng ký Huấn luyện viên (PT - PENDING)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fullName\": \"Trần Quốc HLV\",\n  \"email\": \"pt.test1@ptconnect.vn\",\n  \"password\": \"Password123@\",\n  \"phone\": \"0988776655\",\n  \"role\": \"PT\",\n  \"bio\": \"Huấn luyện viên thể hình 5 năm kinh nghiệm\",\n  \"experienceYears\": 5,\n  \"availableLocations\": \"Quận 1, Quận 7, TP.HCM\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/register",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "register"]
+        },
+        "description": "Đăng ký tài khoản PT. Hệ thống tự động tạo User, PTProfile với trạng thái PENDING, và Ví 0đ trong 1 transaction."
+      }
+    },
+    {
+      "name": "3. POST /auth/login - Đăng nhập lấy JWT Token",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "var jsonData = pm.response.json();",
+              "if (jsonData.data && jsonData.data.token) {",
+              "    pm.collectionVariables.set('authToken', jsonData.data.token);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"student.test1@ptconnect.vn\",\n  \"password\": \"Password123@\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "login"]
+        },
+        "description": "Đăng nhập xác thực BCrypt và sinh JWT Access Token."
+      }
+    },
+    {
+      "name": "4. GET /auth/me - Lấy thông tin cá nhân (Bearer Token)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/me",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "me"]
+        },
+        "description": "Truy cập thông tin người dùng đang đăng nhập thông qua JWT Bearer Token."
+      }
+    },
+    {
+      "name": "5. POST /auth/login - Sai mật khẩu (Kiểm tra 401 Unauthorized)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"student.test1@ptconnect.vn\",\n  \"password\": \"MatKhauSai123\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "login"]
+        },
+        "description": "Kiểm tra hệ thống từ chối đăng nhập với HTTP 401 Unauthorized khi nhập sai mật khẩu."
+      }
+    }
+  ]
+}
