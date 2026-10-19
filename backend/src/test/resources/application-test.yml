@@ -1,0 +1,18 @@
+# Cấu hình riêng cho test slice (@WebMvcTest)
+# @WebMvcTest không load JPA/DataSource nên không cần DB config ở đây.
+# File này chỉ cung cấp jwt.secret để JwtUtil đọc nếu cần inject từ @Value.
+# (Hiện tại JwtUtil dùng constant cứng nên file này chủ yếu là placeholder
+#  và đảm bảo Spring không warning về thiếu config khi chạy test.)
+
+spring:
+  jpa:
+    open-in-view: false
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+
+logging:
+  level:
+    com.PTconnect.security.denial: DEBUG
+    org.springframework.security: DEBUG
