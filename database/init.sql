@@ -239,11 +239,11 @@ ALTER TABLE `payments`           ADD FOREIGN KEY (`enrollment_id`)   REFERENCES 
 -- ---------------------------------------------------------------------
 
 INSERT INTO `users` (`id`, `full_name`, `email`, `password_hash`, `phone`, `role`, `status`) VALUES
-  (1, 'Nguyen Van A', 'student.a@ptconnect.vn', '$2a$10$YtxtP0YdZ0Tm1vZ7lPA4reqqnz8OYXLITj7uAUgBSR3Dcz.xBWoFK', '0900000001', 'STUDENT', 'ACTIVE'),
-  (2, 'Tran Thi B',   'student.b@ptconnect.vn', '$2a$10$YtxtP0YdZ0Tm1vZ7lPA4reqqnz8OYXLITj7uAUgBSR3Dcz.xBWoFK', '0900000002', 'STUDENT', 'ACTIVE'),
-  (3, 'Le Hoang C',   'pt.hoangc@ptconnect.vn', '$2a$10$YtxtP0YdZ0Tm1vZ7lPA4reqqnz8OYXLITj7uAUgBSR3Dcz.xBWoFK', '0900000003', 'PT',      'ACTIVE'),
-  (4, 'Pham Minh D',  'pt.minhd@ptconnect.vn',  '$2a$10$YtxtP0YdZ0Tm1vZ7lPA4reqqnz8OYXLITj7uAUgBSR3Dcz.xBWoFK', '0900000004', 'PT',      'ACTIVE'),
-  (5, 'Admin System', 'admin@ptconnect.vn',     '$2a$10$YtxtP0YdZ0Tm1vZ7lPA4reqqnz8OYXLITj7uAUgBSR3Dcz.xBWoFK', '0900000005', 'ADMIN',   'ACTIVE');
+  (1, 'Nguyen Van A', 'student.a@ptconnect.vn', '$2a$10$IciBJIW1NX.1Za3YIyYqjO7H/SpL//eFExQrDxRk/33YLKZjOvyey', '0900000001', 'STUDENT', 'ACTIVE'),
+  (2, 'Tran Thi B',   'student.b@ptconnect.vn', '$2a$10$IciBJIW1NX.1Za3YIyYqjO7H/SpL//eFExQrDxRk/33YLKZjOvyey', '0900000002', 'STUDENT', 'ACTIVE'),
+  (3, 'Le Hoang C',   'pt.hoangc@ptconnect.vn', '$2a$10$IciBJIW1NX.1Za3YIyYqjO7H/SpL//eFExQrDxRk/33YLKZjOvyey', '0900000003', 'PT',      'ACTIVE'),
+  (4, 'Pham Minh D',  'pt.minhd@ptconnect.vn',  '$2a$10$IciBJIW1NX.1Za3YIyYqjO7H/SpL//eFExQrDxRk/33YLKZjOvyey', '0900000004', 'PT',      'ACTIVE'),
+  (5, 'Admin System', 'admin@ptconnect.vn',     '$2a$10$IciBJIW1NX.1Za3YIyYqjO7H/SpL//eFExQrDxRk/33YLKZjOvyey', '0900000005', 'ADMIN',   'ACTIVE');
 
 INSERT INTO `pt_profiles` (`id`, `user_id`, `experience_years`, `available_locations`, `location_pricing_note`, `average_rating`, `total_reviews`, `verification_status`) VALUES
   (1, 3, 5, 'Phòng Cali Cầu Giấy; FitZone Thanh Xuân; Nhận dạy tại nhà học viên',
