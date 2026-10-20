@@ -1,0 +1,148 @@
+{
+  "info": {
+    "_postman_id": "c3d5e7f9-ptconnect-milestone3-rbac",
+    "name": "PT-Connect - Milestone 3 (RBAC & Security Denial)",
+    "description": "Collection test Ma trận phân quyền Role-Based Access Control (401/403) và Security Denial Logging (Milestone 3 - Huy)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "studentToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "ptToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. GET /api/public/health - Anonymous truy cập Public Endpoint (200 OK)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/public/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "public", "health"]
+        },
+        "description": "Public endpoint không cần token, trả về 200 OK."
+      }
+    },
+    {
+      "name": "2. GET /api/admin/users - Anonymous truy cập Protected Endpoint (401 Unauthorized)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/admin/users",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "admin", "users"]
+        },
+        "description": "Chưa đăng nhập truy cập endpoint bảo vệ bị chặn với 401 Unauthorized."
+      }
+    },
+    {
+      "name": "3. GET /api/student/dashboard - STUDENT Token truy cập Student Dashboard (200 OK)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{studentToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/student/dashboard",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "student", "dashboard"]
+        },
+        "description": "Đúng quyền STUDENT truy cập thành công 200 OK."
+      }
+    },
+    {
+      "name": "4. GET /api/admin/users - STUDENT Token gọi Admin Endpoint (403 Forbidden - Ghi log Denial)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{studentToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/admin/users",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "admin", "users"]
+        },
+        "description": "Student token gọi API Admin bị Spring Security chặn với 403 Forbidden và kích hoạt LoggingAccessDeniedHandler."
+      }
+    },
+    {
+      "name": "5. GET /api/pt/courses - PT Token truy cập PT Endpoint (200 OK)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{ptToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/pt/courses",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "pt", "courses"]
+        },
+        "description": "PT token truy cập trang quản lý khóa học của PT thành công 200 OK."
+      }
+    },
+    {
+      "name": "6. GET /api/admin/users - PT Token gọi Admin Endpoint (403 Forbidden)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{ptToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/admin/users",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "admin", "users"]
+        },
+        "description": "PT gọi API Admin bị từ chối 403 Forbidden."
+      }
+    },
+    {
+      "name": "7. GET /api/admin/users - ADMIN Token gọi Admin Endpoint (200 OK)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/admin/users",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "admin", "users"]
+        },
+        "description": "Admin token truy cập quản lý người dùng thành công 200 OK."
+      }
+    }
+  ]
+}

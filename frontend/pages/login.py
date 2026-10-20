@@ -97,7 +97,7 @@ def render_login_page():
 
             # Gợi ý tài khoản demo kiểm thử
             with st.expander("💡 Tài khoản mẫu để kiểm thử nhanh (Demo Accounts)"):
-                st.caption("Bấm nút bên dưới để tự động điền tài khoản mẫu có sẵn trong database:")
+                st.caption("Bấm nút bên dưới để tự động điền tài khoản mẫu có sẵn trong database (Mật khẩu: **Password123@**):")
                 c1, c2, c3 = st.columns(3)
                 c1.button(
                     "👨‍🎓 Học viên (Student A)",
