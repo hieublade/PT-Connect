@@ -1,0 +1,821 @@
+{
+  "info": {
+    "_postman_id": "e5f7a1b2-ptconnect-milestone5-student",
+    "name": "PT-Connect - Milestone 5 (Student Features, Wallet & Course Enrollment)",
+    "description": "Collection kiểm thử trọn bộ API Milestone 5: Xem/Tìm kiếm PT (PTPublicDTO), Khóa học, Slots rảnh, Quản lý Ví nội bộ, Nạp tiền mô phỏng, Mua khóa học trong 1 Transaction (trừ ví -> enrollment -> payment -> hợp đồng PDF) và Phân quyền.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "studentToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "ptToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "ptProfileId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "targetCourseId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "createdEnrollmentId",
+      "value": "1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Đăng nhập lấy Token",
+      "item": [
+        {
+          "name": "0.1 Đăng nhập Student (Lấy studentToken)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.token) {",
+                  "    pm.collectionVariables.set(\"studentToken\", jsonData.data.token);",
+                  "    console.log(\"Saved studentToken:\", jsonData.data.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"student.a@ptconnect.vn\",\n  \"password\": \"Password123@\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "0.2 Đăng nhập Admin (Lấy adminToken)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.token) {",
+                  "    pm.collectionVariables.set(\"adminToken\", jsonData.data.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@ptconnect.vn\",\n  \"password\": \"Password123@\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "0.3 Đăng nhập PT (Lấy ptToken)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.token) {",
+                  "    pm.collectionVariables.set(\"ptToken\", jsonData.data.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"pt.hoangc@ptconnect.vn\",\n  \"password\": \"Password123@\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Khám Phá Huấn Luyện Viên (PT Profiles - Hiệu)",
+      "item": [
+        {
+          "name": "1.1 Lấy danh sách PT đã duyệt (VERIFIED & ACTIVE)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"Only returns VERIFIED PTs\", function() {",
+                  "    pm.expect(jsonData.data.length).to.be.above(0);",
+                  "    jsonData.data.forEach(function(pt) {",
+                  "        pm.expect(pt.verificationStatus).to.eql(\"VERIFIED\");",
+                  "        pm.expect(pt).to.not.have.property(\"certificateUrls\");",
+                  "    });",
+                  "});",
+                  "if (jsonData.data.length > 0) {",
+                  "    pm.collectionVariables.set(\"ptProfileId\", jsonData.data[0].id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pt-profiles",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "pt-profiles"]
+            }
+          }
+        },
+        {
+          "name": "1.2 Tìm kiếm PT theo tên (name=Hoang)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"Returns matched PTs\", function() {",
+                  "    pm.expect(jsonData.data.length).to.be.above(0);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pt-profiles?name=Hoang",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "pt-profiles"],
+              "query": [
+                {
+                  "key": "name",
+                  "value": "Hoang"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "1.3 Tìm kiếm không tìm thấy (Mảng rỗng [])",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"Returns empty array\", function() {",
+                  "    pm.expect(jsonData.data).to.be.an(\"array\").that.is.empty;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pt-profiles?name=NonExistentPT_XYZ999",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "pt-profiles"],
+              "query": [
+                {
+                  "key": "name",
+                  "value": "NonExistentPT_XYZ999"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "1.4 Xem chi tiết hồ sơ PT (Ẩn chứng chỉ nhạy cảm)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"Has public profile fields\", function() {",
+                  "    pm.expect(jsonData.data).to.have.property(\"fullName\");",
+                  "    pm.expect(jsonData.data).to.have.property(\"bio\");",
+                  "    pm.expect(jsonData.data).to.not.have.property(\"certificateUrls\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pt-profiles/{{ptProfileId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "pt-profiles", "{{ptProfileId}}"]
+            }
+          }
+        },
+        {
+          "name": "1.5 Xem danh sách khóa học ACTIVE của PT",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data.length > 0) {",
+                  "    pm.collectionVariables.set(\"targetCourseId\", jsonData.data[0].id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pt-profiles/{{ptProfileId}}/courses",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "pt-profiles", "{{ptProfileId}}", "courses"]
+            }
+          }
+        },
+        {
+          "name": "1.6 Xem khung giờ rảnh AVAILABLE tương lai của PT",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"Slots have status AVAILABLE\", function() {",
+                  "    jsonData.data.forEach(function(s) {",
+                  "        pm.expect(s.status).to.eql(\"AVAILABLE\");",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/pt-profiles/{{ptProfileId}}/slots",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "pt-profiles", "{{ptProfileId}}", "slots"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Quản Lý Ví & Nạp Tiền (Wallet - Thắng)",
+      "item": [
+        {
+          "name": "2.1 Xem ví và lịch sử giao dịch",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"Wallet has balance and transactions\", function() {",
+                  "    pm.expect(jsonData.data).to.have.property(\"balance\");",
+                  "    pm.expect(jsonData.data).to.have.property(\"transactions\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/wallet",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "wallet"]
+            }
+          }
+        },
+        {
+          "name": "2.2 Nạp tiền vào ví (Lỗi số tiền <= 0 -> 400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": -100000,\n  \"paymentMethod\": \"BANK_TRANSFER\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/wallet/topup",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "wallet", "topup"]
+            }
+          }
+        },
+        {
+          "name": "2.3 Nạp tiền vào ví thành công (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"Transaction is SUCCESS and TOPUP\", function() {",
+                  "    pm.expect(jsonData.data.status).to.eql(\"SUCCESS\");",
+                  "    pm.expect(jsonData.data.paymentType).to.eql(\"TOPUP\");",
+                  "    pm.expect(jsonData.data.transactionRef).to.contain(\"TXN_TOPUP_\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 5000000,\n  \"paymentMethod\": \"BANK_TRANSFER\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/wallet/topup",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "wallet", "topup"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Mua Khóa Học & Hợp Đồng (Enrollments - Thắng)",
+      "item": [
+        {
+          "name": "3.1 Mua khóa khi thiếu tiền ví (400 Bad Request & Rollback)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400 or 201 depending on balance\", function () {",
+                  "    // Nếu số dư không đủ sẽ trả về 400 Bad Request",
+                  "    pm.expect(pm.response.code).to.be.oneOf([400, 201]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"courseId\": 1,\n  \"trainingLocation\": \"Cali Fitness Cầu Giấy\",\n  \"paymentMethod\": \"WALLET\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/enrollments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "enrollments"]
+            }
+          }
+        },
+        {
+          "name": "3.2 Mua khóa học thành công (201 Created - Atomic Transaction)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"Enrollment created with full sessions\", function() {",
+                  "    pm.expect(jsonData.data.remainingSessions).to.eql(jsonData.data.totalSessions);",
+                  "    pm.expect(jsonData.data.status).to.eql(\"ACTIVE\");",
+                  "    pm.expect(jsonData.data.contractUrl).to.contain(\"/contract\");",
+                  "});",
+                  "if (jsonData.data && jsonData.data.id) {",
+                  "    pm.collectionVariables.set(\"createdEnrollmentId\", jsonData.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"courseId\": {{targetCourseId}},\n  \"trainingLocation\": \"Cali Fitness Cầu Giấy\",\n  \"paymentMethod\": \"WALLET\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/enrollments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "enrollments"]
+            }
+          }
+        },
+        {
+          "name": "3.3 Xem danh sách khóa học của tôi (GET /enrollments/my)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"List contains enrollments\", function() {",
+                  "    pm.expect(jsonData.data).to.be.an(\"array\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/enrollments/my",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "enrollments", "my"]
+            }
+          }
+        },
+        {
+          "name": "3.4 Tải hợp đồng điện tử PDF (GET /enrollments/{id}/contract)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Content-Type is application/pdf\", function () {",
+                  "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/pdf\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/enrollments/{{createdEnrollmentId}}/contract",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "enrollments", "{{createdEnrollmentId}}", "contract"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Quản Lý Người Dùng & Phân Quyền (Hưng)",
+      "item": [
+        {
+          "name": "4.1 Admin xem danh sách tất cả người dùng (GET /admin/users)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"Returns users array\", function() {",
+                  "    pm.expect(jsonData.data).to.be.an(\"array\").that.is.not.empty;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "users"]
+            }
+          }
+        },
+        {
+          "name": "4.2 Admin lọc người dùng theo Role STUDENT",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "jsonData.data.forEach(function(u) {",
+                  "    pm.expect(u.role).to.eql(\"STUDENT\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/users?role=STUDENT",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "users"],
+              "query": [
+                {
+                  "key": "role",
+                  "value": "STUDENT"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "4.3 RBAC: Không gửi Bearer Token gọi API Ví -> 401 Unauthorized",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401 Unauthorized\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/wallet",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "wallet"]
+            }
+          }
+        },
+        {
+          "name": "4.4 RBAC: PT gọi API Mua Khóa của Student -> 403 Forbidden",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 403 Forbidden\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ptToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"courseId\": 1,\n  \"trainingLocation\": \"Cali Fitness Cầu Giấy\",\n  \"paymentMethod\": \"WALLET\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/enrollments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "enrollments"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

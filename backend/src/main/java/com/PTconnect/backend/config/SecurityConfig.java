@@ -82,6 +82,14 @@ public class SecurityConfig {
                         .requestMatchers("/api/pt/**", "/api/v1/pt/**").hasRole("PT")
                         .requestMatchers("/api/admin/**", "/api/v1/admin/**").hasRole("ADMIN")
 
+                        // Milestone 5: Chuc nang Student, Wallet va Enrollment
+                        .requestMatchers("/api/v1/wallet/topup", "/api/wallet/topup").hasRole("STUDENT")
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/enrollments", "/api/enrollments").hasRole("STUDENT")
+                        .requestMatchers("/api/v1/enrollments/my", "/api/enrollments/my").hasRole("STUDENT")
+                        .requestMatchers("/api/v1/wallet/**", "/api/wallet/**").authenticated()
+                        .requestMatchers("/api/v1/enrollments/**", "/api/enrollments/**").authenticated()
+                        .requestMatchers("/api/v1/pt-profiles/**", "/api/pt-profiles/**").authenticated()
+
                         // 4. Endpoint quan ly User danh rieng cho nguoi dung da xac thuc
                         .requestMatchers("/api/v1/users/**").authenticated()
 
