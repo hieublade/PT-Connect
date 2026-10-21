@@ -91,6 +91,26 @@ class ApiClient:
         except requests.Timeout:
             raise ApiException("Quá thời gian kết nối đến máy chủ Backend (Timeout 10s).", status_code=504)
 
+    def get_raw(self, endpoint: str, params: Optional[Dict[str, Any]] = None, headers: Optional[Dict[str, str]] = None) -> bytes:
+        """Tải dữ liệu nhị phân (binary content như PDF hợp đồng)."""
+        url = f"{self.base_url}/{endpoint.lstrip('/')}"
+        try:
+            custom_h = {"Accept": "application/pdf, application/octet-stream, */*"}
+            if headers:
+                custom_h.update(headers)
+            res = requests.get(url, params=params, headers=self._get_headers(custom_h), timeout=15)
+            if 200 <= res.status_code < 300:
+                return res.content
+            self._handle_response(res)
+            return res.content
+        except requests.ConnectionError:
+            raise ApiException(
+                "Không thể kết nối đến Backend API (Port 8080). Vui lòng kiểm tra dịch vụ backend đã chạy chưa.",
+                status_code=503
+            )
+        except requests.Timeout:
+            raise ApiException("Quá thời gian kết nối đến máy chủ Backend (Timeout 15s).", status_code=504)
+
     def post(self, endpoint: str, json: Optional[Dict[str, Any]] = None, params: Optional[Dict[str, Any]] = None, headers: Optional[Dict[str, str]] = None) -> Any:
         url = f"{self.base_url}/{endpoint.lstrip('/')}"
         try:
