@@ -11,6 +11,8 @@ import com.PTconnect.backend.controller.AdminController;
 import com.PTconnect.backend.controller.PTController;
 import com.PTconnect.backend.controller.PublicController;
 import com.PTconnect.backend.controller.StudentController;
+import com.PTconnect.backend.service.IAdminPTService;
+import com.PTconnect.backend.service.IPTService;
 import com.PTconnect.backend.service.IUserService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,6 +53,12 @@ class SecurityDenialLogTest {
 
     @MockitoBean
     private IUserService userService;
+
+    @MockitoBean
+    private IPTService ptService;
+
+    @MockitoBean
+    private IAdminPTService adminPTService;
 
     private ListAppender<ILoggingEvent> listAppender;
     private Logger denialLogger;
