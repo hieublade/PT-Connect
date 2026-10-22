@@ -69,8 +69,7 @@ def render_avatar_management(user: Dict[str, Any], user_role: str = "STUDENT") -
                 "Chọn cách tải ảnh của bạn:",
                 [
                     "📤 Tải file từ máy tính của bạn",
-                    "🔗 Dán đường link ảnh từ Internet",
-                    "✨ Chọn ảnh mẫu có sẵn"
+                    "🔗 Dán đường link ảnh từ Internet"
                 ],
                 horizontal=True,
                 key=f"avatar_choice_{user_role}"
@@ -111,7 +110,7 @@ def render_avatar_management(user: Dict[str, Any], user_role: str = "STUDENT") -
                                 st.error(f"❌ Lỗi xử lý tệp: {str(ex)}")
 
             # PHƯƠNG THỨC 2: DÁN ĐƯỜNG LINK ẢNH TỪ WEB
-            elif choice == "🔗 Dán đường link ảnh từ Internet":
+            else:
                 st.caption("Dán link ảnh trực tiếp từ Facebook, Imgur, Postimages.org, GitHub hoặc bất kỳ CDN nào.")
                 new_url = st.text_input(
                     "Đường dẫn URL ảnh:",
@@ -135,34 +134,3 @@ def render_avatar_management(user: Dict[str, Any], user_role: str = "STUDENT") -
                             st.error(f"❌ Cập nhật thất bại [{e.status_code}]: {e.message}")
                         except Exception as ex:
                             st.error(f"❌ Lỗi: {str(ex)}")
-
-            # PHƯƠNG THỨC 3: ẢNH MẪU CÓ SẴN
-            else:
-                st.caption("Hoặc bấm vào ảnh mẫu bất kỳ để thử nghiệm ngay lập tức:")
-                if user_role == "PT":
-                    sample_list = [
-                        ("Huấn Luyện Viên 1", "https://images.unsplash.com/photo-1567013127542-490d757e51fc?w=400&auto=format&fit=crop"),
-                        ("Huấn Luyện Viên 2", "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop"),
-                        ("Huấn Luyện Viên 3", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop"),
-                        ("Huấn Luyện Viên 4", "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400&auto=format&fit=crop")
-                    ]
-                else:
-                    sample_list = [
-                        ("Học Viên Năng Động", "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop"),
-                        ("Học Viên Nữ", "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&auto=format&fit=crop"),
-                        ("Học Viên Nam", "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop"),
-                        ("Học Viên Thể Thao", "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&auto=format&fit=crop")
-                    ]
-
-                s_cols = st.columns(4)
-                for i, (label, s_url) in enumerate(sample_list):
-                    with s_cols[i]:
-                        st.image(s_url, width=80)
-                        if st.button(f"Chọn", key=f"btn_sample_{user_role}_{i}", use_container_width=True):
-                            try:
-                                AuthApi.update_avatar(s_url)
-                                st.success(f"✅ Đã chọn {label}!")
-                                time.sleep(0.5)
-                                st.rerun()
-                            except Exception as ex:
-                                st.error(f"❌ Lỗi: {str(ex)}")
