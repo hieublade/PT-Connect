@@ -639,28 +639,40 @@ def render_student_page(user: Dict[str, Any]):
 
                 st.markdown("**Chọn nhanh mệnh giá:**")
                 q_cols = st.columns(4)
-                if "quick_topup_amount" not in st.session_state:
-                    st.session_state["quick_topup_amount"] = 2000000.0
+                if "student_topup_amount_input" not in st.session_state:
+                    st.session_state["student_topup_amount_input"] = 2000000.0
+
+                def handle_quick_amount_click(amount_val: float):
+                    st.session_state["student_topup_amount_input"] = float(amount_val)
 
                 quick_amounts = [1000000.0, 2000000.0, 5000000.0, 10000000.0]
                 for idx, amt in enumerate(quick_amounts):
                     with q_cols[idx]:
-                        if st.button(f"{int(amt/1000000)}Tr", key=f"q_amt_{int(amt)}", use_container_width=True):
-                            st.session_state["quick_topup_amount"] = amt
+                        st.button(
+                            f"{int(amt/1000000)}Tr",
+                            key=f"q_amt_{int(amt)}",
+                            on_click=handle_quick_amount_click,
+                            args=(amt,),
+                            use_container_width=True
+                        )
 
                 entered_amount = st.number_input(
                     "Hoặc nhập số tiền tùy chọn (VND):",
                     min_value=10000.0,
                     max_value=100000000.0,
                     step=100000.0,
-                    value=float(st.session_state["quick_topup_amount"]),
                     key="student_topup_amount_input"
                 )
 
                 method_code = st.selectbox(
                     "Phương thức nạp mô phỏng:",
-                    options=["VNPAY", "MOMO", "BANK_TRANSFER"],
-                    format_func=lambda x: {"VNPAY": "Cổng VNPAY QR", "MOMO": "Ví điện tử MoMo", "BANK_TRANSFER": "Chuyển khoản ngân hàng"}.get(x, x)
+                    options=["BANK_TRANSFER", "CREDIT_CARD", "CASH"],
+                    format_func=lambda x: {
+                        "BANK_TRANSFER": "🏦 Chuyển khoản ngân hàng (Quét mã VNPAY QR / MoMo / VietQR)",
+                        "CREDIT_CARD": "💳 Thẻ tín dụng / Ghi nợ quốc tế (Visa, Mastercard)",
+                        "CASH": "💵 Nạp tiền mặt tại quầy lễ tân"
+                    }.get(x, x),
+                    key="student_topup_payment_method"
                 )
 
                 if st.button("🚀 Nạp Tiền Ngay", type="primary", use_container_width=True):
