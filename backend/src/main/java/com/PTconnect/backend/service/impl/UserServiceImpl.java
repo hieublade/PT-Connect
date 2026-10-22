@@ -1,6 +1,7 @@
 package com.PTconnect.backend.service.impl;
 
 import com.PTconnect.backend.dto.response.UserDTO;
+import com.PTconnect.backend.entity.User;
 import com.PTconnect.backend.entity.enums.Role;
 import com.PTconnect.backend.exception.ResourceNotFoundException;
 import com.PTconnect.backend.repository.UserRepository;
@@ -38,5 +39,15 @@ public class UserServiceImpl implements IUserService {
         return userRepository.findById(id)
                 .map(UserDTO::fromEntity)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với ID: " + id));
+    }
+
+    @Override
+    @Transactional
+    public UserDTO updateAvatar(String email, String avatarUrl) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với email: " + email));
+        user.setAvatarUrl(avatarUrl);
+        User savedUser = userRepository.save(user);
+        return UserDTO.fromEntity(savedUser);
     }
 }

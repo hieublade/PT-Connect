@@ -473,6 +473,7 @@ Tất cả endpoint có tiền tố `/api/v1`. API ngoài nhóm Auth đều yêu
 | POST | /auth/register | Công khai | Đăng ký Student hoặc PT |
 | POST | /auth/login | Công khai | Đăng nhập, trả JWT |
 | GET | /auth/me | Mọi role | Thông tin tài khoản đang đăng nhập |
+| PUT | /users/avatar | Mọi role | Cập nhật ảnh đại diện (avatar) |
 
 ### **7.2. Student**
 
@@ -743,7 +744,7 @@ Bộ pytest \+ Requests chạy trên hệ thống đang bật, in PASS/FAIL cho 
 
 ### **Milestone 6: Luồng Booking – Trái tim hệ thống (Hạn chót: 28/10/2026)**
 
-* **Mục tiêu:** Student Book → PENDING → PT Confirm / Reject → CONFIRMED / CANCELLED; hỗ trợ cả TRIAL và PACKAGE.  
+* **Mục tiêu:** Student Book → PENDING → PT Confirm / Reject → CONFIRMED / CANCELLED; hỗ trợ cả TRIAL và PACKAGE. Cập nhật avt người dùng.  
 * **Công việc chi tiết:**  
   * Backend: đây là phần cần khoe code với giảng viên. Dùng `@Transactional` bao bọc kiểm tra slot và tạo booking; khóa dòng slot và enrollment; kiểm tra slot tại thời điểm request để chống đặt trùng; trừ `remaining_sessions`.  
   * Frontend: Streamlit gọi API Booking, hiển thị lỗi bằng `st.error`, thành công bằng `st.success`.
@@ -752,7 +753,7 @@ Bộ pytest \+ Requests chạy trên hệ thống đang bật, in PASS/FAIL cho 
 | ----- | ----- | ----- | ----- |
 | 1 | **Huy** | `POST /bookings` (TRIAL và PACKAGE) với `@Transactional`, `PESSIMISTIC_WRITE`, 409 khi trùng; `PUT /pt/bookings/{id}/confirm` và `/reject` (reject ghi `cancellations`, trả buổi, trả slot); trang PT: Booking chờ duyệt. | `.../BookingController`, `.../BookingServiceImpl`, `frontend/pages/pt.py` |
 | 2 | **Hưng** | `GET /bookings/my` (lọc theo trạng thái) và `GET /pt/bookings` với `BookingResponse` DTO (ghép tên PT/Student, thời gian, địa điểm); chặn xem booking của người khác. | `.../dto/BookingResponse`, `.../BookingController` |
-| 3 | **Hiệu** | Trang Student: Đặt lịch (chọn TRIAL/PACKAGE \+ hợp đồng), Lịch của tôi (chờ duyệt / sắp tới / lịch sử). | `frontend/pages/student.py`, `frontend/components/booking_table.py` |
+| 3 | **Hiệu** | Trang Student: Đặt lịch (chọn TRIAL/PACKAGE + hợp đồng), Lịch của tôi (chờ duyệt / sắp tới / lịch sử); API và giao diện đổi avatar (`PUT /users/avatar`). | `frontend/pages/student.py`, `frontend/components/booking_table.py`, `.../UserController` |
 | 4 | **Thắng** | `Enrollment.consumeSession()`/`restoreSession()` và kiểm tra hạn/hết buổi trong `EnrollmentService`; script kiểm thử 2 luồng cùng đặt 1 slot chứng minh UNIQUE `active_slot_id` chặn được. | `.../entity/Enrollment`, `database/tests/concurrency.sql` hoặc `backend/src/test/` |
 | 5 | **Thành** | Test tự động: đặt slot AVAILABLE, 2 Student đặt cùng slot, hết buổi, quá hạn, học thử lần 2; bằng chứng SQL trước/sau. | `frontend/tools/tests/test_booking.py`, `docs/db-evidence-m6.md` |
 
@@ -763,6 +764,8 @@ Bộ pytest \+ Requests chạy trên hệ thống đang bật, in PASS/FAIL cho 
 **Output 3:** PT bấm Confirm → booking CONFIRMED. Bấm Reject → booking CANCELLED, có bản ghi `cancellations`, slot tự động về AVAILABLE, `remaining_sessions` được hoàn.
 
 **Output 4:** Chứng minh chống đặt trùng: hai request cùng lúc vào 1 slot, chỉ một request thành công, request còn lại nhận 409 Conflict.
+
+**Output 5:** Học viên và Huấn luyện viên cập nhật ảnh đại diện thành công qua URL hoặc file ảnh, hiển thị chuẩn xác trên hồ sơ cá nhân và thẻ tìm kiếm.
 
 #### **GIAI ĐOẠN 3: Điểm danh, Đánh giá, Quản trị và Hoàn thiện (28/10 – 04/11)**
 

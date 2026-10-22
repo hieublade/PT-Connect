@@ -12,4 +12,6 @@ public interface IUserService {
     List<UserDTO> getUsersByRole(Role role);
 
     UserDTO getUserById(Long id);
+
+    UserDTO updateAvatar(String email, String avatarUrl);
 }

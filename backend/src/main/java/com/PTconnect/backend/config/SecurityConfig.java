@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -28,6 +29,7 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -62,7 +64,10 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // 1. Cac endpoint cong khai (Auth, Public Health, va User API Milestone 2)
+                        // 1. Endpoint cap nhat avatar bat buoc phai dang nhap (first-match)
+                        .requestMatchers("/api/v1/users/avatar", "/api/users/avatar").authenticated()
+
+                        // 2. Cac endpoint cong khai (Auth, Public Health, va User API Milestone 2)
                         .requestMatchers(
                                 "/auth/register",
                                 "/auth/login",
@@ -74,26 +79,30 @@ public class SecurityConfig {
                                 "/error"
                         ).permitAll()
 
-                        // 2. Endpoint thong tin ca nhan (can dang nhap bat ky role nao)
+                        // 3. Endpoint thong tin ca nhan (can dang nhap bat ky role nao)
                         .requestMatchers("/auth/me", "/api/v1/auth/me").authenticated()
 
-                        // 3. Phan quyen theo Role
+                        // 3. Milestone 6: Booking endpoints
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/bookings", "/api/bookings").hasRole("STUDENT")
+                        .requestMatchers("/api/v1/bookings/my", "/api/bookings/my").hasRole("STUDENT")
+                        .requestMatchers("/api/v1/pt/bookings/**", "/api/pt/bookings/**").hasRole("PT")
+                        .requestMatchers("/api/v1/bookings/**", "/api/bookings/**").authenticated()
+
+                        // 4. Phan quyen theo Role co san
                         .requestMatchers("/api/student/**", "/api/v1/student/**").hasRole("STUDENT")
                         .requestMatchers("/api/pt/**", "/api/v1/pt/**").hasRole("PT")
                         .requestMatchers("/api/admin/**", "/api/v1/admin/**").hasRole("ADMIN")
 
-                        // Milestone 5: Chuc nang Student, Wallet va Enrollment
+                        // 5. Milestone 5: Chuc nang Student, Wallet va Enrollment
                         .requestMatchers("/api/v1/wallet/topup", "/api/wallet/topup").hasRole("STUDENT")
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/enrollments", "/api/enrollments").hasRole("STUDENT")
                         .requestMatchers("/api/v1/enrollments/my", "/api/enrollments/my").hasRole("STUDENT")
                         .requestMatchers("/api/v1/wallet/**", "/api/wallet/**").authenticated()
                         .requestMatchers("/api/v1/enrollments/**", "/api/enrollments/**").authenticated()
                         .requestMatchers("/api/v1/pt-profiles/**", "/api/pt-profiles/**").authenticated()
+                        .requestMatchers("/api/v1/users/**", "/api/users/**").authenticated()
 
-                        // 4. Endpoint quan ly User danh rieng cho nguoi dung da xac thuc
-                        .requestMatchers("/api/v1/users/**").authenticated()
-
-                        // 5. Tat ca cac request con lai bat buoc phai dang nhap
+                        // 6. Tat ca cac request con lai bat buoc phai dang nhap
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex
@@ -133,7 +142,15 @@ public class SecurityConfig {
                     principal, uri, accessDeniedException.getMessage()
             );
 
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Access Denied");
+            response.setContentType("application/json;charset=UTF-8");
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            response.getWriter().write("""
+                    {
+                        "status": 403,
+                        "message": "Bạn không có quyền truy cập tài nguyên này",
+                        "data": null
+                    }
+                    """);
         }
     }
 }

@@ -33,4 +33,7 @@ public interface PTProfileRepository extends JpaRepository<PTProfile, Long> {
     List<PTProfile> findByVerificationStatus(VerificationStatus status);
 
     Optional<PTProfile> findByPtId(Long userId);
+
+    @Query("SELECT p FROM PTProfile p WHERE p.pt.email = :email")
+    Optional<PTProfile> findByPtEmail(@Param("email") String email);
 }

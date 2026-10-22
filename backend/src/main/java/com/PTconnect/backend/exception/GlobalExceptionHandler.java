@@ -1,6 +1,7 @@
 package com.PTconnect.backend.exception;
 
 import com.PTconnect.backend.util.ApiResponse;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -20,6 +21,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Object>> handleBookingConflictException(BookingConflictException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(ApiResponse.error(HttpStatus.CONFLICT.value(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponse<Object>> handleDataIntegrityViolationException(DataIntegrityViolationException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponse.error(HttpStatus.CONFLICT.value(), "Khung giờ này vừa có người khác đặt trước hoặc xung đột dữ liệu!"));
     }
 
     @ExceptionHandler(InvalidBookingException.class)

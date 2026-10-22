@@ -1,12 +1,16 @@
 package com.PTconnect.backend.service;
 
+import com.PTconnect.backend.dto.request.CreateBookingRequest;
+import com.PTconnect.backend.dto.request.RejectBookingRequest;
+import com.PTconnect.backend.dto.response.BookingResponse;
 import com.PTconnect.backend.entity.*;
+import com.PTconnect.backend.entity.enums.BookingStatus;
+import com.PTconnect.backend.entity.enums.BookingType;
 import com.PTconnect.backend.entity.enums.EnrollmentStatus;
 import com.PTconnect.backend.entity.enums.SlotStatus;
 import com.PTconnect.backend.exception.BadRequestException;
-import com.PTconnect.backend.repository.AvailabilitySlotRepository;
-import com.PTconnect.backend.repository.BookingRepository;
-import com.PTconnect.backend.repository.EnrollmentRepository;
+import com.PTconnect.backend.exception.BookingConflictException;
+import com.PTconnect.backend.repository.*;
 import com.PTconnect.backend.service.impl.BookingServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -16,11 +20,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -35,9 +41,19 @@ class BookingServiceTest {
     @Mock
     private EnrollmentRepository enrollmentRepository;
 
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private PTProfileRepository ptProfileRepository;
+
+    @Mock
+    private CancellationRepository cancellationRepository;
+
     @InjectMocks
     private BookingServiceImpl bookingService;
 
+    private PT ptUser;
     private PTProfile ptProfile;
     private User student;
     private AvailabilitySlot futureAvailableSlot;
@@ -45,8 +61,9 @@ class BookingServiceTest {
 
     @BeforeEach
     void setUp() {
-        ptProfile = PTProfile.builder().id(1L).build();
-        student = Student.builder().id(2L).fullName("Nguyen Student").build();
+        ptUser = PT.builder().id(10L).fullName("Le Hoang C").email("pt.hoangc@ptconnect.vn").build();
+        ptProfile = PTProfile.builder().id(1L).pt(ptUser).build();
+        student = Student.builder().id(2L).fullName("Nguyen Student").email("student.a@ptconnect.vn").build();
 
         futureAvailableSlot = AvailabilitySlot.builder()
                 .id(100L)
@@ -60,6 +77,7 @@ class BookingServiceTest {
                 .id(200L)
                 .student(student)
                 .pt(ptProfile)
+                .finalPrice(BigDecimal.valueOf(1200000))
                 .remainingSessions(10)
                 .totalSessions(12)
                 .startDate(LocalDate.now().minusDays(5))
@@ -126,5 +144,151 @@ class BookingServiceTest {
                 bookingService.validateBookingRequest(100L, 999L, 200L)
         );
         assertTrue(ex.getMessage().contains("không thuộc về bạn"));
+    }
+
+    @Test
+    @DisplayName("Đặt lịch PACKAGE thành công: slot thành BOOKED, trừ 1 buổi tập, trạng thái PENDING")
+    void createBooking_Package_Success() {
+        CreateBookingRequest req = CreateBookingRequest.builder()
+                .slotId(100L)
+                .bookingType(BookingType.PACKAGE)
+                .enrollmentId(200L)
+                .studentNote("Muốn tập Squat")
+                .build();
+
+        when(userRepository.findByEmail(student.getEmail())).thenReturn(Optional.of(student));
+        when(slotRepository.findByIdWithLock(100L)).thenReturn(Optional.of(futureAvailableSlot));
+        when(enrollmentRepository.findByIdWithLock(200L)).thenReturn(Optional.of(activeEnrollment));
+        when(bookingRepository.saveAndFlush(any(Booking.class))).thenAnswer(i -> {
+            Booking b = i.getArgument(0);
+            b.setId(500L);
+            return b;
+        });
+
+        BookingResponse response = bookingService.createBooking(student.getEmail(), req);
+
+        assertNotNull(response);
+        assertEquals(500L, response.getId());
+        assertEquals(BookingStatus.PENDING, response.getStatus());
+        assertEquals(SlotStatus.BOOKED, futureAvailableSlot.getStatus());
+        assertEquals(9, activeEnrollment.getRemainingSessions()); // 10 - 1 = 9
+    }
+
+    @Test
+    @DisplayName("Đặt lịch TRIAL thành công: fee = 0, slot thành BOOKED, trạng thái PENDING")
+    void createBooking_Trial_Success() {
+        CreateBookingRequest req = CreateBookingRequest.builder()
+                .slotId(100L)
+                .bookingType(BookingType.TRIAL)
+                .studentNote("Học thử buổi đầu")
+                .build();
+
+        when(userRepository.findByEmail(student.getEmail())).thenReturn(Optional.of(student));
+        when(slotRepository.findByIdWithLock(100L)).thenReturn(Optional.of(futureAvailableSlot));
+        when(bookingRepository.existsByStudentIdAndPtIdAndBookingType(student.getId(), ptProfile.getId(), BookingType.TRIAL))
+                .thenReturn(false);
+        when(bookingRepository.saveAndFlush(any(Booking.class))).thenAnswer(i -> {
+            Booking b = i.getArgument(0);
+            b.setId(501L);
+            return b;
+        });
+
+        BookingResponse response = bookingService.createBooking(student.getEmail(), req);
+
+        assertNotNull(response);
+        assertEquals(BookingType.TRIAL, response.getBookingType());
+        assertEquals(BigDecimal.ZERO, response.getSessionFee());
+        assertEquals(SlotStatus.BOOKED, futureAvailableSlot.getStatus());
+    }
+
+    @Test
+    @DisplayName("Ngoại lệ khi học thử lần 2 với cùng Huấn luyện viên")
+    void createBooking_Trial_AlreadyBooked_ThrowsBadRequestException() {
+        CreateBookingRequest req = CreateBookingRequest.builder()
+                .slotId(100L)
+                .bookingType(BookingType.TRIAL)
+                .build();
+
+        when(userRepository.findByEmail(student.getEmail())).thenReturn(Optional.of(student));
+        when(slotRepository.findByIdWithLock(100L)).thenReturn(Optional.of(futureAvailableSlot));
+        when(bookingRepository.existsByStudentIdAndPtIdAndBookingType(student.getId(), ptProfile.getId(), BookingType.TRIAL))
+                .thenReturn(true);
+
+        BadRequestException ex = assertThrows(BadRequestException.class, () ->
+                bookingService.createBooking(student.getEmail(), req)
+        );
+        assertTrue(ex.getMessage().contains("chỉ được học thử 1 lần"));
+    }
+
+    @Test
+    @DisplayName("Ngoại lệ 409 Conflict khi slot đã bị người khác đặt trước")
+    void createBooking_SlotNotAvailable_ThrowsBookingConflictException() {
+        futureAvailableSlot.setStatus(SlotStatus.BOOKED);
+        CreateBookingRequest req = CreateBookingRequest.builder()
+                .slotId(100L)
+                .bookingType(BookingType.PACKAGE)
+                .enrollmentId(200L)
+                .build();
+
+        when(userRepository.findByEmail(student.getEmail())).thenReturn(Optional.of(student));
+        when(slotRepository.findByIdWithLock(100L)).thenReturn(Optional.of(futureAvailableSlot));
+
+        assertThrows(BookingConflictException.class, () ->
+                bookingService.createBooking(student.getEmail(), req)
+        );
+    }
+
+    @Test
+    @DisplayName("PT xác nhận booking thành công: PENDING -> CONFIRMED")
+    void confirmBooking_Success() {
+        Booking booking = Booking.builder()
+                .id(700L)
+                .student(student)
+                .pt(ptProfile)
+                .slot(futureAvailableSlot)
+                .status(BookingStatus.PENDING)
+                .build();
+
+        when(ptProfileRepository.findByPtEmail(ptUser.getEmail())).thenReturn(Optional.of(ptProfile));
+        when(bookingRepository.findByIdWithLock(700L)).thenReturn(Optional.of(booking));
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(i -> i.getArgument(0));
+
+        BookingResponse res = bookingService.confirmBooking(ptUser.getEmail(), 700L);
+
+        assertNotNull(res);
+        assertEquals(BookingStatus.CONFIRMED, res.getStatus());
+    }
+
+    @Test
+    @DisplayName("PT từ chối booking thành công: CANCELLED, trả slot AVAILABLE, hoàn lại buổi tập")
+    void rejectBooking_Success() {
+        futureAvailableSlot.setStatus(SlotStatus.BOOKED);
+        activeEnrollment.setRemainingSessions(9); // Đã bị trừ 1
+
+        Booking booking = Booking.builder()
+                .id(800L)
+                .student(student)
+                .pt(ptProfile)
+                .slot(futureAvailableSlot)
+                .enrollment(activeEnrollment)
+                .bookingType(BookingType.PACKAGE)
+                .sessionFee(BigDecimal.valueOf(100000))
+                .status(BookingStatus.PENDING)
+                .build();
+
+        RejectBookingRequest req = RejectBookingRequest.builder().reason("PT bận lịch cá nhân").build();
+
+        when(ptProfileRepository.findByPtEmail(ptUser.getEmail())).thenReturn(Optional.of(ptProfile));
+        when(bookingRepository.findByIdWithLock(800L)).thenReturn(Optional.of(booking));
+        when(cancellationRepository.save(any(Cancellation.class))).thenAnswer(i -> i.getArgument(0));
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(i -> i.getArgument(0));
+
+        BookingResponse res = bookingService.rejectBooking(ptUser.getEmail(), 800L, req);
+
+        assertNotNull(res);
+        assertEquals(BookingStatus.CANCELLED, res.getStatus());
+        assertEquals(SlotStatus.AVAILABLE, futureAvailableSlot.getStatus());
+        assertEquals(10, activeEnrollment.getRemainingSessions()); // Đã hoàn lại 9 + 1 = 10
+        verify(cancellationRepository, times(1)).save(any(Cancellation.class));
     }
 }

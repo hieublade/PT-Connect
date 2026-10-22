@@ -61,4 +61,23 @@ public class Enrollment {
 
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    // Phương thức nghiệp vụ quản lý kho buổi tập (Encapsulation)
+    public void consumeSession() {
+        if (this.status != EnrollmentStatus.ACTIVE) {
+            throw new IllegalStateException("Hợp đồng không ở trạng thái hoạt động (ACTIVE)");
+        }
+        if (this.remainingSessions == null || this.remainingSessions <= 0) {
+            throw new IllegalStateException("Hợp đồng đã sử dụng hết số buổi tập khả dụng");
+        }
+        this.remainingSessions--;
+    }
+
+    public void restoreSession() {
+        if (this.remainingSessions != null && this.totalSessions != null) {
+            if (this.remainingSessions < this.totalSessions) {
+                this.remainingSessions++;
+            }
+        }
+    }
 }

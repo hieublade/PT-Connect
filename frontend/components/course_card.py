@@ -15,7 +15,9 @@ def render_course_card(
     course: Dict[str, Any],
     on_edit: Optional[Callable[[Dict[str, Any]], None]] = None,
     on_toggle_status: Optional[Callable[[Dict[str, Any]], None]] = None,
-    on_delete: Optional[Callable[[Dict[str, Any]], None]] = None
+    on_delete: Optional[Callable[[Dict[str, Any]], None]] = None,
+    show_actions: bool = True,
+    **kwargs: Any
 ) -> None:
     """Component hiển thị thẻ khóa học (Course Card) trực quan."""
     course_id = course.get("id")
@@ -58,17 +60,18 @@ def render_course_card(
         with c3:
             st.metric(label="⏳ Thời hạn khóa", value=f"{validity_days} ngày")
 
-        btn1, btn2, btn3 = st.columns([2, 2, 2])
-        if on_edit:
-            with btn1:
-                if st.button("✏️ Chỉnh sửa", key=f"btn_edit_course_{course_id}", use_container_width=True):
-                    on_edit(course)
-        if on_toggle_status:
-            with btn2:
-                toggle_label = "⏸️ Ngưng bán" if is_active else "▶️ Mở bán lại"
-                if st.button(toggle_label, key=f"btn_toggle_course_{course_id}", use_container_width=True):
-                    on_toggle_status(course)
-        if on_delete:
-            with btn3:
-                if st.button("🗑️ Xóa", key=f"btn_del_course_{course_id}", use_container_width=True):
-                    on_delete(course)
+        if show_actions and (on_edit or on_toggle_status or on_delete):
+            btn1, btn2, btn3 = st.columns([2, 2, 2])
+            if on_edit:
+                with btn1:
+                    if st.button("✏️ Chỉnh sửa", key=f"btn_edit_course_{course_id}", use_container_width=True):
+                        on_edit(course)
+            if on_toggle_status:
+                with btn2:
+                    toggle_label = "⏸️ Ngưng bán" if is_active else "▶️ Mở bán lại"
+                    if st.button(toggle_label, key=f"btn_toggle_course_{course_id}", use_container_width=True):
+                        on_toggle_status(course)
+            if on_delete:
+                with btn3:
+                    if st.button("🗑️ Xóa", key=f"btn_del_course_{course_id}", use_container_width=True):
+                        on_delete(course)
