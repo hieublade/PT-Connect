@@ -49,6 +49,23 @@ class AuthApi:
                 return api_client.get("/auth/me")
             raise e
 
+    @staticmethod
+    def update_avatar(avatar_url: str) -> Dict[str, Any]:
+        """Cập nhật URL ảnh đại diện của người dùng (PUT /api/v1/users/avatar)."""
+        payload = {"avatarUrl": avatar_url.strip()}
+        try:
+            res = api_client.put("/api/v1/users/avatar", json=payload)
+        except ApiException as e:
+            if e.status_code == 404:
+                res = api_client.put("/users/avatar", json=payload)
+            else:
+                raise e
+
+        # Đồng bộ lại user trong st.session_state
+        if st.session_state.get("user") and isinstance(res, dict):
+            st.session_state["user"]["avatarUrl"] = res.get("avatarUrl", avatar_url)
+        return res
+
 
 # ===================================================================
 # Helper Functions quản lý Session State trong Streamlit

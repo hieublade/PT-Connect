@@ -30,4 +30,9 @@ public interface AvailabilitySlotRepository extends JpaRepository<AvailabilitySl
                                            @Param("startTime") LocalDateTime startTime,
                                            @Param("endTime") LocalDateTime endTime,
                                            @Param("excludeId") Long excludeId);
+
+    // Khóa bi quan chống đặt trùng lịch ca tập (Milestone 6)
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT s FROM AvailabilitySlot s WHERE s.id = :id")
+    java.util.Optional<AvailabilitySlot> findByIdWithLock(@Param("id") Long id);
 }

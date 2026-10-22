@@ -3,6 +3,7 @@ from api.auth_api import AuthApi, clear_auth_session, get_current_user, is_authe
 from api.pt_api import PTApi
 from api.admin_api import AdminApi
 from api.student_api import StudentApi
+from api.booking_api import BookingApi
 
 __all__ = [
     "ApiClient",
@@ -12,6 +13,7 @@ __all__ = [
     "PTApi",
     "AdminApi",
     "StudentApi",
+    "BookingApi",
     "clear_auth_session",
     "get_current_user",
     "is_authenticated",
