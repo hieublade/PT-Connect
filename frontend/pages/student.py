@@ -7,6 +7,7 @@ from api.auth_api import AuthApi
 from api.client import ApiException
 from components.pt_card import render_pt_card, format_currency_vnd
 from components.booking_table import render_booking_table, format_booking_datetime
+from components.avatar_uploader import render_avatar_management
 
 
 def render_student_page(user: Dict[str, Any]):
@@ -702,54 +703,8 @@ def render_student_page(user: Dict[str, Any]):
         st.subheader("👤 Hồ Sơ Cá Nhân & Ảnh Đại Diện (Milestone 6)")
         st.caption("Cập nhật ảnh đại diện để đồng bộ trên toàn bộ hệ thống đặt lịch.")
 
-        with st.container(border=True):
-            st.markdown("### 🖼️ Ảnh Đại Diện (Avatar)")
-            col_av_view, col_av_form = st.columns([1, 3])
-            with col_av_view:
-                if avatar_url:
-                    st.image(avatar_url, width=120, caption="Ảnh đại diện hiện tại")
-                else:
-                    st.markdown(
-                        """
-                        <div style="width: 120px; height: 120px; border-radius: 50%; background: #e3f2fd; display: flex; align-items: center; justify-content: center; font-size: 3rem; border: 3px solid #1976d2;">
-                            👤
-                        </div>
-                        <div style="font-size: 0.8rem; color: #888; text-align: center; margin-top: 6px;">Chưa có ảnh</div>
-                        """,
-                        unsafe_allow_html=True
-                    )
-            with col_av_form:
-                new_avatar_val = st.text_input(
-                    "Đường dẫn URL ảnh đại diện (CDN / Web):",
-                    value=avatar_url or "",
-                    placeholder="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde",
-                    key="input_student_avatar_url"
-                )
-                col_sub_av, col_sample_av = st.columns([2, 3])
-                with col_sub_av:
-                    if st.button("💾 Cập Nhật Avatar", key="btn_update_student_avatar", type="primary", use_container_width=True):
-                        if not new_avatar_val.strip():
-                            st.error("❌ Vui lòng nhập đường dẫn URL ảnh đại diện!")
-                        else:
-                            try:
-                                AuthApi.update_avatar(new_avatar_val.strip())
-                                st.success("✅ Cập nhật ảnh đại diện thành công!")
-                                st.rerun()
-                            except ApiException as e:
-                                st.error(f"❌ Cập nhật thất bại [{e.status_code}]: {e.message}")
-                            except Exception as ex:
-                                st.error(f"❌ Lỗi: {str(ex)}")
-                with col_sample_av:
-                    if st.button("✨ Dùng ảnh mẫu Học viên", key="btn_sample_student_avatar", use_container_width=True):
-                        sample_url = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop"
-                        try:
-                            AuthApi.update_avatar(sample_url)
-                            st.success("✅ Đã áp dụng ảnh mẫu thành công!")
-                            st.rerun()
-                        except Exception as ex:
-                            st.error(f"❌ Lỗi: {str(ex)}")
-
-        st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+        # Widget Quản lý & Tải lên Avatar (Milestone 6 - Hiệu)
+        render_avatar_management(user, "STUDENT")
 
         with st.container(border=True):
             st.markdown("### 📋 Thông Tin Tài Khoản")
