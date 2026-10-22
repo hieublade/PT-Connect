@@ -16,3 +16,7 @@ venv/
 .vscode/
 *.iml
 .DS_Store
+
+# Static avatars uploads
+frontend/static/avatars/*
+!frontend/static/avatars/.gitkeep
