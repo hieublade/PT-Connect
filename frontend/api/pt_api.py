@@ -43,12 +43,15 @@ class PTApi:
         return res if isinstance(res, list) else []
 
     @staticmethod
-    def create_slot(start_time: str, end_time: str) -> Dict[str, Any]:
-        """Tạo khung giờ rảnh mới (start_time, end_time)."""
-        payload = {
-            "startTime": start_time,
-            "endTime": end_time
-        }
+    def create_slot(start_time: Any, end_time: Optional[str] = None) -> Dict[str, Any]:
+        """Tạo khung giờ rảnh mới (hỗ trợ cả 2 tham số hoặc truyền dictionary payload)."""
+        if isinstance(start_time, dict):
+            payload = start_time
+        else:
+            payload = {
+                "startTime": start_time,
+                "endTime": end_time
+            }
         return api_client.post("/api/v1/pt/slots", json=payload)
 
     @staticmethod

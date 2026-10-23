@@ -29,6 +29,8 @@ services:
     container_name: ptconnect-backend
     restart: unless-stopped
     environment:
+      TZ: Asia/Ho_Chi_Minh
+      JAVA_TOOL_OPTIONS: "-Duser.timezone=Asia/Ho_Chi_Minh"
       DB_HOST: mysql
       DB_PORT: 3306
       DB_NAME: ${MYSQL_DATABASE:-ptconnect}
@@ -47,6 +49,7 @@ services:
     container_name: ptconnect-frontend
     restart: unless-stopped
     environment:
+      TZ: Asia/Ho_Chi_Minh
       BACKEND_URL: http://backend:8080
     ports:
       - "8501:8501"

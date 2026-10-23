@@ -60,7 +60,6 @@ def render_sidebar(user: dict):
                 <span style="font-size: 2.2rem;">🏋️</span>
                 <div>
                     <h3 style="margin: 0; font-size: 1.25rem; font-weight: 700; color: #FF4B4B;">PT Connect</h3>
-                    <small style="color: #6c757d;">Milestone 3 - Authentication</small>
                 </div>
             </div>
             """,

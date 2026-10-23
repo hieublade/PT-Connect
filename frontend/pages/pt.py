@@ -120,11 +120,31 @@ def render_pt_page(user: Dict[str, Any]):
 
         st.markdown("---")
         with st.container(border=True):
-            st.markdown("### 📌 Lộ Trình Triển Khai Hệ Thống")
-            st.caption("• **Milestone 4:** Quản lý hồ sơ PT, tạo khóa học và mở khung giờ rảnh (AVAILABLE).")
-            st.caption("• **Milestone 5:** Học viên tìm kiếm và đăng ký mua khóa học của bạn.")
-            st.caption("• **Milestone 6:** Nhận yêu cầu đặt lịch (Booking) và phê duyệt / từ chối buổi tập; cập nhật avatar.")
-            st.caption("• **Milestone 7:** Điểm danh học viên bằng mã OTP và nhận đánh giá sao.")
+            st.markdown("### 💬 Đánh Giá Gần Đây Từ Học Viên (Milestone 7)")
+            pt_id = profile_data.get("id")
+            pt_reviews = BookingApi.get_pt_reviews(pt_id) if pt_id else []
+            if not pt_reviews:
+                st.info("Chưa có lượt đánh giá nào từ học viên. Các buổi tập hoàn tất sẽ được học viên gửi đánh giá tại đây.")
+            else:
+                for rev in pt_reviews:
+                    r_rating = rev.get("rating", 5)
+                    r_comment = rev.get("comment", "Không có nhận xét")
+                    r_student = rev.get("studentName", "Học viên")
+                    r_time = rev.get("createdAt", "")
+                    stars = "⭐" * r_rating
+                    st.markdown(
+                        f"""
+                        <div style="background: #f9fbe7; border-left: 4px solid #827717; padding: 10px 14px; border-radius: 4px; margin-bottom: 8px;">
+                            <div style="display: flex; justify-content: space-between;">
+                                <strong>👤 {r_student}</strong>
+                                <span>{stars} ({r_rating}/5)</span>
+                            </div>
+                            <div style="margin-top: 4px; color: #333;">{r_comment}</div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+
 
     # -------------------------------------------------------------------------
     # TAB 2: DUYỆT BOOKING & LỊCH DẠY (MILESTONE 6)
@@ -218,12 +238,8 @@ def render_pt_page(user: Dict[str, Any]):
                     elif dt_start < datetime.now():
                         st.error("❌ Không thể mở khung giờ trong quá khứ!")
                     else:
-                        slot_payload = {
-                            "startTime": dt_start.isoformat(),
-                            "endTime": dt_end.isoformat()
-                        }
                         try:
-                            PTApi.create_slot(slot_payload)
+                            PTApi.create_slot(dt_start.isoformat(), dt_end.isoformat())
                             st.success("✅ Mở khung giờ rảnh thành công!")
                             st.rerun()
                         except ApiException as e:

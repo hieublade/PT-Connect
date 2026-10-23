@@ -57,6 +57,8 @@ class ApiClient:
         if 200 <= response.status_code < 300:
             if isinstance(body, dict):
                 # Format ApiResponse: { status: 200, message: "...", data: {...} }
+                if "status" in body and "data" in body:
+                    return body["data"]
                 if "data" in body and body.get("data") is not None:
                     return body["data"]
                 return body

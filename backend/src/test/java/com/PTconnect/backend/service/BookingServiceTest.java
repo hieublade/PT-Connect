@@ -50,6 +50,15 @@ class BookingServiceTest {
     @Mock
     private CancellationRepository cancellationRepository;
 
+    @Mock
+    private com.PTconnect.backend.policy.CancellationPolicyFactory cancellationPolicyFactory;
+
+    @Mock
+    private WalletRepository walletRepository;
+
+    @Mock
+    private PaymentRepository paymentRepository;
+
     @InjectMocks
     private BookingServiceImpl bookingService;
 
