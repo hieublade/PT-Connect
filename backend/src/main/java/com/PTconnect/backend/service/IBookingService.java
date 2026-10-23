@@ -27,4 +27,11 @@ public interface IBookingService {
     BookingResponse confirmBooking(String ptEmail, Long bookingId);
 
     BookingResponse rejectBooking(String ptEmail, Long bookingId, RejectBookingRequest request);
+
+    BookingResponse cancelBookingByStudent(String studentEmail, Long bookingId, com.PTconnect.backend.dto.request.CancelBookingRequest request);
+
+    BookingResponse cancelBookingByPT(String ptEmail, Long bookingId, com.PTconnect.backend.dto.request.CancelBookingRequest request);
+
+    com.PTconnect.backend.dto.response.CancelPreviewResponse previewCancelBooking(String userEmail, Long bookingId);
 }
+

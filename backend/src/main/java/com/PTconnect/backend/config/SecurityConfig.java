@@ -102,7 +102,12 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/pt-profiles/**", "/api/pt-profiles/**").authenticated()
                         .requestMatchers("/api/v1/users/**", "/api/users/**").authenticated()
 
-                        // 6. Tat ca cac request con lai bat buoc phai dang nhap
+                        // 6. Milestone 7: Chuc nang Diem danh, Huy lich va Danh gia (Review)
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/reviews", "/api/reviews").hasRole("STUDENT")
+                        .requestMatchers("/api/v1/reviews/**", "/api/reviews/**").permitAll()
+                        .requestMatchers("/api/v1/attendance/**", "/api/attendance/**").authenticated()
+
+                        // 7. Tat ca cac request con lai bat buoc phai dang nhap
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex

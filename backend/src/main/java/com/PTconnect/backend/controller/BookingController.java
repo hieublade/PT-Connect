@@ -107,4 +107,47 @@ public class BookingController {
         BookingResponse response = bookingService.rejectBooking(email, id, request);
         return ResponseEntity.ok(ApiResponse.success("Đã từ chối đơn đặt lịch và hoàn lại buổi tập", response));
     }
+
+    // -------------------------------------------------------------
+    // 3. Chính sách Hủy lịch & Bồi thường (Milestone 7 - Hưng & Thắng)
+    // -------------------------------------------------------------
+
+    @PutMapping({"/api/v1/bookings/{id}/cancel", "/api/bookings/{id}/cancel"})
+    public ResponseEntity<ApiResponse<BookingResponse>> cancelBookingByStudent(
+            Authentication authentication,
+            @PathVariable Long id,
+            @RequestBody(required = false) com.PTconnect.backend.dto.request.CancelBookingRequest request) {
+        String email = getCurrentUserEmail(authentication);
+        if (request == null) {
+            request = com.PTconnect.backend.dto.request.CancelBookingRequest.builder()
+                    .reason("Học viên hủy lịch ca tập")
+                    .build();
+        }
+        BookingResponse response = bookingService.cancelBookingByStudent(email, id, request);
+        return ResponseEntity.ok(ApiResponse.success("Học viên hủy ca tập thành công theo chính sách", response));
+    }
+
+    @PutMapping({"/api/v1/pt/bookings/{id}/cancel", "/api/pt/bookings/{id}/cancel"})
+    public ResponseEntity<ApiResponse<BookingResponse>> cancelBookingByPT(
+            Authentication authentication,
+            @PathVariable Long id,
+            @RequestBody(required = false) com.PTconnect.backend.dto.request.CancelBookingRequest request) {
+        String email = getCurrentUserEmail(authentication);
+        if (request == null) {
+            request = com.PTconnect.backend.dto.request.CancelBookingRequest.builder()
+                    .reason("Huấn luyện viên hủy lịch ca tập")
+                    .build();
+        }
+        BookingResponse response = bookingService.cancelBookingByPT(email, id, request);
+        return ResponseEntity.ok(ApiResponse.success("Huấn luyện viên hủy ca tập thành công theo chính sách", response));
+    }
+
+    @GetMapping({"/api/v1/bookings/{id}/cancel-preview", "/api/bookings/{id}/cancel-preview"})
+    public ResponseEntity<ApiResponse<com.PTconnect.backend.dto.response.CancelPreviewResponse>> previewCancelBooking(
+            Authentication authentication,
+            @PathVariable Long id) {
+        String email = getCurrentUserEmail(authentication);
+        com.PTconnect.backend.dto.response.CancelPreviewResponse response = bookingService.previewCancelBooking(email, id);
+        return ResponseEntity.ok(ApiResponse.success("Xem trước chính sách hủy lịch thành công", response));
+    }
 }
