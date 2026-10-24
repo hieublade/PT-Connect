@@ -58,3 +58,37 @@ class PTApi:
     def delete_slot(slot_id: int) -> None:
         """Xóa khung giờ rảnh (chỉ thành công nếu slot AVAILABLE và chưa có booking)."""
         api_client.delete(f"/api/v1/pt/slots/{slot_id}")
+
+    @staticmethod
+    def get_enrollments() -> List[Dict[str, Any]]:
+        """Lấy danh sách các hợp đồng học viên của PT hiện tại."""
+        res = api_client.get("/api/v1/pt/enrollments")
+        return res if isinstance(res, list) else []
+
+    @staticmethod
+    def get_workout_plans() -> List[Dict[str, Any]]:
+        """Lấy danh sách các giáo án tập luyện do PT soạn."""
+        res = api_client.get("/api/v1/pt/workout-plans")
+        return res if isinstance(res, list) else []
+
+    @staticmethod
+    def create_workout_plan(data: Dict[str, Any]) -> Dict[str, Any]:
+        """Tạo giáo án tập luyện mới cho hợp đồng khóa học."""
+        return api_client.post("/api/v1/pt/workout-plans", json=data)
+
+    @staticmethod
+    def add_workout(plan_id: int, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Thêm bài tập cụ thể vào giáo án."""
+        return api_client.post(f"/api/v1/pt/workout-plans/{plan_id}/workouts", json=data)
+
+    @staticmethod
+    def delete_workout_plan(plan_id: int) -> None:
+        """Xóa giáo án tập luyện."""
+        api_client.delete(f"/api/v1/pt/workout-plans/{plan_id}")
+
+    @staticmethod
+    def delete_workout(plan_id: int, workout_id: int) -> None:
+        """Xóa một bài tập khỏi giáo án."""
+        api_client.delete(f"/api/v1/pt/workout-plans/{plan_id}/workouts/{workout_id}")
+
+

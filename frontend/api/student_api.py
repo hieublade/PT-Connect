@@ -65,3 +65,10 @@ class StudentApi:
     def download_contract(enrollment_id: int) -> bytes:
         """Tải file PDF hợp đồng điện tử."""
         return api_client.get_raw(f"/api/v1/enrollments/{enrollment_id}/contract")
+
+    @staticmethod
+    def get_workout_plans(enrollment_id: int) -> List[Dict[str, Any]]:
+        """Lấy danh sách giáo án tập luyện và bài tập của một khóa học/hợp đồng."""
+        res = api_client.get(f"/api/v1/enrollments/{enrollment_id}/workout-plans")
+        return res if isinstance(res, list) else []
+

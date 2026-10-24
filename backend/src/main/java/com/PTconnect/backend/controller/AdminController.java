@@ -1,12 +1,13 @@
 package com.PTconnect.backend.controller;
 
-import com.PTconnect.backend.dto.response.PendingPTResponse;
-import com.PTconnect.backend.dto.response.PTProfileResponse;
-import com.PTconnect.backend.dto.response.UserDTO;
+import com.PTconnect.backend.dto.request.UpdateUserStatusRequest;
+import com.PTconnect.backend.dto.response.*;
 import com.PTconnect.backend.entity.enums.Role;
 import com.PTconnect.backend.service.IAdminPTService;
+import com.PTconnect.backend.service.IAdminStatisticsService;
 import com.PTconnect.backend.service.IUserService;
 import com.PTconnect.backend.util.ApiResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,6 +21,7 @@ public class AdminController {
 
     private final IUserService userService;
     private final IAdminPTService adminPTService;
+    private final IAdminStatisticsService adminStatisticsService;
 
     @GetMapping("/users")
     public ResponseEntity<ApiResponse<List<UserDTO>>> getUsers(
@@ -28,6 +30,14 @@ public class AdminController {
                 ? userService.getUsersByRole(role)
                 : userService.getAllUsers();
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách người dùng thành công", users));
+    }
+
+    @PutMapping("/users/{id}/status")
+    public ResponseEntity<ApiResponse<UserDTO>> updateUserStatus(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateUserStatusRequest request) {
+        UserDTO updatedUser = userService.updateUserStatus(id, request.getStatus());
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái người dùng thành công", updatedUser));
     }
 
     @GetMapping("/pt/pending")
@@ -46,5 +56,23 @@ public class AdminController {
     public ResponseEntity<ApiResponse<PTProfileResponse>> rejectPT(@PathVariable Long id) {
         PTProfileResponse response = adminPTService.rejectPT(id);
         return ResponseEntity.ok(ApiResponse.success("Từ chối hồ sơ Huấn luyện viên thành công", response));
+    }
+
+    @GetMapping("/statistics")
+    public ResponseEntity<ApiResponse<AdminStatisticsResponse>> getStatistics() {
+        AdminStatisticsResponse stats = adminStatisticsService.getStatistics();
+        return ResponseEntity.ok(ApiResponse.success("Lấy thống kê hệ thống thành công", stats));
+    }
+
+    @GetMapping("/bookings")
+    public ResponseEntity<ApiResponse<List<AdminBookingAnalyticsResponse>>> getBookingsForAnalytics() {
+        List<AdminBookingAnalyticsResponse> bookings = adminStatisticsService.getBookingAnalytics();
+        return ResponseEntity.ok(ApiResponse.success("Lấy dữ liệu đặt lịch cho phân tích thành công", bookings));
+    }
+
+    @GetMapping("/payments")
+    public ResponseEntity<ApiResponse<List<AdminPaymentAnalyticsResponse>>> getPaymentsForAnalytics() {
+        List<AdminPaymentAnalyticsResponse> payments = adminStatisticsService.getPaymentAnalytics();
+        return ResponseEntity.ok(ApiResponse.success("Lấy dữ liệu thanh toán cho phân tích thành công", payments));
     }
 }

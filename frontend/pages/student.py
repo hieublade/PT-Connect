@@ -334,7 +334,7 @@ def render_student_page(user: Dict[str, Any]):
     # TAB 3: ĐẶT LỊCH TẬP (MILESTONE 6 - HIỆU & HUY)
     # -------------------------------------------------------------------------
     elif active_tab == NAV_BOOKING:
-        st.subheader("📅 Đặt Lịch Tập Cùng Huấn Luyện Viên (Milestone 6)")
+        st.subheader("📅 Đặt Lịch Tập Cùng Huấn Luyện Viên")
         st.caption("Hệ thống bảo vệ giao dịch chống đặt trùng (409 Conflict) với khóa bi quan PESSIMISTIC_WRITE.")
 
         booking_type_choice = st.radio(
@@ -504,7 +504,7 @@ def render_student_page(user: Dict[str, Any]):
     # TAB 4: LỊCH CỦA TÔI (MILESTONE 6 - HIỆU)
     # -------------------------------------------------------------------------
     elif active_tab == NAV_MY_SCHEDULE:
-        st.subheader("🗓️ Lịch Tập Luyện Của Tôi (Milestone 6)")
+        st.subheader("🗓️ Lịch Tập Luyện Của Tôi")
         st.caption("Theo dõi tiến độ duyệt lịch, các ca tập sắp diễn ra và lịch sử tập luyện.")
 
         col_st_filter, col_st_refresh = st.columns([4, 1])
@@ -605,6 +605,45 @@ def render_student_page(user: Dict[str, Any]):
                             )
                         except Exception as dl_err:
                             st.caption(f"*(Chưa tải được hợp đồng: {str(dl_err)})*")
+
+                    # GIÁO ÁN VÀ BÀI TẬP HUẤN LUYỆN
+                    with st.expander("📋 Xem Giáo Án & Bài Tập Của Khóa Học", expanded=False):
+                        plans = []
+                        try:
+                            plans = StudentApi.get_workout_plans(e_id)
+                        except Exception:
+                            plans = []
+
+                        if not plans:
+                            st.info("💡 Huấn luyện viên chưa tải lên giáo án cho khóa học này. Hãy liên hệ HLV để nhận lộ trình tập luyện!")
+                        else:
+                            for plan in plans:
+                                st.markdown(f"##### 📑 {plan.get('title')}")
+                                p_goal = plan.get("goal")
+                                p_start = plan.get("startDate")
+                                p_end = plan.get("endDate")
+                                if p_goal:
+                                    st.caption(f"🎯 **Mục tiêu:** {p_goal}")
+                                if p_start and p_end:
+                                    st.caption(f"🗓️ **Thời hạn:** từ `{p_start}` đến `{p_end}`")
+
+                                workouts = plan.get("workouts", [])
+                                if not workouts:
+                                    st.caption("*(Chưa có danh sách bài tập chi tiết)*")
+                                else:
+                                    workout_rows = []
+                                    for w in workouts:
+                                        workout_rows.append({
+                                            "Tên bài tập": w.get("exerciseName"),
+                                            "Nhóm cơ": w.get("targetMuscle") or "-",
+                                            "Số Sets": w.get("sets", 3),
+                                            "Số Reps": w.get("reps", 10),
+                                            "Mức tạ": f"{w.get('weightKg')} kg" if w.get("weightKg") else "-",
+                                            "Nghỉ giữa hiệp": f"{w.get('restSeconds', 60)} giây",
+                                            "Video demo": w.get("videoDemoUrl") or ""
+                                        })
+                                    st.dataframe(workout_rows, use_container_width=True)
+
 
     # -------------------------------------------------------------------------
     # TAB 6: VÍ TIỀN & NẠP TIỀN (MILESTONE 5)
@@ -712,7 +751,7 @@ def render_student_page(user: Dict[str, Any]):
     # TAB 7: HỒ SƠ CÁ NHÂN & CẬP NHẬT AVATAR (MILESTONE 6 - HIỆU)
     # -------------------------------------------------------------------------
     elif active_tab == NAV_PROFILE:
-        st.subheader("👤 Hồ Sơ Cá Nhân & Ảnh Đại Diện (Milestone 6)")
+        st.subheader("👤 Hồ Sơ Cá Nhân & Ảnh Đại Diện")
         st.caption("Cập nhật ảnh đại diện để đồng bộ trên toàn bộ hệ thống đặt lịch.")
 
         # Widget Quản lý & Tải lên Avatar (Milestone 6 - Hiệu)

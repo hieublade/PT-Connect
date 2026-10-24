@@ -37,4 +37,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     Optional<Booking> findByIdWithLock(@Param("id") Long id);
 
     boolean existsByEnrollmentIdAndStatusIn(Long enrollmentId, List<BookingStatus> statuses);
+
+    List<Booking> findAllByOrderByCreatedAtDesc();
 }
