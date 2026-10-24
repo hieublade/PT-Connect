@@ -622,6 +622,8 @@ Bộ pytest \+ Requests chạy trên hệ thống đang bật, in PASS/FAIL cho 
 | 13 | Đánh giá lần 2 cùng booking | 409 hoặc 400 |
 | 14 | Đánh giá hợp lệ | 201, `average_rating` của PT đổi (Trigger) |
 
+## **9. Kế hoạch triển khai theo Milestone**
+
 #### **GIAI ĐOẠN 1: Nền tảng (đến 18/10)**
 
 ### **Milestone 1: Khởi tạo project (Hạn chót: 07/10/2026) – ĐÃ XONG**
@@ -638,61 +640,42 @@ Bộ pytest \+ Requests chạy trên hệ thống đang bật, in PASS/FAIL cho 
 
 **Output 3:** Terminal hiển thị trạng thái Running của 3 container sau `docker compose up -d`.
 
-**Output 4:** `localhost:8501` hiển thị trang Streamlit "Hello World"; log Spring Boot báo Tomcat khởi động thành công ở port 8080\.
+**Output 4:** `localhost:8501` hiển thị trang Streamlit "Hello World"; log Spring Boot báo Tomcat khởi động thành công ở port 8080.
 
 ### **Milestone 2: Kết nối Backend với Database (Hạn chót: 15/10/2026)**
 
-* **Mục tiêu:** Chốt schema 13 bảng, toàn bộ Entity và Repository; test bằng Postman.  
+* **Mục tiêu:** Chốt schema 13 bảng, hoàn thiện toàn bộ Entity và Repository; kiểm tra kết nối Backend với MySQL qua API.  
 * **Công việc chi tiết:**  
-  * Chốt `init.sql` và ERD chuẩn 3NF cho 13 bảng.  
-  * Backend map Entity với `@Inheritance` cho User, map khóa ngoại đúng (nhớ `pt_id` trỏ `pt_profiles.id`).  
-  * Viết 1 API GET đơn giản (danh sách Users) để kiểm tra nối DB thành công.
+  * Chốt script `init.sql` và schema chuẩn 3NF cho 13 bảng.  
+  * Backend ánh xạ toàn bộ Entity (sử dụng `@Inheritance` cho User, ánh xạ khóa ngoại chính xác, `pt_id` trỏ `pt_profiles.id`) và Repository tương ứng.  
+  * Viết API GET đơn giản (danh sách Users) qua Controller → Service → Repository để kiểm tra kết nối CSDL thành công.
 
-| \# | Người | Output cần nộp | File / vị trí |
-| ----- | ----- | ----- | ----- |
-| 1 | **Thắng** (DB Lead) | Script `init.sql` 13 bảng đúng 3NF, có PK, FK, UNIQUE, CHECK, cột sinh `active_slot_id`. Thay mật khẩu mẫu bằng BCrypt hợp lệ, bổ sung dữ liệu mẫu nhất quán (payment cho enrollment \#1). Chạy `docker compose down -v && up` không lỗi. Entity `Course`, `Enrollment`, `Payment` và 3 Repository. |  |
-| 2 | **Thành** (ERD và Tài liệu) | Sơ đồ ERD thể hiện rõ 13 bảng, PK, FK, quan hệ 1-1 và 1-N. File hợp đồng schema và giải thích 3NF (kèm 3 chỗ denormalize có chủ đích). Entity `Review` và `ReviewRepository`. |  |
-| 3 | **Hưng** (Backend – nhóm User) | Entity `User` (dùng `@Inheritance`) cùng `Student`, `PT`, `Admin`; enum `Role`, `UserStatus`, `VerificationStatus`; Entity `PTProfile` (1-1 với PT), `Wallet`; `UserRepository`, `PTProfileRepository`, `WalletRepository`. |  |
-| 4 | **Huy** (Backend – nhóm nghiệp vụ) | Entity `AvailabilitySlot` (N-1 với PTProfile), `Booking` (N-1 Student, N-1 Slot, cột `active_slot_id` chỉ đọc), `Cancellation`, `Attendance`, các enum trạng thái và 4 Repository. |  |
-| 5 | **Hiệu** (API và Postman) | 1 API GET danh sách Users qua Controller → Service → Repository, dùng `UserDTO` (không trả password), kèm `ApiResponse` và `GlobalExceptionHandler`. Entity `WorkoutPlan`, `Workout`. Postman Collection có request trả 200 OK và `[]`. |  |
+**Output 1:** Script `init.sql` tạo cấu trúc 13 bảng đúng chuẩn 3NF và dữ liệu mẫu khởi tạo.
 
-**Output 1:** Script `init.sql` tạo cấu trúc 13 bảng đúng chuẩn 3NF.
+**Output 2:** Toàn bộ class Entity và Repository trong Java với annotation ánh xạ chính xác quan hệ CSDL.
 
-**Output 2:** Các class Entity trong Java với annotation ánh xạ chính xác quan hệ khóa ngoại 1-1, 1-N.
+**Output 3:** Backend kết nối thành công với MySQL, API kiểm tra trả về HTTP 200 OK.
 
-**Output 3:** Collection Postman test kết nối thành công, trả HTTP 200 OK (ví dụ mảng rỗng `[]` khi chưa có user, chứng tỏ Backend đã query MySQL thành công).
-
-**Output 4:** Sơ đồ ERD hoàn chỉnh (.png hoặc .drawio / Mermaid) thể hiện 13 bảng, PK, FK và quan hệ 1-1, 1-N.
-
-**📌 Quy ước thư mục chung cho cả 5 người (Package gốc: com.PTconnect.backend):**
+**📌 Quy ước cấu trúc mã nguồn Backend (Package gốc: com.PTconnect.backend):**
 
 * **Entity & Enum:** backend/src/main/java/com/PTconnect/backend/entity/ (Enum để trong entity/enums/)  
 * **Repository:** backend/src/main/java/com/PTconnect/backend/repository/  
-* **Controller, Service, DTO, Exception:** backend/src/main/java/com/PTconnect/backend/{controller, service, dto, exception}/  
-* **Tài liệu & Postman:** Thư mục docs/ và postman/ ở thư mục gốc.
+* **Controller, Service, DTO, Exception:** backend/src/main/java/com/PTconnect/backend/{controller, service, dto, exception}/
 
 ### **Milestone 3: Authentication (Hạn chót: 18/10/2026) – *Nút thắt kỹ thuật***
 
 * **Mục tiêu:** Register, Login, BCrypt, JWT, Role. Milestone bắt buộc phải xong trước khi làm các tính năng khác.  
 * **Công việc chi tiết:**  
-  * Backend: cấu hình Spring Security Filter Chain; hash mật khẩu bằng BCrypt; API trả JWT; test kỹ phân quyền (Student không gọi được API Admin).  
-  * Frontend: màn Login/Register; lưu JWT vào `st.session_state` để giữ đăng nhập khi chuyển trang.
+  * Backend: cấu hình Spring Security Filter Chain; hash mật khẩu bằng BCrypt; API trả JWT; kiểm tra phân quyền (Student không gọi được API Admin).  
+  * Frontend: màn Login/Register; lưu JWT vào `st.session_state` để giữ đăng nhập khi chuyển trang và điều hướng theo vai trò.
 
-| \# | Người | Output cần nộp | File / vị trí |
-| ----- | ----- | ----- | ----- |
-| 1 | **Hưng** | `SecurityConfig`, `JwtFilter`, `JwtUtil`; `POST /auth/register` (tạo users \+ pt\_profiles \+ wallets trong 1 transaction), `POST /auth/login`, `GET /auth/me`; BCrypt; PT mới đăng ký ở PENDING. | `backend/.../config/`, `.../controller/AuthController`, `.../service/` |
-| 2 | **Hiệu** | `api/client.py` (gắn Bearer, parse `ApiResponse`), `auth_api.py`, trang Login/Register, lưu JWT trong `st.session_state`, điều hướng theo role. | `frontend/app.py`, `frontend/api/`, `frontend/pages/login.py` |
-| 3 | **Huy** | Bộ test phân quyền: ma trận role × nhóm API (401/403) bằng MockMvc, chụp log Security từ chối Student gọi API Admin. | `backend/src/test/`, `postman/` |
-| 4 | **Thắng** | Xác nhận DB: `password_hash` là BCrypt, ví được tạo, trùng email/phone bị UNIQUE chặn; seed tài khoản Admin dùng được. | `database/init.sql`, `docs/db-evidence-m3.md` |
-| 5 | **Thành** | Tài liệu luồng Auth (sơ đồ trình tự) và bộ pytest đầu tiên: đăng ký hợp lệ, email sai/trùng, mật khẩu \< 6 ký tự, đăng nhập sai. | `docs/api-auth.md`, `frontend/tools/tests/test_auth.py` |
+**Output 1:** `POST /api/v1/auth/register` insert thành công user vào DB với mật khẩu đã băm BCrypt, tự động tạo ví và hồ sơ PT (ở trạng thái PENDING) trong cùng một transaction.
 
-**Output 1:** `POST /api/v1/auth/register` insert thành công user vào DB với mật khẩu đã băm BCrypt.
+**Output 2:** `POST /api/v1/auth/login` trả chuỗi JWT chứa thông tin định danh và role (STUDENT, PT, ADMIN).
 
-**Output 2:** `POST /api/v1/auth/login` trả chuỗi JWT chứa role (STUDENT, PT, ADMIN).
+**Output 3:** Frontend Python gọi `requests` đăng nhập thành công, trích JWT từ JSON, lưu vào `st.session_state` và điều hướng đúng trang theo role.
 
-**Output 3:** Frontend Python gọi `requests` đăng nhập thành công, trích JWT từ JSON và lưu vào `st.session_state`.
-
-**Output 4:** Log Spring Security từ chối (403 Forbidden) khi cố tình dùng token Student gọi API Admin.
+**Output 4:** Cơ chế phân quyền API theo Role hoạt động chính xác (trả 403 Forbidden khi người dùng gọi API vượt quyền hạn).
 
 #### **GIAI ĐOẠN 2: Nghiệp vụ PT và Student (18/10 – 28/10)**
 
@@ -703,124 +686,80 @@ Bộ pytest \+ Requests chạy trên hệ thống đang bật, in PASS/FAIL cho 
   * Backend: logic slot không nằm trong quá khứ, giờ kết thúc lớn hơn giờ bắt đầu, không chồng giờ, chỉ xóa slot chưa có booking; CRUD khóa học; Admin duyệt/từ chối PT.  
   * Frontend: PT Dashboard, form cập nhật hồ sơ, quản lý khóa học và slot, trang Admin duyệt PT.
 
-| \# | Người | Output cần nộp | File / vị trí |
-| ----- | ----- | ----- | ----- |
-| 1 | **Hưng** | `GET/PUT /pt/profile` (validate, lưu `certificate_urls` dạng JSON); `GET /admin/pt/pending`, \`PUT /admin/pt/{id}/approve | reject\`; trang PT: Hồ sơ; trang Admin: PT chờ duyệt. |
-| 2 | **Thắng** | `POST/GET/PUT /pt/courses` với quy tắc không xóa khóa đã có hợp đồng, ngưng bán được; trang PT: Khóa học. | `.../CourseController`, `frontend/pages/pt.py` |
-| 3 | **Huy** | `POST/GET/DELETE /pt/slots` với đủ quy tắc (quá khứ, kết thúc \> bắt đầu, chồng giờ, chỉ xóa slot chưa booking); trang PT: Slot của tôi. | `.../SlotController`, `frontend/pages/pt.py` |
-| 4 | **Hiệu** | Khung PT Dashboard (menu theo role, layout), component dùng chung; Postman cho toàn bộ API PT; chốt request/response nhóm API Student (mục 7.2) cho M5. | `frontend/components/`, `postman/` |
-| 5 | **Thành** | Test tự động các quy tắc slot và khóa học (các ca 400); tài liệu API PT; cập nhật ERD nếu schema đổi. | `frontend/tools/tests/test_pt.py`, `docs/api-pt.md` |
+**Output 1:** Giao diện Dashboard PT trên Streamlit hiển thị form cập nhật hồ sơ cá nhân và quản lý danh sách khóa học.
 
-**Output 1:** Giao diện Dashboard PT trên Streamlit hiển thị form cập nhật hồ sơ cá nhân và danh sách khóa học.
+**Output 2:** Bộ API quản lý slot giờ rảnh (`/pt/slots`) ghi slot vào DB với trạng thái mặc định `AVAILABLE` và đầy đủ xác thực (chặn quá khứ, chặn trùng/chồng giờ, chỉ xóa slot chưa booking).
 
-**Output 2:** API `POST /api/v1/pt/slots` ghi slot vào DB với trạng thái mặc định `AVAILABLE`.
+**Output 3:** Bộ API quản lý khóa học (`/pt/courses`) cho phép tạo, sửa, ngưng bán khóa học (không cho xóa khóa đã có hợp đồng).
 
-**Output 3:** Xử lý lỗi API (400 Bad Request) khi PT tạo slot có giờ bắt đầu trong quá khứ hoặc trùng giờ với slot cũ.
-
-**Output 4:** Admin duyệt PT thành công: `verification_status = VERIFIED`, `users.status = ACTIVE`.
+**Output 4:** Chức năng Admin duyệt/từ chối PT thành công: cập nhật `verification_status = VERIFIED`, `users.status = ACTIVE`, kích hoạt hiển thị cho Student.
 
 ### **Milestone 5: Chức năng Student (Hạn chót: 24/10/2026)**
 
 * **Mục tiêu:** View PT, Search PT, View Profile, View Slot, Nạp ví, Mua khóa.  
 * **Công việc chi tiết:**  
   * Backend: API danh sách PT đã duyệt; nạp tiền; mua khóa trong 1 Transaction (trừ ví → enrollment → payment → hợp đồng PDF).  
-  * Frontend: lưới danh sách PT, hiển thị slot chỉ ở trạng thái AVAILABLE, trang Ví và Mua khóa.
+  * Frontend: lưới danh sách PT, tìm kiếm theo tên, hiển thị slot chỉ ở trạng thái AVAILABLE, trang Ví và Mua khóa.
 
-| \# | Người | Output cần nộp | File / vị trí |
-| ----- | ----- | ----- | ----- |
-| 1 | **Hiệu** | `GET /pt-profiles?name=`, `/pt-profiles/{id}`, `/{id}/courses`; Streamlit: Danh sách PT dạng lưới, tìm theo tên, Chi tiết PT. | `.../PTProfileController`, `frontend/pages/student.py`, `frontend/components/pt_card.py` |
-| 2 | **Thắng** | `POST /wallet/topup`, `GET /wallet`, `POST /enrollments` (Transaction \+ sinh hợp đồng PDF \+ `payments`), `GET /enrollments/my`; trang Student: Ví, Mua khóa. | `.../WalletController`, `.../EnrollmentController`, `.../util/ContractPdfGenerator` |
-| 3 | **Hưng** | Phân tách `PTPublicDTO` / `PTPrivateDTO` (Student không thấy chứng chỉ); `GET /admin/users`, trang Admin: Người dùng; test phân quyền cho API mới. | `.../dto/`, `frontend/pages/admin.py` |
-| 4 | **Huy** | `GET /pt-profiles/{id}/slots` chỉ trả slot AVAILABLE trong tương lai; viết nháp `BookingService` và test đơn vị cho logic kiểm tra đặt lịch (chuẩn bị M6). | `.../SlotController`, `backend/src/test/` |
-| 5 | **Thành** | Test mua khóa (thiếu tiền 400, thành công 201), bằng chứng SQL: rollback không để lại enrollment/payment rác; cập nhật tài liệu. | `frontend/tools/tests/test_purchase.py`, `docs/db-evidence-m5.md` |
+**Output 1:** Giao diện danh sách PT trên Streamlit chỉ hiển thị PT `VERIFIED` và `ACTIVE`, hỗ trợ tìm kiếm theo tên.
 
-**Output 1:** Giao diện danh sách PT trên Streamlit chỉ render PT `VERIFIED` và `ACTIVE`.
+**Output 2:** Màn Chi tiết PT hiển thị thông tin giới thiệu, các gói khóa học đang mở bán và các slot giờ rảnh khả dụng (AVAILABLE).
 
-**Output 2:** Tìm kiếm theo tên trả danh sách đã lọc, hoặc hiển thị "Không tìm thấy PT phù hợp" nếu mảng JSON rỗng.
+**Output 3:** Chức năng Ví nội bộ: nạp tiền mô phỏng và theo dõi số dư, lịch sử giao dịch.
 
-**Output 3:** Màn Chi tiết PT hiển thị hồ sơ, khóa học và các giờ trống (AVAILABLE).
-
-**Output 4:** Mua khóa thành công: ví bị trừ đúng `final_price`, có dòng `enrollments` (`remaining_sessions = total_sessions`), dòng `payments` PURCHASE\_PACKAGE và file hợp đồng PDF tải được.
+**Output 4:** Mua khóa thành công trong 1 Transaction: ví bị trừ đúng `final_price`, tạo bản ghi `enrollments` (`remaining_sessions = total_sessions`), ghi nhận `payments` PURCHASE_PACKAGE và sinh file hợp đồng PDF.
 
 ### **Milestone 6: Luồng Booking – Trái tim hệ thống (Hạn chót: 28/10/2026)**
 
-* **Mục tiêu:** Student Book → PENDING → PT Confirm / Reject → CONFIRMED / CANCELLED; hỗ trợ cả TRIAL và PACKAGE. Cập nhật avt người dùng.  
+* **Mục tiêu:** Student Book → PENDING → PT Confirm / Reject → CONFIRMED / CANCELLED; hỗ trợ cả TRIAL và PACKAGE. Cập nhật avatar người dùng.  
 * **Công việc chi tiết:**  
-  * Backend: đây là phần cần khoe code với giảng viên. Dùng `@Transactional` bao bọc kiểm tra slot và tạo booking; khóa dòng slot và enrollment; kiểm tra slot tại thời điểm request để chống đặt trùng; trừ `remaining_sessions`.  
-  * Frontend: Streamlit gọi API Booking, hiển thị lỗi bằng `st.error`, thành công bằng `st.success`.
+  * Backend: Dùng `@Transactional` bao bọc kiểm tra slot và tạo booking; khóa bi quan (`PESSIMISTIC_WRITE`) trên dòng slot và enrollment; kiểm tra slot tại thời điểm request để chống đặt trùng; trừ `remaining_sessions`.  
+  * Frontend: Streamlit gọi API Booking, hiển thị thông báo trạng thái; giao diện PT duyệt booking; đổi avatar người dùng.
 
-| \# | Người | Output cần nộp | File / vị trí |
-| ----- | ----- | ----- | ----- |
-| 1 | **Huy** | `POST /bookings` (TRIAL và PACKAGE) với `@Transactional`, `PESSIMISTIC_WRITE`, 409 khi trùng; `PUT /pt/bookings/{id}/confirm` và `/reject` (reject ghi `cancellations`, trả buổi, trả slot); trang PT: Booking chờ duyệt. | `.../BookingController`, `.../BookingServiceImpl`, `frontend/pages/pt.py` |
-| 2 | **Hưng** | `GET /bookings/my` (lọc theo trạng thái) và `GET /pt/bookings` với `BookingResponse` DTO (ghép tên PT/Student, thời gian, địa điểm); chặn xem booking của người khác. | `.../dto/BookingResponse`, `.../BookingController` |
-| 3 | **Hiệu** | Trang Student: Đặt lịch (chọn TRIAL/PACKAGE + hợp đồng), Lịch của tôi (chờ duyệt / sắp tới / lịch sử); API và giao diện đổi avatar (`PUT /users/avatar`). | `frontend/pages/student.py`, `frontend/components/booking_table.py`, `.../UserController` |
-| 4 | **Thắng** | `Enrollment.consumeSession()`/`restoreSession()` và kiểm tra hạn/hết buổi trong `EnrollmentService`; script kiểm thử 2 luồng cùng đặt 1 slot chứng minh UNIQUE `active_slot_id` chặn được. | `.../entity/Enrollment`, `database/tests/concurrency.sql` hoặc `backend/src/test/` |
-| 5 | **Thành** | Test tự động: đặt slot AVAILABLE, 2 Student đặt cùng slot, hết buổi, quá hạn, học thử lần 2; bằng chứng SQL trước/sau. | `frontend/tools/tests/test_booking.py`, `docs/db-evidence-m6.md` |
+**Output 1:** API `POST /api/v1/bookings` chạy thành công khối `@Transactional`: tạo bản ghi `bookings` trạng thái PENDING, slot thành BOOKED, `remaining_sessions` giảm 1 (với PACKAGE).
 
-**Output 1:** `POST /api/v1/bookings` chạy thành công khối `@Transactional`: tạo bản ghi `bookings` trạng thái PENDING, slot thành BOOKED, `remaining_sessions` giảm 1 (PACKAGE).
+**Output 2:** Giao diện PT Dashboard hiển thị danh sách booking đang PENDING; hỗ trợ thao tác Confirm (chuyển CONFIRMED) hoặc Reject (chuyển CANCELLED, hoàn buổi, trả slot về AVAILABLE).
 
-**Output 2:** Giao diện PT Dashboard hiển thị danh sách booking đang PENDING.
+**Output 3:** Xử lý chống đặt trùng slot: hai request đồng thời vào cùng 1 slot chỉ 1 request thành công, request còn lại nhận 409 Conflict.
 
-**Output 3:** PT bấm Confirm → booking CONFIRMED. Bấm Reject → booking CANCELLED, có bản ghi `cancellations`, slot tự động về AVAILABLE, `remaining_sessions` được hoàn.
+**Output 4:** Trang quản lý lịch cá nhân của Student (hiển thị lịch chờ duyệt, sắp tới và lịch sử).
 
-**Output 4:** Chứng minh chống đặt trùng: hai request cùng lúc vào 1 slot, chỉ một request thành công, request còn lại nhận 409 Conflict.
-
-**Output 5:** Học viên và Huấn luyện viên cập nhật ảnh đại diện thành công qua URL hoặc file ảnh, hiển thị chuẩn xác trên hồ sơ cá nhân và thẻ tìm kiếm.
+**Output 5:** Chức năng cập nhật ảnh đại diện người dùng qua API và hiển thị chuẩn xác trên hồ sơ cá nhân và danh sách tìm kiếm.
 
 #### **GIAI ĐOẠN 3: Điểm danh, Đánh giá, Quản trị và Hoàn thiện (28/10 – 04/11)**
 
-### **Milestone 7: Điểm danh, Hủy lịch và Review \+ Trigger (Hạn chót: 01/11/2026)**
+### **Milestone 7: Điểm danh, Hủy lịch và Review + Trigger (Hạn chót: 01/11/2026)**
 
 * **Mục tiêu:** CONFIRMED → điểm danh hai phía → COMPLETED → Đánh giá → Trigger tính `average_rating`; hủy lịch có chính sách hoàn/đền bù.  
 * **Công việc chi tiết:**  
   * Database: viết đúng 1 Trigger MySQL `AFTER INSERT ON reviews` cập nhật `AVG(rating)` và `total_reviews` vào `pt_profiles`.  
-  * Backend: API điểm danh OTP; API hủy lịch theo `CancellationPolicy`; API tạo Review (booking phải COMPLETED, chỉ đánh giá 1 lần).
+  * Backend: API điểm danh hai phía bằng OTP; API hủy lịch theo `CancellationPolicy` áp dụng hoàn buổi, phạt, đền bù; API tạo Review (chỉ đánh giá khi COMPLETED, 1 lần duy nhất).  
+  * Frontend: Giao diện PT hiển thị OTP; giao diện Student nhập OTP và giao diện gửi đánh giá số sao (1–5).
 
-| \# | Người | Output cần nộp | File / vị trí |
-| ----- | ----- | ----- | ----- |
-| 1 | **Thành** | Script Trigger `AFTER INSERT ON reviews`; `POST /reviews` (chỉ booking COMPLETED, đúng chủ booking, 1 lần); trang Student: Đánh giá (chọn 1–5 sao); bằng chứng `average_rating` tự đổi. | `database/trigger.sql`, `.../ReviewController`, `frontend/pages/student.py`, `docs/db-evidence-m7.md` |
-| 2 | **Huy** | `AttendanceService`: sinh/kiểm tra OTP (`OtpUtil`), Student xác nhận, PT xác nhận, trạng thái PRESENT/LATE/ABSENT, booking → COMPLETED; `CancellationPolicy` \+ 3 hiện thực (Student/PT/Admin); trang PT: Điểm danh \+ OTP. | `.../AttendanceController`, `.../policy/`, `frontend/pages/pt.py` |
-| 3 | **Thắng** | Áp kết quả chính sách lên ví: ghi `payments` loại REFUND/COMPENSATION, cộng/trừ `wallets` trong cùng Transaction; khôi phục `remaining_sessions`; trạng thái enrollment COMPLETED/EXPIRED. | `.../WalletServiceImpl`, `.../EnrollmentServiceImpl` |
-| 4 | **Hưng** | `PUT /bookings/{id}/cancel`, `PUT /pt/bookings/{id}/cancel` (lý do bắt buộc, `evidence_url` tùy chọn); unit test JUnit cho từng dòng bảng chính sách mục 3.11 (chứng minh đa hình). | `.../BookingController`, `backend/src/test/policy/` |
-| 5 | **Hiệu** | Trang Student: nút Hủy lịch (hiển thị trước số tiền hoàn/đền bù), nhập OTP điểm danh; Postman cho nhóm API mới. | `frontend/pages/student.py`, `postman/` |
+**Output 1:** Chức năng điểm danh hai phía bằng OTP đưa booking sang trạng thái COMPLETED.
 
-**Output 1:** Màn Student My Bookings cho phép đánh giá (chọn 1–5 sao) các lịch có trạng thái COMPLETED.
+**Output 2:** Chức năng hủy lịch tự động áp dụng chính sách hoàn buổi, đền bù hoặc phạt tiền vào ví nội bộ dựa trên mốc thời gian trước/sau 24 giờ.
 
-**Output 2:** Script SQL chứa Trigger `AFTER INSERT ON reviews`.
-
-**Output 3:** Bằng chứng minh họa CSDL: sau khi gọi API gửi review, query thủ công `pt_profiles` cho thấy `average_rating` và `total_reviews` tự động thay đổi mà không có logic Java nào tác động.
-
-**Output 4:** Điểm danh hai phía thành công đưa booking sang COMPLETED; hủy trước/sau 24 giờ cho kết quả khôi phục buổi, đền bù, phạt đúng bảng chính sách (JUnit PASS).
+**Output 3:** Giao diện đánh giá (1–5 sao) trên màn hình học viên cho các buổi tập COMPLETED; Trigger MySQL tự động cập nhật `average_rating` và `total_reviews` của PT ngay khi đánh giá được lưu.
 
 ### **Milestone 8: Giáo án, Admin và Thống kê (Hạn chót: 04/11/2026)**
 
 * **Mục tiêu:**  
-  * Hoàn thiện Admin.  
-  * Hoàn thiện Python Data Analytics.  
-  * Hoàn thiện Python API Testing.  
+  * Hoàn thiện Admin Dashboard và quản lý tài khoản.  
+  * Hoàn thiện phân tích dữ liệu (Pandas + Plotly) trên giao diện Admin.  
   * Chuẩn bị dữ liệu mẫu phục vụ demo.  
-  * Hoàn thành Giáo án (mức Nên có).  
+  * Hoàn thành chức năng Giáo án (mức Nên có).  
 * **Công việc chi tiết:**  
-  * Backend: API thống kê Student/PT/Booking/Doanh thu; API trả dữ liệu cho Python Analytics; API giáo án.  
-  * Python: Streamlit Admin Dashboard; Requests lấy dữ liệu từ Backend; Pandas xử lý; Plotly ít nhất 3 biểu đồ; Data Generator; API Testing.
+  * Backend: API thống kê tổng quan (Student/PT/Booking/Doanh thu); API trả dữ liệu cho phân tích; API quản lý giáo án và bài tập (`workout_plans`, `workouts`); API khóa/mở khóa tài khoản người dùng.  
+  * Python: Streamlit Admin Dashboard; Requests lấy dữ liệu từ Backend; Pandas xử lý; Plotly tối thiểu 3 biểu đồ; Data Generator tạo dữ liệu mẫu phong phú.
 
-| \# | Người | Output cần nộp | File / vị trí |
-| ----- | ----- | ----- | ----- |
-| 1 | **Thành** | `GET /admin/statistics`, `/admin/bookings`, `/admin/payments`; `analytics/stats.py` (Pandas) và `charts.py` (Plotly) ít nhất 3 biểu đồ; Admin Dashboard. | `.../AdminController`, `frontend/analytics/`, `frontend/pages/admin.py` |
-| 2 | **Thắng** | `generate_data.py` tạo `seed_demo.sql` hợp lệ mọi CHECK/UNIQUE, có `seed` cố định; nạp vào DB; kiểm tra Trigger tính đúng rating cho dữ liệu mẫu. | `frontend/tools/generate_data.py`, `database/seed_demo.sql` |
-| 3 | **Hiệu** | `WorkoutPlan`/`Workout` API (PT tạo, Student xem) và giao diện tương ứng; Postman cuối cùng cho toàn bộ API. | `.../WorkoutPlanController`, `frontend/pages/`, `postman/` |
-| 4 | **Hưng** | `PUT /admin/users/{id}/status` (khóa/mở khóa, chặn đăng nhập khi SUSPENDED); gắn các trang Admin thành một Dashboard thống nhất. | `.../AdminController`, `frontend/pages/admin.py` |
-| 5 | **Huy** | Xử lý ABSENT và công việc `@Scheduled` đánh dấu enrollment EXPIRED; bổ sung test pytest cho điểm danh, hủy lịch (các ca 11–14 mục 8.5). | `.../scheduler/`, `frontend/tools/tests/test_attendance.py` |
+**Output 1:** Admin Dashboard hiển thị thống kê tổng quan (tổng Student, PT, Booking, doanh thu) và quản lý danh sách, trạng thái người dùng (khóa/mở khóa).
 
-**Output 1:** Admin Dashboard hiển thị thống kê cơ bản (tổng Student, PT, Booking, doanh thu).
+**Output 2:** Hệ thống biểu đồ trực quan hóa dữ liệu (Plotly + Pandas) trên Dashboard Admin (trạng thái booking, doanh thu theo tháng, top PT).
 
-**Output 2:** Ít nhất 3 biểu đồ Plotly dùng dữ liệu đã xử lý bằng Pandas.
+**Output 3:** Chức năng Giáo án và bài tập (PT soạn giáo án theo từng hợp đồng, Student theo dõi bài tập được giao).
 
-**Output 3:** Script Python có thể tạo dữ liệu mẫu hợp lệ và nạp vào DB.
-
-**Output 4:** Script Python API Testing chạy được và hiển thị PASS/FAIL cho 14 ca.
-
-**Output 5:** Có thể chứng minh Python lấy dữ liệu từ Java Backend thông qua REST API.
+**Output 4:** Script Python (`tools/generate_data.py`) tự động sinh dữ liệu mẫu hợp lệ, đầy đủ ràng buộc để phục vụ chạy demo hệ thống.
 
 #### **GIAI ĐOẠN 4: Triển khai hạ tầng và Chuẩn bị bảo vệ (04/11 – 10/11)**
 
@@ -828,30 +767,22 @@ Bộ pytest \+ Requests chạy trên hệ thống đang bật, in PASS/FAIL cho 
 
 * **Mục tiêu:** Bất kỳ ai clone về gõ `docker compose up -d` là chạy; toàn bộ luồng MVP chạy ổn trên môi trường Docker.  
 * **Công việc chi tiết:**  
-  * Tối ưu Dockerfile của Spring Boot (đóng gói file `.jar`) và Streamlit (`requirements.txt`).  
-  * Đảm bảo container backend tự đợi container DB sẵn sàng (healthcheck).  
-  * Chạy hồi quy toàn bộ luồng MVP, sửa lỗi còn lại.
+  * Tối ưu Dockerfile của Spring Boot (đóng gói file `.jar` độc lập) và Streamlit (`requirements.txt` ghim phiên bản).  
+  * Cấu hình container Backend tự đợi MySQL sẵn sàng (`healthcheck` kết hợp `depends_on: condition: service_healthy`).  
+  * Chạy hồi quy toàn bộ luồng MVP, dọn dẹp mã nguồn.
 
-| \# | Người | Output cần nộp | File / vị trí |
-| ----- | ----- | ----- | ----- |
-| 1 | **Thắng** | Dockerfile Backend đa giai đoạn (build `.jar`), `docker-compose.yml` với `healthcheck` MySQL \+ `depends_on: condition: service_healthy`, volume cho MySQL và thư mục hợp đồng PDF, `.env.example`. | `backend/Dockerfile`, `docker-compose.yml` |
-| 2 | **Hiệu** | Dockerfile Frontend, `requirements.txt` ghim phiên bản, `.gitignore`, README hướng dẫn chạy; dọn repo; merge `develop` → `main`. | `frontend/Dockerfile`, `README.md` |
-| 3 | **Hưng** | Đưa JWT secret, mật khẩu DB ra biến môi trường; tắt profile `dev`; rà lại CORS và phân quyền; hồi quy Auth/Role. | `backend/src/main/resources/`, `.env.example` |
-| 4 | **Huy** | Hồi quy Booking, Hủy, Điểm danh trên môi trường Docker; sửa lỗi. | issue tracker / PR |
-| 5 | **Thành** | Chạy toàn bộ pytest trên bản clone sạch, lưu kết quả; cập nhật tài liệu, ERD cuối cùng. | `docs/test-report.md` |
+**Output 1:** Repository sạch sẽ, chuẩn hóa cấu trúc thư mục, biến môi trường `.env.example` và README hướng dẫn khởi chạy.
 
-**Output 1:** Repository sạch sẽ (không chứa file rác, file build cục bộ).
+**Output 2:** Dockerfile Backend multi-stage build thành `.jar` và Dockerfile Frontend Streamlit hoạt động ổn định.
 
-**Output 2:** Dockerfile Backend được tối ưu, build độc lập thành `.jar` và tự động đợi MySQL sẵn sàng.
+**Output 3:** File `docker-compose.yml` hoàn chỉnh, khởi động toàn bộ 3 dịch vụ đồng bộ chỉ với lệnh `docker compose up -d`.
 
-**Output 3:** Bất kỳ thành viên nào xóa toàn bộ môi trường cũ, clone code mới nhất và gõ `docker compose up -d`, hệ thống tự build lại image và chạy mượt.
-
-## **Git, Docker, MVP và tiêu chí nghiệm thu**
+## **10. Git, Docker, MVP và tiêu chí nghiệm thu**
 
 ### **Git workflow**
 
 * Nhánh: `main` (ổn định, dùng để nộp), `develop` (tích hợp), `feature/*` (mỗi người làm việc tại đây), ví dụ `feature/auth`, `feature/database`, `feature/course-wallet`, `feature/booking`, `feature/review-trigger`, `feature/analytics`, `feature/frontend`.  
-* Không push trực tiếp vào `main`; mọi thay đổi qua Pull Request, ít nhất 1 thành viên khác review trước khi merge vào `develop` (cặp review ở mục 9.3).  
+* Không push trực tiếp vào `main`; mọi thay đổi qua Pull Request, ít nhất 1 thành viên khác review trước khi merge vào `develop`.  
 * Commit theo Conventional Commits: `feat: add login api`, `feat: add booking feature`, `fix: fix slot conflict`, `chore: update docker compose`.
 
 ### **Docker**

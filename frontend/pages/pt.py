@@ -79,12 +79,13 @@ def render_pt_page(user: Dict[str, Any]):
     else:
         st.success("✅ Hồ sơ của bạn đã được xác minh thành công (`VERIFIED`). Sẵn sàng nhận học viên!", icon="🎉")
 
-    # Phân chia các Tab chức năng theo Milestone 6
-    tab_overview, tab_bookings, tab_slots, tab_courses, tab_profile = st.tabs([
+    # Phân chia các Tab chức năng theo Milestone 6 & Milestone 8
+    tab_overview, tab_bookings, tab_slots, tab_courses, tab_workout_plans, tab_profile = st.tabs([
         "📊 Tổng Quan",
         "📋 Duyệt Booking & Lịch Dạy",
         "⏰ Khung Giờ Rảnh (Slots)",
         "📚 Quản Lý Khóa Học",
+        "🏋️ Giáo Án & Bài Tập",
         "👤 Hồ Sơ & Avatar"
     ])
 
@@ -120,7 +121,7 @@ def render_pt_page(user: Dict[str, Any]):
 
         st.markdown("---")
         with st.container(border=True):
-            st.markdown("### 💬 Đánh Giá Gần Đây Từ Học Viên (Milestone 7)")
+            st.markdown("### 💬 Đánh Giá Gần Đây Từ Học Viên")
             pt_id = profile_data.get("id")
             pt_reviews = BookingApi.get_pt_reviews(pt_id) if pt_id else []
             if not pt_reviews:
@@ -147,10 +148,10 @@ def render_pt_page(user: Dict[str, Any]):
 
 
     # -------------------------------------------------------------------------
-    # TAB 2: DUYỆT BOOKING & LỊCH DẠY (MILESTONE 6)
+    # TAB 2: DUYỆT BOOKING & LỊCH DẠY
     # -------------------------------------------------------------------------
     with tab_bookings:
-        st.subheader("📋 Quản Lý & Phê Duyệt Lịch Ca Tập (Milestone 6)")
+        st.subheader("📋 Quản Lý & Phê Duyệt Lịch Ca Tập")
         st.caption("Phê duyệt hoặc từ chối các đơn đặt lịch của học viên theo gói hoặc học thử.")
 
         col_filter, col_refresh = st.columns([4, 1])
@@ -357,7 +358,193 @@ def render_pt_page(user: Dict[str, Any]):
                 )
 
     # -------------------------------------------------------------------------
-    # TAB 5: HỒ SƠ CÁ NHÂN & CẬP NHẬT AVATAR (MILESTONE 6 - HIỆU)
+    # TAB 5: GIÁO ÁN & BÀI TẬP
+    # -------------------------------------------------------------------------
+    with tab_workout_plans:
+        st.subheader("🏋️ Quản Lý Giáo Án & Bài Tập Huấn Luyện")
+        st.caption("Thiết lập lộ trình luyện tập cho từng học viên theo hợp đồng và giao bài tập chi tiết.")
+
+        # Lấy danh sách hợp đồng của PT
+        pt_enrollments: List[Dict[str, Any]] = []
+        try:
+            pt_enrollments = PTApi.get_enrollments()
+        except Exception:
+            pt_enrollments = []
+
+        # 1. Soạn Giáo Án Mới
+        with st.expander("➕ Soạn Giáo Án Mới Cho Học Viên", expanded=False):
+            if not pt_enrollments:
+                st.info("💡 Bạn chưa có học viên nào ký hợp đồng khóa học. Khi học viên mua khóa, danh sách hợp đồng sẽ xuất hiện tại đây để bạn soạn giáo án!")
+            else:
+                enroll_options = {
+                    e["id"]: f"Hợp đồng #{e['id']} — Học viên: {e.get('studentName', 'Học viên')} | Khóa: {e.get('courseTitle', 'Khóa học')} (Còn {e.get('remainingSessions')}/{e.get('totalSessions')} buổi)"
+                    for e in pt_enrollments
+                }
+
+                chosen_eid = st.selectbox(
+                    "Chọn hợp đồng học viên cần soạn giáo án:",
+                    options=list(enroll_options.keys()),
+                    format_func=lambda x: enroll_options.get(x, str(x)),
+                    key="select_enroll_for_plan"
+                )
+
+                chosen_e = next((e for e in pt_enrollments if e["id"] == chosen_eid), pt_enrollments[0])
+
+                with st.container(border=True):
+                    st.markdown(
+                        f"**Học viên:** `{chosen_e.get('studentName')}` (`{chosen_e.get('studentEmail')}`) | "
+                        f"**📍 Địa điểm:** `{chosen_e.get('trainingLocation')}` | "
+                        f"**Thời hạn hợp đồng:** từ `{chosen_e.get('startDate')}` đến `{chosen_e.get('endDate')}`"
+                    )
+
+                with st.form("form_create_workout_plan"):
+                    plan_title = st.text_input(
+                        "Tiêu đề giáo án (*):",
+                        value=f"Giáo án rèn luyện - {chosen_e.get('studentName')}",
+                        placeholder="Ví dụ: Lộ trình giảm mỡ 4 tuần đầu"
+                    )
+                    plan_goal = st.text_input(
+                        "Mục tiêu giáo án (Goal):",
+                        value=f"Rèn luyện thể lực và hoàn thành khóa {chosen_e.get('courseTitle')}",
+                        placeholder="Ví dụ: Giảm 3kg mỡ, tăng sức bền tim mạch..."
+                    )
+
+                    col_d1, col_d2 = st.columns(2)
+                    with col_d1:
+                        plan_start_date = st.date_input("Ngày bắt đầu giáo án:", value=date.today())
+                    with col_d2:
+                        plan_end_date = st.date_input("Ngày kết thúc giáo án:", value=date.today() + timedelta(days=30))
+
+                    if st.form_submit_button("🚀 Tạo Giáo Án", type="primary"):
+                        if not plan_title.strip():
+                            st.error("Vui lòng nhập tiêu đề giáo án!")
+                        elif plan_start_date > plan_end_date:
+                            st.error("Ngày bắt đầu giáo án không thể sau ngày kết thúc!")
+                        else:
+                            try:
+                                payload = {
+                                    "enrollmentId": int(chosen_eid),
+                                    "title": plan_title.strip(),
+                                    "goal": plan_goal.strip() if plan_goal else None,
+                                    "startDate": plan_start_date.isoformat(),
+                                    "endDate": plan_end_date.isoformat()
+                                }
+                                PTApi.create_workout_plan(payload)
+                                st.success(f"✅ Đã tạo thành công giáo án: {plan_title}!")
+                                st.rerun()
+                            except ApiException as e:
+                                st.error(f"❌ Lỗi tạo giáo án [{e.status_code}]: {e.message}")
+                            except Exception as ex:
+                                st.error(f"❌ Lỗi: {str(ex)}")
+
+        # 2. Danh Sách Giáo Án Đã Tạo
+        st.markdown("#### 📑 Danh Sách Giáo Án Đã Tạo")
+        plans: List[Dict[str, Any]] = []
+        try:
+            plans = PTApi.get_workout_plans()
+        except Exception:
+            plans = []
+
+        if not plans:
+            st.info("Chưa có giáo án nào được tạo. Hãy nhấn vào 'Soạn Giáo Án Mới Cho Học Viên' ở trên để bắt đầu thiết kế bài tập!")
+        else:
+            for p in plans:
+                plan_id = p.get("id")
+                p_title = p.get("title", "Giáo án")
+                p_enroll_id = p.get("enrollmentId")
+                p_student_name = p.get("studentName", "Học viên")
+                p_goal = p.get("goal", "")
+                p_start = p.get("startDate", "")
+                p_end = p.get("endDate", "")
+                p_workouts = p.get("workouts", [])
+
+                with st.container(border=True):
+                    col_p_title, col_p_actions = st.columns([3, 1])
+                    with col_p_title:
+                        st.markdown(f"### 📋 {p_title}")
+                        st.markdown(f"**Học viên:** `{p_student_name}` | **Mã Hợp Đồng:** `#{p_enroll_id}` | **Thời hạn:** từ `{p_start}` đến `{p_end}`")
+                        if p_goal:
+                            st.caption(f"🎯 **Mục tiêu:** {p_goal}")
+                    with col_p_actions:
+                        st.markdown(f"<div style='text-align: right; color: #1565c0; font-weight: 600; font-size: 1.05rem; margin-bottom: 6px;'>{len(p_workouts)} bài tập</div>", unsafe_allow_html=True)
+                        if st.button("🗑️ Xóa Giáo Án", key=f"btn_del_plan_{plan_id}", type="secondary", use_container_width=True, help="Xóa toàn bộ giáo án này"):
+                            try:
+                                PTApi.delete_workout_plan(plan_id)
+                                st.success("✅ Đã xóa giáo án thành công!")
+                                st.rerun()
+                            except ApiException as e:
+                                st.error(f"❌ Lỗi xóa giáo án [{e.status_code}]: {e.message}")
+                            except Exception as ex:
+                                st.error(f"❌ Lỗi: {str(ex)}")
+
+                    # Danh sách bài tập hiện tại
+                    if p_workouts:
+                        st.markdown("**Danh sách bài tập chi tiết:**")
+                        for idx, w in enumerate(p_workouts, 1):
+                            w_id = w.get("id")
+                            col_w_info, col_w_del = st.columns([5, 1])
+                            with col_w_info:
+                                weight_txt = f" • **Tạ:** `{w.get('weightKg')} kg`" if w.get("weightKg") else ""
+                                muscle_txt = f" *(Cơ: {w.get('targetMuscle')})*" if w.get("targetMuscle") else ""
+                                video_txt = f" • [🔗 Video demo]({w.get('videoDemoUrl')})" if w.get("videoDemoUrl") else ""
+                                st.markdown(
+                                    f"**{idx}. {w.get('exerciseName')}**{muscle_txt}: "
+                                    f"`{w.get('sets', 3)} sets` × `{w.get('reps', 10)} reps`"
+                                    f"{weight_txt} • Nghỉ: `{w.get('restSeconds', 60)}s`{video_txt}"
+                                )
+                            with col_w_del:
+                                if st.button("🗑️ Xóa", key=f"btn_del_wo_{plan_id}_{w_id}", help=f"Xóa bài tập '{w.get('exerciseName')}'", use_container_width=True):
+                                    try:
+                                        PTApi.delete_workout(plan_id, w_id)
+                                        st.success(f"✅ Đã xóa bài tập '{w.get('exerciseName')}'!")
+                                        st.rerun()
+                                    except ApiException as e:
+                                        st.error(f"❌ Lỗi xóa bài tập [{e.status_code}]: {e.message}")
+                                    except Exception as ex:
+                                        st.error(f"❌ Lỗi: {str(ex)}")
+
+                    # Form thêm bài tập vào giáo án này
+                    with st.expander(f"➕ Thêm Bài Tập Vào Giáo Án #{plan_id}", expanded=False):
+                        with st.form(f"form_add_workout_{plan_id}"):
+                            w_name = st.text_input("Tên bài tập (*):", placeholder="Ví dụ: Barbell Squat, Bench Press, Dumbbell Lunges...", key=f"ex_name_{plan_id}")
+                            w_muscle = st.text_input("Nhóm cơ tác động:", placeholder="Ví dụ: Cơ đùi & Mông, Ngực, Vai...", key=f"muscle_{plan_id}")
+
+                            col_w1, col_w2, col_w3, col_w4 = st.columns(4)
+                            with col_w1:
+                                w_sets = st.number_input("Số sets:", min_value=1, value=3, step=1, key=f"sets_{plan_id}")
+                            with col_w2:
+                                w_reps = st.number_input("Số reps/set:", min_value=1, value=10, step=1, key=f"reps_{plan_id}")
+                            with col_w3:
+                                w_weight = st.number_input("Mức tạ (kg):", min_value=0.0, value=20.0, step=2.5, key=f"weight_{plan_id}")
+                            with col_w4:
+                                w_rest = st.number_input("Nghỉ giữa hiệp (giây):", min_value=0, value=60, step=15, key=f"rest_{plan_id}")
+
+                            w_video = st.text_input("Link video demo kỹ thuật (tùy chọn):", placeholder="https://storage.ptconnect.vn/videos/demo.mp4", key=f"video_{plan_id}")
+
+                            if st.form_submit_button("➕ Thêm Bài Tập Này", type="primary"):
+                                if not w_name.strip():
+                                    st.error("Vui lòng nhập tên bài tập!")
+                                else:
+                                    try:
+                                        payload = {
+                                            "exerciseName": w_name.strip(),
+                                            "targetMuscle": w_muscle.strip() if w_muscle else None,
+                                            "sets": int(w_sets),
+                                            "reps": int(w_reps),
+                                            "weightKg": float(w_weight) if w_weight > 0 else None,
+                                            "restSeconds": int(w_rest),
+                                            "videoDemoUrl": w_video.strip() if w_video else None
+                                        }
+                                        PTApi.add_workout(plan_id, payload)
+                                        st.success(f"✅ Đã thêm bài tập {w_name} vào giáo án!")
+                                        st.rerun()
+                                    except ApiException as e:
+                                        st.error(f"❌ Lỗi thêm bài tập [{e.status_code}]: {e.message}")
+                                    except Exception as ex:
+                                        st.error(f"❌ Lỗi: {str(ex)}")
+
+    # -------------------------------------------------------------------------
+    # TAB 6: HỒ SƠ CÁ NHÂN & CẬP NHẬT AVATAR (MILESTONE 6 - HIỆU)
     # -------------------------------------------------------------------------
     with tab_profile:
         st.subheader("👤 Cập Nhật Hồ Sơ Năng Lực & Ảnh Đại Diện")

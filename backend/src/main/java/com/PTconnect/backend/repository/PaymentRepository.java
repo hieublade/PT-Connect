@@ -2,6 +2,7 @@ package com.PTconnect.backend.repository;
 
 import com.PTconnect.backend.entity.Payment;
 import com.PTconnect.backend.entity.enums.PaymentStatus;
+import com.PTconnect.backend.entity.enums.PaymentType;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -13,4 +14,6 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     List<Payment> findByStatus(PaymentStatus status);
     Optional<Payment> findByTransactionRef(String transactionRef);
     List<Payment> findByWalletIdAndStatus(Long walletId, PaymentStatus status);
+    List<Payment> findByPaymentTypeAndStatus(PaymentType paymentType, PaymentStatus status);
+    List<Payment> findAllByOrderByCreatedAtDesc();
 }

@@ -180,7 +180,7 @@ def render_booking_card(
 
             elif status == "CONFIRMED":
                 st.markdown("---")
-                st.markdown("##### ⚡ Thao Tác Ca Tập (Milestone 7)")
+                st.markdown("##### ⚡ Thao Tác Ca Tập")
                 col_pt_act1, col_pt_act2, col_pt_act3 = st.columns([2, 2, 1.5])
 
                 # 1. PT Bắt đầu điểm danh & Hiển thị mã OTP
