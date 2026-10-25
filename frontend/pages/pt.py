@@ -8,7 +8,7 @@ from api.auth_api import AuthApi
 from components.course_card import render_course_card
 from components.slot_card import render_slot_card
 from components.booking_table import render_booking_table
-from components.avatar_uploader import render_avatar_management
+from components.avatar_uploader import render_avatar_management, normalize_avatar_url
 
 
 def render_pt_page(user: Dict[str, Any]):
@@ -18,7 +18,7 @@ def render_pt_page(user: Dict[str, Any]):
     email = user.get("email", "")
     phone = user.get("phone", "Chưa cập nhật")
     status = user.get("status", "ACTIVE")
-    avatar_url = user.get("avatarUrl")
+    avatar_url = normalize_avatar_url(user.get("avatarUrl"))
 
     # Header chào mừng Huấn luyện viên
     st.markdown(

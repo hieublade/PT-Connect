@@ -7,7 +7,7 @@ from api.auth_api import AuthApi
 from api.client import ApiException
 from components.pt_card import render_pt_card, format_currency_vnd
 from components.booking_table import render_booking_table, format_booking_datetime
-from components.avatar_uploader import render_avatar_management
+from components.avatar_uploader import render_avatar_management, normalize_avatar_url
 
 
 def render_student_page(user: Dict[str, Any]):
@@ -17,7 +17,7 @@ def render_student_page(user: Dict[str, Any]):
     email = user.get("email", "")
     phone = user.get("phone", "Chưa cập nhật")
     status = user.get("status", "ACTIVE")
-    avatar_url = user.get("avatarUrl")
+    avatar_url = normalize_avatar_url(user.get("avatarUrl"))
 
     # Tải dữ liệu Ví & Danh sách hợp đồng
     wallet_data: Dict[str, Any] = {}
@@ -204,7 +204,7 @@ def render_student_page(user: Dict[str, Any]):
                 with st.container(border=True):
                     col_p1, col_p2 = st.columns([1, 3])
                     with col_p1:
-                        avatar = pt_profile.get("avatarUrl") or "https://api.dicebear.com/7.x/avataaars/svg?seed=" + pt_profile.get("fullName", "").replace(" ", "")
+                        avatar = normalize_avatar_url(pt_profile.get("avatarUrl")) or "https://api.dicebear.com/7.x/avataaars/svg?seed=" + pt_profile.get("fullName", "").replace(" ", "")
                         st.image(avatar, width=130)
                     with col_p2:
                         st.markdown(f"### {pt_profile.get('fullName')}")

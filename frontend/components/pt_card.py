@@ -1,5 +1,6 @@
 from typing import Any, Callable, Dict, Optional
 import streamlit as st
+from components.avatar_uploader import normalize_avatar_url
 
 
 def format_currency_vnd(amount: Any) -> str:
@@ -28,7 +29,7 @@ def render_pt_card(
     rating = pt.get("averageRating", 0.0)
     total_reviews = pt.get("totalReviews", 0)
     lowest_price = pt.get("lowestPrice")
-    avatar_url = pt.get("avatarUrl") or "https://api.dicebear.com/7.x/avataaars/svg?seed=" + full_name.replace(" ", "")
+    avatar_url = normalize_avatar_url(pt.get("avatarUrl")) or "https://api.dicebear.com/7.x/avataaars/svg?seed=" + full_name.replace(" ", "")
 
     with st.container(border=True):
         col_avatar, col_info = st.columns([1, 3])
