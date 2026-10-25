@@ -38,7 +38,7 @@ def plot_booking_status(df_counts: pd.DataFrame) -> go.Figure:
     ])
 
     fig.update_layout(
-        title="📊 Phân Bố Trạng Thái Ca Tập (Booking Status)",
+        title="Phân Bố Trạng Thái Ca Tập (Booking Status)",
         xaxis_title="Trạng thái",
         yaxis_title="Số ca tập",
         template="plotly_white",
@@ -88,7 +88,7 @@ def plot_monthly_trends(df_trends: pd.DataFrame) -> go.Figure:
     )
 
     fig.update_layout(
-        title="📈 Xu Hướng Doanh Thu Bán Khóa & Lượng Ca Tập Theo Tháng",
+        title="Xu Hướng Doanh Thu Bán Khóa & Lượng Ca Tập Theo Tháng",
         xaxis=dict(title=dict(text="Tháng (YYYY-MM)")),
         yaxis=dict(
             title=dict(text="Doanh thu (VNĐ)", font=dict(color="#1e88e5")),
@@ -135,7 +135,7 @@ def plot_top_pts(df_top_pts: pd.DataFrame) -> go.Figure:
     ])
 
     fig.update_layout(
-        title="🏆 Top Huấn Luyện Viên Có Số Ca Dạy Hoàn Thành Cao Nhất",
+        title="Top Huấn Luyện Viên Có Số Ca Dạy Hoàn Thành Cao Nhất",
         xaxis_title="Số ca hoàn thành (COMPLETED)",
         yaxis_title="Huấn luyện viên",
         template="plotly_white",
@@ -157,7 +157,7 @@ def plot_cancellation_reasons(df_cancel: pd.DataFrame) -> go.Figure:
         df_cancel,
         values="count",
         names="cancelled_by",
-        title="⚠️ Tỷ Lệ Ca Bị Hủy Theo Đối Tượng Hủy",
+        title="Tỷ Lệ Ca Bị Hủy Theo Đối Tượng Hủy",
         hole=0.45,
         color_discrete_sequence=px.colors.qualitative.Set2
     )
@@ -178,7 +178,7 @@ def plot_popular_hours(df_hourly: pd.DataFrame) -> go.Figure:
         df_hourly,
         x="hour_label",
         y="count",
-        title="⏰ Phân Bố Khung Giờ Tập Được Học Viên Đặt Lịch Nhiều Nhất",
+        title="Phân Bố Khung Giờ Tập Được Học Viên Đặt Lịch Nhiều Nhất",
         labels={"hour_label": "Khung giờ", "count": "Số ca đặt"},
         color="count",
         color_continuous_scale="Teal"

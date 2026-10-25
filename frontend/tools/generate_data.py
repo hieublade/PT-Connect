@@ -57,12 +57,12 @@ def escape_sql(val):
 
 
 def main():
-    print(f"🚀 Bắt đầu sinh dữ liệu mẫu PT Connect (Seed: {SEED})...")
+    print(f"Bắt đầu sinh dữ liệu mẫu PT Connect (Seed: {SEED})...")
 
     # Sinh mã băm mật khẩu chuẩn BCrypt cho "Password123@" (Khớp hoàn toàn với giao diện Đăng nhập nhanh)
     password_plain = "Password123@"
     password_hash = bcrypt.hashpw(password_plain.encode("utf-8"), bcrypt.gensalt(10)).decode("utf-8")
-    print(f"🔑 Mật khẩu mặc định: '{password_plain}' -> BCrypt: {password_hash}")
+    print(f"Mật khẩu mặc định: '{password_plain}' -> BCrypt: {password_hash}")
 
     sql_lines = []
     sql_lines.append("-- =====================================================================")
@@ -600,8 +600,8 @@ def main():
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         f.write("\n".join(sql_lines))
 
-    print(f"🎉 Đã sinh thành công file SQL seed demo tại: {OUTPUT_FILE}")
-    print(f"📊 Thống kê dữ liệu đã sinh:")
+    print(f"Đã sinh thành công file SQL seed demo tại: {OUTPUT_FILE}")
+    print(f"Thống kê dữ liệu đã sinh:")
     print(f"   - Users: {len(users)} (1 Admin, {len(pt_profiles)} PT, {len(student_users)} Students)")
     print(f"   - Courses: {len(courses)}")
     print(f"   - Slots: {len(slots)}")
@@ -612,7 +612,7 @@ def main():
     print(f"   - Workout Plans: {len(workout_plans)} plans ({len(workouts)} exercises)")
 
     if "--import" in sys.argv:
-        print("\n📥 Đang tự động nạp dữ liệu vào MySQL container (bảo toàn 100% font tiếng Việt UTF-8)...")
+        print("\nĐang tự động nạp dữ liệu vào MySQL container (bảo toàn 100% font tiếng Việt UTF-8)...")
         import subprocess
         res_cp = subprocess.run([
             "docker", "cp", OUTPUT_FILE, "ptconnect-mysql:/tmp/seed_demo.sql"
@@ -623,11 +623,11 @@ def main():
                 "--default-character-set=utf8mb4", "ptconnect", "-e", "source /tmp/seed_demo.sql;"
             ], capture_output=True, text=True)
             if res_sql.returncode == 0:
-                print("✅ Nạp dữ liệu vào database thành công! Font tiếng Việt chuẩn xác 100%.")
+                print("Nạp dữ liệu vào database thành công! Font tiếng Việt chuẩn xác 100%.")
             else:
-                print(f"❌ Lỗi nạp SQL: {res_sql.stderr}")
+                print(f"Lỗi nạp SQL: {res_sql.stderr}")
         else:
-            print(f"❌ Lỗi copy file vào container: {res_cp.stderr}")
+            print(f"Lỗi copy file vào container: {res_cp.stderr}")
 
 
 if __name__ == "__main__":

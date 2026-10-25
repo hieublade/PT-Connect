@@ -26,9 +26,9 @@ def render_pt_page(user: Dict[str, Any]):
         <div style="background: linear-gradient(135deg, #e65100 0%, #f57c00 100%); padding: 1.5rem 2rem; border-radius: 12px; color: white; margin-bottom: 1.5rem; box-shadow: 0 4px 15px rgba(230, 81, 0, 0.25);">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
                 <div style="display: flex; align-items: center; gap: 1rem;">
-                    {"<img src='" + avatar_url + "' style='width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 3px solid white;' />" if avatar_url else "<div style='width: 64px; height: 64px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 2rem;'>🏋️</div>"}
+                    {"<img src='" + avatar_url + "' style='width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 3px solid white;' />" if avatar_url else "<div style='width: 64px; height: 64px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 700; color: white;'>PT</div>"}
                     <div>
-                        <h2 style="margin: 0; color: white; font-weight: 700;">🏋️ Bảng Điều Khiển Huấn Luyện Viên (PT)</h2>
+                        <h2 style="margin: 0; color: white; font-weight: 700;">Bảng Điều Khiển Huấn Luyện Viên (PT)</h2>
                         <p style="margin: 0.4rem 0 0 0; opacity: 0.95; font-size: 1.05rem;">
                             Xin chào, <strong>{full_name}</strong>! Quản lý hồ sơ, lịch rảnh và duyệt các yêu cầu đặt lịch (Booking).
                         </p>
@@ -54,39 +54,36 @@ def render_pt_page(user: Dict[str, Any]):
     if status == "SUSPENDED":
         st.error(
             """
-            ⛔ **Tài khoản đang bị tạm ngưng (SUSPENDED):**
+            **Tài khoản đang bị tạm ngưng (SUSPENDED):**
             Vui lòng liên hệ với bộ phận Quản trị viên hệ thống để được hỗ trợ kiểm tra và mở khóa tài khoản.
-            """,
-            icon="🚫"
+            """
         )
         return
     elif verification_status == "PENDING" or status == "PENDING":
         st.warning(
             """
-            ⏳ **Hồ sơ Huấn luyện viên đang chờ Admin phê duyệt (PENDING):**
+            **Hồ sơ Huấn luyện viên đang chờ Admin phê duyệt (PENDING):**
             Hồ sơ và bằng cấp của bạn đang được ban quản trị xét duyệt. Bạn vẫn có thể hoàn thiện thông tin hồ sơ và chuẩn bị khóa học.
-            """,
-            icon="⚠️"
+            """
         )
     elif verification_status == "REJECTED":
         st.error(
             """
-            ❌ **Hồ sơ chưa được phê duyệt (REJECTED):**
+            **Hồ sơ chưa được phê duyệt (REJECTED):**
             Vui lòng kiểm tra lại thông tin chứng chỉ hoặc liên hệ Admin để cập nhật lại hồ sơ.
-            """,
-            icon="⚠️"
+            """
         )
     else:
-        st.success("✅ Hồ sơ của bạn đã được xác minh thành công (`VERIFIED`). Sẵn sàng nhận học viên!", icon="🎉")
+        st.success("Hồ sơ của bạn đã được xác minh thành công (`VERIFIED`). Sẵn sàng nhận học viên!")
 
     # Phân chia các Tab chức năng theo Milestone 6 & Milestone 8
     tab_overview, tab_bookings, tab_slots, tab_courses, tab_workout_plans, tab_profile = st.tabs([
-        "📊 Tổng Quan",
-        "📋 Duyệt Booking & Lịch Dạy",
-        "⏰ Khung Giờ Rảnh (Slots)",
-        "📚 Quản Lý Khóa Học",
-        "🏋️ Giáo Án & Bài Tập",
-        "👤 Hồ Sơ & Avatar"
+        "Tổng Quan",
+        "Duyệt Booking & Lịch Dạy",
+        "Khung Giờ Rảnh (Slots)",
+        "Quản Lý Khóa Học",
+        "Giáo Án & Bài Tập",
+        "Hồ Sơ & Avatar"
     ])
 
     # -------------------------------------------------------------------------
@@ -110,18 +107,18 @@ def render_pt_page(user: Dict[str, Any]):
             pass
 
         with c1:
-            st.metric(label="⏳ Ca tập chờ duyệt", value=f"{len(pending_bookings)} ca", delta="Cần xử lý" if pending_bookings else None)
+            st.metric(label="Ca tập chờ duyệt", value=f"{len(pending_bookings)} ca", delta="Cần xử lý" if pending_bookings else None)
         with c2:
             available_slots = [s for s in slots_list if s.get("status") == "AVAILABLE"]
-            st.metric(label="⏰ Khung giờ trống", value=f"{len(available_slots)} slot")
+            st.metric(label="Khung giờ trống", value=f"{len(available_slots)} slot")
         with c3:
-            st.metric(label="📚 Khóa học của tôi", value=f"{len(courses_list)} khóa")
+            st.metric(label="Khóa học của tôi", value=f"{len(courses_list)} khóa")
         with c4:
-            st.metric(label="⭐ Đánh giá", value=f"{avg_rating:.1f}/5.0", delta=f"{total_rev} lượt review")
+            st.metric(label="Đánh giá", value=f"{avg_rating:.1f}/5.0", delta=f"{total_rev} lượt review")
 
         st.markdown("---")
         with st.container(border=True):
-            st.markdown("### 💬 Đánh Giá Gần Đây Từ Học Viên")
+            st.markdown("### Đánh Giá Gần Đây Từ Học Viên")
             pt_id = profile_data.get("id")
             pt_reviews = BookingApi.get_pt_reviews(pt_id) if pt_id else []
             if not pt_reviews:
@@ -132,13 +129,12 @@ def render_pt_page(user: Dict[str, Any]):
                     r_comment = rev.get("comment", "Không có nhận xét")
                     r_student = rev.get("studentName", "Học viên")
                     r_time = rev.get("createdAt", "")
-                    stars = "⭐" * r_rating
                     st.markdown(
                         f"""
                         <div style="background: #f9fbe7; border-left: 4px solid #827717; padding: 10px 14px; border-radius: 4px; margin-bottom: 8px;">
                             <div style="display: flex; justify-content: space-between;">
-                                <strong>👤 {r_student}</strong>
-                                <span>{stars} ({r_rating}/5)</span>
+                                <strong>{r_student}</strong>
+                                <span>({r_rating}/5 sao)</span>
                             </div>
                             <div style="margin-top: 4px; color: #333;">{r_comment}</div>
                         </div>
@@ -146,12 +142,11 @@ def render_pt_page(user: Dict[str, Any]):
                         unsafe_allow_html=True
                     )
 
-
     # -------------------------------------------------------------------------
     # TAB 2: DUYỆT BOOKING & LỊCH DẠY
     # -------------------------------------------------------------------------
     with tab_bookings:
-        st.subheader("📋 Quản Lý & Phê Duyệt Lịch Ca Tập")
+        st.subheader("Quản Lý & Phê Duyệt Lịch Ca Tập")
         st.caption("Phê duyệt hoặc từ chối các đơn đặt lịch của học viên theo gói hoặc học thử.")
 
         col_filter, col_refresh = st.columns([4, 1])
@@ -160,17 +155,17 @@ def render_pt_page(user: Dict[str, Any]):
                 "Lọc theo trạng thái:",
                 ["PENDING", "CONFIRMED", "COMPLETED", "CANCELLED", "ALL"],
                 format_func=lambda x: {
-                    "PENDING": "⏳ Chờ duyệt (PENDING - Ưu tiên)",
-                    "CONFIRMED": "✅ Đã xác nhận / Sắp tới (CONFIRMED)",
-                    "COMPLETED": "🎉 Đã hoàn thành (COMPLETED)",
-                    "CANCELLED": "❌ Đã từ chối / Đã hủy (CANCELLED)",
-                    "ALL": "📌 Tất cả trạng thái"
+                    "PENDING": "Chờ duyệt (PENDING - Ưu tiên)",
+                    "CONFIRMED": "Đã xác nhận / Sắp tới (CONFIRMED)",
+                    "COMPLETED": "Đã hoàn thành (COMPLETED)",
+                    "CANCELLED": "Đã từ chối / Đã hủy (CANCELLED)",
+                    "ALL": "Tất cả trạng thái"
                 }.get(x, x),
                 index=0
             )
         with col_refresh:
             st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
-            if st.button("🔄 Làm mới", key="btn_refresh_pt_bookings", use_container_width=True):
+            if st.button("Làm mới", key="btn_refresh_pt_bookings", use_container_width=True):
                 st.rerun()
 
         # Gọi API lấy danh sách booking của PT
@@ -179,29 +174,29 @@ def render_pt_page(user: Dict[str, Any]):
             status_param = None if filter_choice == "ALL" else filter_choice
             pt_bookings = BookingApi.get_pt_bookings(status=status_param)
         except ApiException as e:
-            st.error(f"❌ Lỗi tải danh sách booking [{e.status_code}]: {e.message}")
+            st.error(f"Lỗi tải danh sách booking [{e.status_code}]: {e.message}")
         except Exception as ex:
-            st.error(f"❌ Lỗi: {str(ex)}")
+            st.error(f"Lỗi: {str(ex)}")
 
         def handle_confirm_booking(b_id: int):
             try:
                 BookingApi.confirm_booking(b_id)
-                st.success(f"✅ Đã phê duyệt thành công ca tập #{b_id}!")
+                st.success(f"Đã phê duyệt thành công ca tập #{b_id}!")
                 st.rerun()
             except ApiException as err:
-                st.error(f"❌ Phê duyệt thất bại [{err.status_code}]: {err.message}")
+                st.error(f"Phê duyệt thất bại [{err.status_code}]: {err.message}")
             except Exception as ex:
-                st.error(f"❌ Lỗi: {str(ex)}")
+                st.error(f"Lỗi: {str(ex)}")
 
         def handle_reject_booking(b_id: int, reason: str):
             try:
                 BookingApi.reject_booking(b_id, reason)
-                st.success(f"✅ Đã từ chối ca tập #{b_id}. Khung giờ và số buổi tập đã được hoàn lại cho học viên.")
+                st.success(f"Đã từ chối ca tập #{b_id}. Khung giờ và số buổi tập đã được hoàn lại cho học viên.")
                 st.rerun()
             except ApiException as err:
-                st.error(f"❌ Từ chối thất bại [{err.status_code}]: {err.message}")
+                st.error(f"Từ chối thất bại [{err.status_code}]: {err.message}")
             except Exception as ex:
-                st.error(f"❌ Lỗi: {str(ex)}")
+                st.error(f"Lỗi: {str(ex)}")
 
         render_booking_table(
             bookings=pt_bookings,
@@ -214,10 +209,10 @@ def render_pt_page(user: Dict[str, Any]):
     # TAB 3: KHUNG GIỜ RẢNH (SLOTS)
     # -------------------------------------------------------------------------
     with tab_slots:
-        st.subheader("⏰ Quản Lý Khung Giờ Rảnh (Availability Slots)")
+        st.subheader("Quản Lý Khung Giờ Rảnh (Availability Slots)")
         st.caption("Mở các khung giờ trống để học viên có thể đăng ký đặt lịch tập luyện.")
 
-        with st.expander("➕ Thêm Khung Giờ Rảnh Mới", expanded=False):
+        with st.expander("Thêm Khung Giờ Rảnh Mới", expanded=False):
             with st.form("form_create_slot"):
                 st.markdown("**Chọn ngày và khoảng thời gian khả dụng:**")
                 col_d, col_st, col_et = st.columns(3)
@@ -228,25 +223,25 @@ def render_pt_page(user: Dict[str, Any]):
                 with col_et:
                     s_end_time = st.time_input("Giờ kết thúc:", value=time(10, 30))
 
-                btn_add_slot = st.form_submit_button("🚀 Mở Khung Giờ", type="primary", use_container_width=True)
+                btn_add_slot = st.form_submit_button("Mở Khung Giờ", type="primary", use_container_width=True)
 
                 if btn_add_slot:
                     dt_start = datetime.combine(s_date, s_start_time)
                     dt_end = datetime.combine(s_date, s_end_time)
 
                     if dt_end <= dt_start:
-                        st.error("❌ Giờ kết thúc phải sau giờ bắt đầu!")
+                        st.error("Giờ kết thúc phải sau giờ bắt đầu!")
                     elif dt_start < datetime.now():
-                        st.error("❌ Không thể mở khung giờ trong quá khứ!")
+                        st.error("Không thể mở khung giờ trong quá khứ!")
                     else:
                         try:
                             PTApi.create_slot(dt_start.isoformat(), dt_end.isoformat())
-                            st.success("✅ Mở khung giờ rảnh thành công!")
+                            st.success("Mở khung giờ rảnh thành công!")
                             st.rerun()
                         except ApiException as e:
-                            st.error(f"❌ Lỗi mở slot [{e.status_code}]: {e.message}")
+                            st.error(f"Lỗi mở slot [{e.status_code}]: {e.message}")
                         except Exception as ex:
-                            st.error(f"❌ Lỗi ngoại lệ: {str(ex)}")
+                            st.error(f"Lỗi ngoại lệ: {str(ex)}")
 
         # Danh sách slots của PT
         all_slots: List[Dict[str, Any]] = []
@@ -262,12 +257,12 @@ def render_pt_page(user: Dict[str, Any]):
                 s_id = s.get("id")
                 try:
                     PTApi.delete_slot(s_id)
-                    st.success(f"✅ Đã xóa khung giờ #{s_id} thành công!")
+                    st.success(f"Đã xóa khung giờ #{s_id} thành công!")
                     st.rerun()
                 except ApiException as e:
-                    st.error(f"❌ Lỗi xóa slot [{e.status_code}]: {e.message}")
+                    st.error(f"Lỗi xóa slot [{e.status_code}]: {e.message}")
                 except Exception as ex:
-                    st.error(f"❌ Lỗi: {str(ex)}")
+                    st.error(f"Lỗi: {str(ex)}")
 
             for slot_item in all_slots:
                 render_slot_card(slot_item, on_delete=handle_delete_slot)
@@ -276,10 +271,10 @@ def render_pt_page(user: Dict[str, Any]):
     # TAB 4: QUẢN LÝ KHÓA HỌC
     # -------------------------------------------------------------------------
     with tab_courses:
-        st.subheader("📚 Danh Sách Khóa Học Cố Định")
+        st.subheader("Danh Sách Khóa Học Cố Định")
         st.caption("Các gói khóa học huấn luyện trọn gói theo quy định của hệ thống.")
 
-        with st.expander("➕ Thêm Khóa Học Mới", expanded=False):
+        with st.expander("Thêm Khóa Học Mới", expanded=False):
             with st.form("form_create_course"):
                 c_title = st.text_input("Tên khóa học (*):", placeholder="Ví dụ: Gói Giảm Mỡ Cấp Tốc 12 Buổi")
                 c_desc = st.text_area("Mô tả chi tiết:", placeholder="Mô tả nội dung giáo trình, mục tiêu đạt được...")
@@ -292,11 +287,11 @@ def render_pt_page(user: Dict[str, Any]):
                 with col_pr:
                     c_price = st.number_input("Học phí trọn gói (VND) (*):", min_value=0.0, step=100000.0, value=3600000.0)
 
-                btn_add_course = st.form_submit_button("🚀 Tạo Khóa Học", type="primary", use_container_width=True)
+                btn_add_course = st.form_submit_button("Tạo Khóa Học", type="primary", use_container_width=True)
 
                 if btn_add_course:
                     if not c_title.strip():
-                        st.error("❌ Tên khóa học không được để trống!")
+                        st.error("Tên khóa học không được để trống!")
                     else:
                         c_payload = {
                             "title": c_title.strip(),
@@ -307,12 +302,12 @@ def render_pt_page(user: Dict[str, Any]):
                         }
                         try:
                             PTApi.create_course(c_payload)
-                            st.success("✅ Tạo khóa học thành công!")
+                            st.success("Tạo khóa học thành công!")
                             st.rerun()
                         except ApiException as e:
-                            st.error(f"❌ Lỗi tạo khóa học [{e.status_code}]: {e.message}")
+                            st.error(f"Lỗi tạo khóa học [{e.status_code}]: {e.message}")
                         except Exception as ex:
-                            st.error(f"❌ Lỗi ngoại lệ: {str(ex)}")
+                            st.error(f"Lỗi ngoại lệ: {str(ex)}")
 
         all_courses: List[Dict[str, Any]] = []
         try:
@@ -335,19 +330,19 @@ def render_pt_page(user: Dict[str, Any]):
                 }
                 try:
                     PTApi.update_course(c_id, up_payload)
-                    st.success(f"✅ Đã chuyển trạng thái khóa học sang {new_status}!")
+                    st.success(f"Đã chuyển trạng thái khóa học sang {new_status}!")
                     st.rerun()
                 except ApiException as e:
-                    st.error(f"❌ Lỗi cập nhật: {e.message}")
+                    st.error(f"Lỗi cập nhật: {e.message}")
 
             def handle_delete_course(c: Dict[str, Any]):
                 c_id = c.get("id")
                 try:
                     PTApi.delete_course(c_id)
-                    st.success("✅ Đã xóa khóa học thành công!")
+                    st.success("Đã xóa khóa học thành công!")
                     st.rerun()
                 except ApiException as e:
-                    st.error(f"❌ Lỗi xóa khóa học: {e.message}")
+                    st.error(f"Lỗi xóa khóa học: {e.message}")
 
             for crs in all_courses:
                 render_course_card(
@@ -361,7 +356,7 @@ def render_pt_page(user: Dict[str, Any]):
     # TAB 5: GIÁO ÁN & BÀI TẬP
     # -------------------------------------------------------------------------
     with tab_workout_plans:
-        st.subheader("🏋️ Quản Lý Giáo Án & Bài Tập Huấn Luyện")
+        st.subheader("Quản Lý Giáo Án & Bài Tập Huấn Luyện")
         st.caption("Thiết lập lộ trình luyện tập cho từng học viên theo hợp đồng và giao bài tập chi tiết.")
 
         # Lấy danh sách hợp đồng của PT
@@ -372,9 +367,9 @@ def render_pt_page(user: Dict[str, Any]):
             pt_enrollments = []
 
         # 1. Soạn Giáo Án Mới
-        with st.expander("➕ Soạn Giáo Án Mới Cho Học Viên", expanded=False):
+        with st.expander("Soạn Giáo Án Mới Cho Học Viên", expanded=False):
             if not pt_enrollments:
-                st.info("💡 Bạn chưa có học viên nào ký hợp đồng khóa học. Khi học viên mua khóa, danh sách hợp đồng sẽ xuất hiện tại đây để bạn soạn giáo án!")
+                st.info("Bạn chưa có học viên nào ký hợp đồng khóa học. Khi học viên mua khóa, danh sách hợp đồng sẽ xuất hiện tại đây để bạn soạn giáo án!")
             else:
                 enroll_options = {
                     e["id"]: f"Hợp đồng #{e['id']} — Học viên: {e.get('studentName', 'Học viên')} | Khóa: {e.get('courseTitle', 'Khóa học')} (Còn {e.get('remainingSessions')}/{e.get('totalSessions')} buổi)"
@@ -393,7 +388,7 @@ def render_pt_page(user: Dict[str, Any]):
                 with st.container(border=True):
                     st.markdown(
                         f"**Học viên:** `{chosen_e.get('studentName')}` (`{chosen_e.get('studentEmail')}`) | "
-                        f"**📍 Địa điểm:** `{chosen_e.get('trainingLocation')}` | "
+                        f"**Địa điểm:** `{chosen_e.get('trainingLocation')}` | "
                         f"**Thời hạn hợp đồng:** từ `{chosen_e.get('startDate')}` đến `{chosen_e.get('endDate')}`"
                     )
 
@@ -415,7 +410,7 @@ def render_pt_page(user: Dict[str, Any]):
                     with col_d2:
                         plan_end_date = st.date_input("Ngày kết thúc giáo án:", value=date.today() + timedelta(days=30))
 
-                    if st.form_submit_button("🚀 Tạo Giáo Án", type="primary"):
+                    if st.form_submit_button("Tạo Giáo Án", type="primary"):
                         if not plan_title.strip():
                             st.error("Vui lòng nhập tiêu đề giáo án!")
                         elif plan_start_date > plan_end_date:
@@ -430,15 +425,15 @@ def render_pt_page(user: Dict[str, Any]):
                                     "endDate": plan_end_date.isoformat()
                                 }
                                 PTApi.create_workout_plan(payload)
-                                st.success(f"✅ Đã tạo thành công giáo án: {plan_title}!")
+                                st.success(f"Đã tạo thành công giáo án: {plan_title}!")
                                 st.rerun()
                             except ApiException as e:
-                                st.error(f"❌ Lỗi tạo giáo án [{e.status_code}]: {e.message}")
+                                st.error(f"Lỗi tạo giáo án [{e.status_code}]: {e.message}")
                             except Exception as ex:
-                                st.error(f"❌ Lỗi: {str(ex)}")
+                                st.error(f"Lỗi: {str(ex)}")
 
         # 2. Danh Sách Giáo Án Đã Tạo
-        st.markdown("#### 📑 Danh Sách Giáo Án Đã Tạo")
+        st.markdown("#### Danh Sách Giáo Án Đã Tạo")
         plans: List[Dict[str, Any]] = []
         try:
             plans = PTApi.get_workout_plans()
@@ -461,21 +456,21 @@ def render_pt_page(user: Dict[str, Any]):
                 with st.container(border=True):
                     col_p_title, col_p_actions = st.columns([3, 1])
                     with col_p_title:
-                        st.markdown(f"### 📋 {p_title}")
+                        st.markdown(f"### {p_title}")
                         st.markdown(f"**Học viên:** `{p_student_name}` | **Mã Hợp Đồng:** `#{p_enroll_id}` | **Thời hạn:** từ `{p_start}` đến `{p_end}`")
                         if p_goal:
-                            st.caption(f"🎯 **Mục tiêu:** {p_goal}")
+                            st.caption(f"**Mục tiêu:** {p_goal}")
                     with col_p_actions:
                         st.markdown(f"<div style='text-align: right; color: #1565c0; font-weight: 600; font-size: 1.05rem; margin-bottom: 6px;'>{len(p_workouts)} bài tập</div>", unsafe_allow_html=True)
-                        if st.button("🗑️ Xóa Giáo Án", key=f"btn_del_plan_{plan_id}", type="secondary", use_container_width=True, help="Xóa toàn bộ giáo án này"):
+                        if st.button("Xóa Giáo Án", key=f"btn_del_plan_{plan_id}", type="secondary", use_container_width=True, help="Xóa toàn bộ giáo án này"):
                             try:
                                 PTApi.delete_workout_plan(plan_id)
-                                st.success("✅ Đã xóa giáo án thành công!")
+                                st.success("Đã xóa giáo án thành công!")
                                 st.rerun()
                             except ApiException as e:
-                                st.error(f"❌ Lỗi xóa giáo án [{e.status_code}]: {e.message}")
+                                st.error(f"Lỗi xóa giáo án [{e.status_code}]: {e.message}")
                             except Exception as ex:
-                                st.error(f"❌ Lỗi: {str(ex)}")
+                                st.error(f"Lỗi: {str(ex)}")
 
                     # Danh sách bài tập hiện tại
                     if p_workouts:
@@ -486,25 +481,25 @@ def render_pt_page(user: Dict[str, Any]):
                             with col_w_info:
                                 weight_txt = f" • **Tạ:** `{w.get('weightKg')} kg`" if w.get("weightKg") else ""
                                 muscle_txt = f" *(Cơ: {w.get('targetMuscle')})*" if w.get("targetMuscle") else ""
-                                video_txt = f" • [🔗 Video demo]({w.get('videoDemoUrl')})" if w.get("videoDemoUrl") else ""
+                                video_txt = f" • [Video demo]({w.get('videoDemoUrl')})" if w.get("videoDemoUrl") else ""
                                 st.markdown(
                                     f"**{idx}. {w.get('exerciseName')}**{muscle_txt}: "
                                     f"`{w.get('sets', 3)} sets` × `{w.get('reps', 10)} reps`"
                                     f"{weight_txt} • Nghỉ: `{w.get('restSeconds', 60)}s`{video_txt}"
                                 )
                             with col_w_del:
-                                if st.button("🗑️ Xóa", key=f"btn_del_wo_{plan_id}_{w_id}", help=f"Xóa bài tập '{w.get('exerciseName')}'", use_container_width=True):
+                                if st.button("Xóa", key=f"btn_del_wo_{plan_id}_{w_id}", help=f"Xóa bài tập '{w.get('exerciseName')}'", use_container_width=True):
                                     try:
                                         PTApi.delete_workout(plan_id, w_id)
-                                        st.success(f"✅ Đã xóa bài tập '{w.get('exerciseName')}'!")
+                                        st.success(f"Đã xóa bài tập '{w.get('exerciseName')}'!")
                                         st.rerun()
                                     except ApiException as e:
-                                        st.error(f"❌ Lỗi xóa bài tập [{e.status_code}]: {e.message}")
+                                        st.error(f"Lỗi xóa bài tập [{e.status_code}]: {e.message}")
                                     except Exception as ex:
-                                        st.error(f"❌ Lỗi: {str(ex)}")
+                                        st.error(f"Lỗi: {str(ex)}")
 
                     # Form thêm bài tập vào giáo án này
-                    with st.expander(f"➕ Thêm Bài Tập Vào Giáo Án #{plan_id}", expanded=False):
+                    with st.expander(f"Thêm Bài Tập Vào Giáo Án #{plan_id}", expanded=False):
                         with st.form(f"form_add_workout_{plan_id}"):
                             w_name = st.text_input("Tên bài tập (*):", placeholder="Ví dụ: Barbell Squat, Bench Press, Dumbbell Lunges...", key=f"ex_name_{plan_id}")
                             w_muscle = st.text_input("Nhóm cơ tác động:", placeholder="Ví dụ: Cơ đùi & Mông, Ngực, Vai...", key=f"muscle_{plan_id}")
@@ -521,7 +516,7 @@ def render_pt_page(user: Dict[str, Any]):
 
                             w_video = st.text_input("Link video demo kỹ thuật (tùy chọn):", placeholder="https://storage.ptconnect.vn/videos/demo.mp4", key=f"video_{plan_id}")
 
-                            if st.form_submit_button("➕ Thêm Bài Tập Này", type="primary"):
+                            if st.form_submit_button("Thêm Bài Tập Này", type="primary"):
                                 if not w_name.strip():
                                     st.error("Vui lòng nhập tên bài tập!")
                                 else:
@@ -536,24 +531,24 @@ def render_pt_page(user: Dict[str, Any]):
                                             "videoDemoUrl": w_video.strip() if w_video else None
                                         }
                                         PTApi.add_workout(plan_id, payload)
-                                        st.success(f"✅ Đã thêm bài tập {w_name} vào giáo án!")
+                                        st.success(f"Đã thêm bài tập {w_name} vào giáo án!")
                                         st.rerun()
                                     except ApiException as e:
-                                        st.error(f"❌ Lỗi thêm bài tập [{e.status_code}]: {e.message}")
+                                        st.error(f"Lỗi thêm bài tập [{e.status_code}]: {e.message}")
                                     except Exception as ex:
-                                        st.error(f"❌ Lỗi: {str(ex)}")
+                                        st.error(f"Lỗi: {str(ex)}")
 
     # -------------------------------------------------------------------------
     # TAB 6: HỒ SƠ CÁ NHÂN & CẬP NHẬT AVATAR (MILESTONE 6 - HIỆU)
     # -------------------------------------------------------------------------
     with tab_profile:
-        st.subheader("👤 Cập Nhật Hồ Sơ Năng Lực & Ảnh Đại Diện")
+        st.subheader("Cập Nhật Hồ Sơ Năng Lực & Ảnh Đại Diện")
 
         # Widget Quản lý & Tải lên Avatar (Milestone 6 - Hiệu)
         render_avatar_management(user, "PT")
 
         with st.form("form_update_profile"):
-            st.markdown("### 📝 Thông Tin Hồ Sơ Năng Lực")
+            st.markdown("### Thông Tin Hồ Sơ Năng Lực")
             f_bio = st.text_area(
                 "Giới thiệu bản thân (Bio):",
                 value=profile_data.get("bio") or "",
@@ -590,11 +585,11 @@ def render_pt_page(user: Dict[str, Any]):
                 height=80
             )
 
-            btn_save = st.form_submit_button("💾 Lưu Cập Nhật Hồ Sơ", type="primary", use_container_width=True)
+            btn_save = st.form_submit_button("Lưu Cập Nhật Hồ Sơ", type="primary", use_container_width=True)
 
             if btn_save:
                 if not f_locations.strip():
-                    st.error("❌ Địa điểm nhận dạy không được để trống!")
+                    st.error("Địa điểm nhận dạy không được để trống!")
                 else:
                     payload = {
                         "bio": f_bio.strip(),
@@ -605,9 +600,9 @@ def render_pt_page(user: Dict[str, Any]):
                     }
                     try:
                         PTApi.update_profile(payload)
-                        st.success("✅ Cập nhật hồ sơ Huấn luyện viên thành công!")
+                        st.success("Cập nhật hồ sơ Huấn luyện viên thành công!")
                         st.rerun()
                     except ApiException as e:
-                        st.error(f"❌ Lỗi cập nhật hồ sơ [{e.status_code}]: {e.message}")
+                        st.error(f"Lỗi cập nhật hồ sơ [{e.status_code}]: {e.message}")
                     except Exception as ex:
-                        st.error(f"❌ Lỗi ngoại lệ: {str(ex)}")
+                        st.error(f"Lỗi ngoại lệ: {str(ex)}")

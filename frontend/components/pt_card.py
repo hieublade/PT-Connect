@@ -39,7 +39,7 @@ def render_pt_card(
                 """
                 <div style="text-align: center; margin-top: 4px;">
                     <span style="background-color: #e8f5e9; color: #2e7d32; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">
-                        🛡️ Đã xác thực
+                        Đã xác thực
                     </span>
                 </div>
                 """,
@@ -47,15 +47,14 @@ def render_pt_card(
             )
 
         with col_info:
-            st.markdown(f"#### 🏋️ {full_name}")
+            st.markdown(f"#### {full_name}")
 
-            # Rating stars
+            # Rating display
             rating_val = float(rating) if rating is not None else 0.0
-            stars = "⭐" * int(round(rating_val)) if rating_val > 0 else "⭐"
             st.markdown(
-                f"<span style='color: #f57c00; font-weight: 600;'>{stars} {rating_val:.1f}</span> "
+                f"<span style='color: #f57c00; font-weight: 600;'>Đánh giá: {rating_val:.1f}/5</span> "
                 f"<span style='color: #616161; font-size: 0.85rem;'>({total_reviews} đánh giá)</span> "
-                f"• <span style='color: #1976d2; font-weight: 500;'>⏱️ {exp_years} năm KN</span>",
+                f"• <span style='color: #1976d2; font-weight: 500;'>{exp_years} năm KN</span>",
                 unsafe_allow_html=True
             )
 
@@ -66,7 +65,7 @@ def render_pt_card(
         st.markdown(
             f"""
             <div style="margin-top: 0.5rem; font-size: 0.9rem; color: #37474f;">
-                📍 <b>Khu vực:</b> {locations}
+                <b>Khu vực:</b> {locations}
             </div>
             """,
             unsafe_allow_html=True
@@ -81,10 +80,10 @@ def render_pt_card(
 
         with c_btn:
             btn_key = f"btn_select_pt_{pt_id}"
-            if st.button("🔍 Xem Chi Tiết", key=btn_key, use_container_width=True, type="primary"):
+            if st.button("Xem Chi Tiết", key=btn_key, use_container_width=True, type="primary"):
                 if on_select:
                     on_select(pt)
                 else:
                     st.session_state["selected_pt_id"] = pt_id
-                    st.session_state["student_active_tab"] = "🏋️ Chi Tiết PT & Mua Khóa"
+                    st.session_state["student_active_tab"] = "Chi Tiết & Mua Khóa"
                 st.rerun()

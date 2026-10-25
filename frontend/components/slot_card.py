@@ -23,9 +23,9 @@ def render_slot_card(
     status = slot.get("status", "AVAILABLE")
 
     status_config = {
-        "AVAILABLE": {"bg": "#e8f5e9", "color": "#2e7d32", "label": "🟢 Đang trống (AVAILABLE)", "can_delete": True},
-        "BOOKED": {"bg": "#e3f2fd", "color": "#1565c0", "label": "🔵 Đã có học viên đặt (BOOKED)", "can_delete": False},
-        "LOCKED": {"bg": "#fff3e0", "color": "#e65100", "label": "🟠 Đã khóa (LOCKED)", "can_delete": False},
+        "AVAILABLE": {"bg": "#e8f5e9", "color": "#2e7d32", "label": "Đang trống (AVAILABLE)", "can_delete": True},
+        "BOOKED": {"bg": "#e3f2fd", "color": "#1565c0", "label": "Đã có học viên đặt (BOOKED)", "can_delete": False},
+        "LOCKED": {"bg": "#fff3e0", "color": "#e65100", "label": "Đã khóa (LOCKED)", "can_delete": False},
     }
 
     cfg = status_config.get(status, {"bg": "#f5f5f5", "color": "#757575", "label": status, "can_delete": False})
@@ -33,8 +33,8 @@ def render_slot_card(
     with st.container(border=True):
         c_time, c_badge, c_action = st.columns([4, 3, 2])
         with c_time:
-            st.markdown(f"**⏰ Bắt đầu:** `{format_slot_datetime(start_time)}`")
-            st.markdown(f"**🏁 Kết thúc:** `{format_slot_datetime(end_time)}`")
+            st.markdown(f"**Bắt đầu:** `{format_slot_datetime(start_time)}`")
+            st.markdown(f"**Kết thúc:** `{format_slot_datetime(end_time)}`")
         with c_badge:
             st.markdown(
                 f"""
@@ -49,5 +49,5 @@ def render_slot_card(
         with c_action:
             if on_delete and cfg["can_delete"]:
                 st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
-                if st.button("🗑️ Xóa", key=f"btn_delete_slot_{slot_id}", use_container_width=True):
+                if st.button("Xóa", key=f"btn_delete_slot_{slot_id}", use_container_width=True):
                     on_delete(slot)

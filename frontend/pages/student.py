@@ -42,9 +42,9 @@ def render_student_page(user: Dict[str, Any]):
         <div style="background: linear-gradient(135deg, #1976d2 0%, #0d47a1 100%); padding: 1.5rem 2rem; border-radius: 12px; color: white; margin-bottom: 1.5rem; box-shadow: 0 4px 15px rgba(25, 118, 210, 0.25);">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
                 <div style="display: flex; align-items: center; gap: 1rem;">
-                    {"<img src='" + avatar_url + "' style='width: 68px; height: 68px; border-radius: 50%; object-fit: cover; border: 3px solid white;' />" if avatar_url else "<div style='width: 68px; height: 68px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 2.2rem;'>👤</div>"}
+                    {"<img src='" + avatar_url + "' style='width: 68px; height: 68px; border-radius: 50%; object-fit: cover; border: 3px solid white;' />" if avatar_url else "<div style='width: 68px; height: 68px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 700; color: white;'>USER</div>"}
                     <div>
-                        <h2 style="margin: 0; color: white; font-weight: 700;">👋 Chào mừng bạn, {full_name}!</h2>
+                        <h2 style="margin: 0; color: white; font-weight: 700;">Chào mừng bạn, {full_name}!</h2>
                         <p style="margin: 0.4rem 0 0 0; opacity: 0.92; font-size: 1.05rem;">
                             Không gian rèn luyện, đặt lịch Huấn luyện viên & quản lý hợp đồng tập luyện tại PT Connect
                         </p>
@@ -63,22 +63,22 @@ def render_student_page(user: Dict[str, Any]):
     # Thẻ thống kê tổng quan
     c1, c2, c3 = st.columns(3)
     with c1:
-        st.metric(label="💳 Số dư Ví mô phỏng", value=format_currency_vnd(wallet_balance), help="Ví điện tử thanh toán khóa học nội bộ")
+        st.metric(label="Số dư Ví mô phỏng", value=format_currency_vnd(wallet_balance), help="Ví điện tử thanh toán khóa học nội bộ")
     with c2:
-        st.metric(label="🏋️ Gói tập đã đăng ký", value=f"{len(my_enrollments)} khóa")
+        st.metric(label="Gói tập đã đăng ký", value=f"{len(my_enrollments)} khóa")
     with c3:
-        st.metric(label="🔢 Tổng buổi tập còn lại", value=f"{total_remaining_sessions} buổi")
+        st.metric(label="Tổng buổi tập còn lại", value=f"{total_remaining_sessions} buổi")
 
     st.markdown("---")
 
     # Các hằng số định danh Tab điều hướng (Milestone 6)
-    NAV_EXPLORE = "🔍 Khám Phá PT"
-    NAV_DETAIL = "🏋️ Chi Tiết & Mua Khóa"
-    NAV_BOOKING = "📅 Đặt Lịch Tập"
-    NAV_MY_SCHEDULE = "🗓️ Lịch Của Tôi"
-    NAV_COURSES = f"📜 Khóa Của Tôi ({len(my_enrollments)})"
-    NAV_WALLET = "💳 Ví Tiền"
-    NAV_PROFILE = "👤 Hồ Sơ & Avatar"
+    NAV_EXPLORE = "Khám Phá PT"
+    NAV_DETAIL = "Chi Tiết & Mua Khóa"
+    NAV_BOOKING = "Đặt Lịch Tập"
+    NAV_MY_SCHEDULE = "Lịch Của Tôi"
+    NAV_COURSES = f"Khóa Của Tôi ({len(my_enrollments)})"
+    NAV_WALLET = "Ví Tiền"
+    NAV_PROFILE = "Hồ Sơ & Avatar"
 
     nav_tabs = [NAV_EXPLORE, NAV_DETAIL, NAV_BOOKING, NAV_MY_SCHEDULE, NAV_COURSES, NAV_WALLET, NAV_PROFILE]
 
@@ -106,7 +106,7 @@ def render_student_page(user: Dict[str, Any]):
     # TAB 1: KHÁM PHÁ & TÌM KIẾM HUẤN LUYỆN VIÊN (MILESTONE 5)
     # -------------------------------------------------------------------------
     if active_tab == NAV_EXPLORE:
-        st.subheader("🔍 Tìm Kiếm & Khám Phá Huấn Luyện Viên (PT)")
+        st.subheader("Tìm Kiếm & Khám Phá Huấn Luyện Viên (PT)")
         st.caption("Chỉ hiển thị các Huấn luyện viên đã được Admin phê duyệt (VERIFIED) và đang hoạt động (ACTIVE).")
 
         col_search, col_reset = st.columns([4, 1])
@@ -118,7 +118,7 @@ def render_student_page(user: Dict[str, Any]):
             )
         with col_reset:
             st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
-            if st.button("🔄 Làm mới", use_container_width=True):
+            if st.button("Làm mới", use_container_width=True):
                 st.session_state["student_pt_search_input"] = ""
                 st.rerun()
 
@@ -127,12 +127,12 @@ def render_student_page(user: Dict[str, Any]):
         try:
             pt_list = StudentApi.get_pt_profiles(name=search_query)
         except ApiException as e:
-            st.error(f"❌ Lỗi tải danh sách PT [{e.status_code}]: {e.message}")
+            st.error(f"Lỗi tải danh sách PT [{e.status_code}]: {e.message}")
         except Exception as ex:
-            st.error(f"❌ Lỗi hệ thống: {str(ex)}")
+            st.error(f"Lỗi hệ thống: {str(ex)}")
 
         if not pt_list:
-            st.info("ℹ️ Không tìm thấy Huấn luyện viên phù hợp với từ khóa tìm kiếm.")
+            st.info("Không tìm thấy Huấn luyện viên phù hợp với từ khóa tìm kiếm.")
         else:
             st.markdown(f"**Tìm thấy {len(pt_list)} Huấn luyện viên chuyên nghiệp:**")
 
@@ -160,11 +160,11 @@ def render_student_page(user: Dict[str, Any]):
     elif active_tab == NAV_DETAIL:
         col_back, col_title = st.columns([1, 4])
         with col_back:
-            if st.button("⬅️ Quay lại danh sách", use_container_width=True):
+            if st.button("Quay lại danh sách", use_container_width=True):
                 st.session_state["student_active_tab"] = NAV_EXPLORE
                 st.rerun()
         with col_title:
-            st.subheader("🏋️ Hồ Sơ Chi Tiết & Đăng Ký Khóa Học")
+            st.subheader("Hồ Sơ Chi Tiết & Đăng Ký Khóa Học")
 
         selected_pt_id = st.session_state.get("selected_pt_id")
 
@@ -174,7 +174,7 @@ def render_student_page(user: Dict[str, Any]):
             all_pts = []
 
         if all_pts:
-            pt_options = {p.get("id"): f"{p.get('fullName')} (⭐ {float(p.get('averageRating', 0)):.1f} - {p.get('experienceYears', 0)} năm KN)" for p in all_pts}
+            pt_options = {p.get("id"): f"{p.get('fullName')} (Đánh giá: {float(p.get('averageRating', 0)):.1f}/5 - {p.get('experienceYears', 0)} năm KN)" for p in all_pts}
             default_index = 0
             if selected_pt_id and selected_pt_id in pt_options:
                 default_index = list(pt_options.keys()).index(selected_pt_id)
@@ -194,7 +194,7 @@ def render_student_page(user: Dict[str, Any]):
                 st.rerun()
 
         if not selected_pt_id:
-            st.info("👉 Vui lòng chọn một Huấn luyện viên từ Tab **Khám Phá Huấn Luyện Viên** để xem hồ sơ và khóa học.")
+            st.info("Vui lòng chọn một Huấn luyện viên từ Tab **Khám Phá Huấn Luyện Viên** để xem hồ sơ và khóa học.")
         else:
             try:
                 pt_profile = StudentApi.get_pt_profile(selected_pt_id)
@@ -207,20 +207,20 @@ def render_student_page(user: Dict[str, Any]):
                         avatar = pt_profile.get("avatarUrl") or "https://api.dicebear.com/7.x/avataaars/svg?seed=" + pt_profile.get("fullName", "").replace(" ", "")
                         st.image(avatar, width=130)
                     with col_p2:
-                        st.markdown(f"### 🏅 {pt_profile.get('fullName')}")
+                        st.markdown(f"### {pt_profile.get('fullName')}")
                         st.markdown(
-                            f"**Đánh giá:** ⭐ `{float(pt_profile.get('averageRating', 0)):.1f} / 5.0` ({pt_profile.get('totalReviews', 0)} lượt đánh giá) "
+                            f"**Đánh giá:** `{float(pt_profile.get('averageRating', 0)):.1f} / 5.0` ({pt_profile.get('totalReviews', 0)} lượt đánh giá) "
                             f"• **Kinh nghiệm:** `{pt_profile.get('experienceYears', 0)} năm`"
                         )
                         st.markdown(f"**Giới thiệu:** {pt_profile.get('bio') or 'Chưa có tiểu sử.'}")
-                        st.markdown(f"**📍 Khu vực nhận dạy:** `{pt_profile.get('availableLocations')}`")
+                        st.markdown(f"**Khu vực nhận dạy:** `{pt_profile.get('availableLocations')}`")
                         if pt_profile.get("locationPricingNote"):
-                            st.caption(f"💡 *Chính sách giá/di chuyển:* {pt_profile.get('locationPricingNote')}")
+                            st.caption(f"*Chính sách giá/di chuyển:* {pt_profile.get('locationPricingNote')}")
 
                 st.markdown("---")
 
                 # DANH SÁCH KHÓA HỌC ĐANG MỞ BÁN
-                st.markdown(f"#### 📦 Các Gói Tập & Khóa Học Đang Mở Bán ({len(pt_courses)})")
+                st.markdown(f"#### Các Gói Tập & Khóa Học Đang Mở Bán ({len(pt_courses)})")
                 if not pt_courses:
                     st.info("Huấn luyện viên này hiện chưa tạo khóa học nào.")
                 else:
@@ -235,7 +235,7 @@ def render_student_page(user: Dict[str, Any]):
                         with st.container(border=True):
                             col_c_info, col_c_buy = st.columns([3, 2])
                             with col_c_info:
-                                st.markdown(f"##### 🏋️ {c_title}")
+                                st.markdown(f"##### {c_title}")
                                 if c_desc:
                                     st.write(c_desc)
                                 st.markdown(
@@ -245,7 +245,7 @@ def render_student_page(user: Dict[str, Any]):
 
                             with col_c_buy:
                                 st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
-                                with st.expander(f"💳 Mua Gói Tập Này", expanded=False):
+                                with st.expander("Mua Gói Tập Này", expanded=False):
                                     st.markdown(f"**Học phí thanh toán:** `{format_currency_vnd(c_price)}`")
                                     st.markdown(f"**Số dư ví hiện tại:** `{format_currency_vnd(wallet_balance)}`")
 
@@ -253,12 +253,12 @@ def render_student_page(user: Dict[str, Any]):
 
                                     if not has_enough_money:
                                         shortage = float(c_price) - float(wallet_balance)
-                                        st.error(f"⚠️ Số dư ví không đủ! Cần thêm `{format_currency_vnd(shortage)}`.")
-                                        if st.button("👉 Nạp tiền ngay vào ví", key=f"btn_go_wallet_{c_id}"):
+                                        st.error(f"Số dư ví không đủ! Cần thêm `{format_currency_vnd(shortage)}`.")
+                                        if st.button("Nạp tiền ngay vào ví", key=f"btn_go_wallet_{c_id}"):
                                             st.session_state["student_active_tab"] = NAV_WALLET
                                             st.rerun()
                                     else:
-                                        st.success("✅ Bạn đủ số dư ví để thanh toán gói tập này.")
+                                        st.success("Bạn đủ số dư ví để thanh toán gói tập này.")
 
                                     loc_suggestions = [loc.strip() for loc in pt_profile.get("availableLocations", "").split(";") if loc.strip()]
                                     loc_options = loc_suggestions + ["Địa điểm khác (tự nhập)"]
@@ -278,7 +278,7 @@ def render_student_page(user: Dict[str, Any]):
                                     else:
                                         training_location = chosen_loc_type
 
-                                    if st.button("🚀 Xác Nhận Thanh Toán & Ký Hợp Đồng", key=f"btn_confirm_buy_{c_id}", type="primary", disabled=not has_enough_money):
+                                    if st.button("Xác Nhận Thanh Toán & Ký Hợp Đồng", key=f"btn_confirm_buy_{c_id}", type="primary", disabled=not has_enough_money):
                                         if not training_location or not training_location.strip():
                                             st.error("Vui lòng chọn hoặc nhập địa điểm tập luyện cố định.")
                                         else:
@@ -289,19 +289,18 @@ def render_student_page(user: Dict[str, Any]):
                                                         training_location=training_location.strip(),
                                                         payment_method="WALLET"
                                                     )
-                                                    st.success(f"🎉 Chúc mừng bạn đã mua khóa học thành công! Mã hợp đồng: PTC-HD-{enroll_res.get('id'):06d}")
+                                                    st.success(f"Chúc mừng bạn đã mua khóa học thành công! Mã hợp đồng: PTC-HD-{enroll_res.get('id'):06d}")
                                                     st.session_state["student_active_tab"] = NAV_COURSES
-                                                    st.balloons()
                                                     st.rerun()
                                                 except ApiException as e:
-                                                    st.error(f"❌ Mua khóa học thất bại [{e.status_code}]: {e.message}")
+                                                    st.error(f"Mua khóa học thất bại [{e.status_code}]: {e.message}")
                                                 except Exception as ex:
-                                                    st.error(f"❌ Lỗi: {str(ex)}")
+                                                    st.error(f"Lỗi: {str(ex)}")
 
                 st.markdown("---")
 
                 # LỊCH GIỜ RẢNH KHẢ DỤNG (SLOTS)
-                st.markdown(f"#### 📅 Khung Giờ Rảnh Khả Dụng Trong Tương Lai ({len(pt_slots)})")
+                st.markdown(f"#### Khung Giờ Rảnh Khả Dụng Trong Tương Lai ({len(pt_slots)})")
                 st.caption("Chỉ hiển thị các slot ở trạng thái AVAILABLE và chưa bắt đầu.")
                 if not pt_slots:
                     st.info("Huấn luyện viên chưa mở khung giờ rảnh nào sắp tới.")
@@ -321,25 +320,25 @@ def render_student_page(user: Dict[str, Any]):
                             "Mã Slot": s.get("id"),
                             "Ngày": date_str,
                             "Khung giờ": time_str,
-                            "Trạng thái": "🟢 Sẵn sàng (AVAILABLE)"
+                            "Trạng thái": "Sẵn sàng (AVAILABLE)"
                         })
                     st.dataframe(slots_data, use_container_width=True)
 
             except ApiException as e:
-                st.error(f"❌ Lỗi tải hồ sơ PT [{e.status_code}]: {e.message}")
+                st.error(f"Lỗi tải hồ sơ PT [{e.status_code}]: {e.message}")
             except Exception as ex:
-                st.error(f"❌ Lỗi: {str(ex)}")
+                st.error(f"Lỗi: {str(ex)}")
 
     # -------------------------------------------------------------------------
     # TAB 3: ĐẶT LỊCH TẬP (MILESTONE 6 - HIỆU & HUY)
     # -------------------------------------------------------------------------
     elif active_tab == NAV_BOOKING:
-        st.subheader("📅 Đặt Lịch Tập Cùng Huấn Luyện Viên")
+        st.subheader("Đặt Lịch Tập Cùng Huấn Luyện Viên")
         st.caption("Hệ thống bảo vệ giao dịch chống đặt trùng (409 Conflict) với khóa bi quan PESSIMISTIC_WRITE.")
 
         booking_type_choice = st.radio(
             "Hình thức đặt lịch:",
-            ["📜 Đặt theo Gói Khóa Học (PACKAGE)", "🎁 Buổi Học Thử Miễn Phí (TRIAL)"],
+            ["Đặt theo Gói Khóa Học (PACKAGE)", "Buổi Học Thử Miễn Phí (TRIAL)"],
             horizontal=True
         )
 
@@ -355,7 +354,7 @@ def render_student_page(user: Dict[str, Any]):
             if not valid_enrollments:
                 st.warning(
                     """
-                    ⚠️ **Bạn chưa có hợp đồng khóa học nào còn buổi tập khả dụng!**
+                    **Bạn chưa có hợp đồng khóa học nào còn buổi tập khả dụng!**
                     Vui lòng chuyển sang Tab **Khám Phá PT** hoặc **Chi Tiết & Mua Khóa** để đăng ký khóa học,
                     hoặc chọn hình thức **Buổi Học Thử Miễn Phí (TRIAL)** ở trên.
                     """
@@ -380,13 +379,13 @@ def render_student_page(user: Dict[str, Any]):
                 try:
                     slots = StudentApi.get_pt_slots(pt_id)
                 except Exception as ex:
-                    st.error(f"❌ Lỗi tải khung giờ trống của HLV: {str(ex)}")
+                    st.error(f"Lỗi tải khung giờ trống của HLV: {str(ex)}")
 
                 if not slots:
                     st.info(f"Huấn luyện viên **{chosen_enroll.get('ptName')}** hiện chưa mở khung giờ trống nào trong tương lai. Vui lòng liên hệ HLV để mở thêm lịch.")
                 else:
                     slot_map = {
-                        s["id"]: f"Slot #{s['id']} | {format_booking_datetime(s.get('startTime'))} ➔ {format_booking_datetime(s.get('endTime'))}"
+                        s["id"]: f"Slot #{s['id']} | {format_booking_datetime(s.get('startTime'))} - {format_booking_datetime(s.get('endTime'))}"
                         for s in slots
                     }
 
@@ -403,13 +402,13 @@ def render_student_page(user: Dict[str, Any]):
                     )
 
                     with st.container(border=True):
-                        st.markdown("#### 📋 Xác Nhận Chi Tiết Đặt Lịch")
+                        st.markdown("#### Xác Nhận Chi Tiết Đặt Lịch")
                         st.markdown(f"- **Hợp đồng:** `{chosen_enroll.get('courseTitle')}` (Mã: PTC-HD-{chosen_enroll_id:06d})")
                         st.markdown(f"- **Huấn luyện viên:** `{chosen_enroll.get('ptName')}`")
                         st.markdown(f"- **Địa điểm tập:** `{chosen_enroll.get('trainingLocation')}`")
                         st.markdown(f"- **Số buổi tập còn lại sau ca này:** `{chosen_enroll.get('remainingSessions') - 1} buổi`")
 
-                        if st.button("🚀 Xác Nhận Đặt Lịch Ca Tập", type="primary", use_container_width=True):
+                        if st.button("Xác Nhận Đặt Lịch Ca Tập", type="primary", use_container_width=True):
                             with st.spinner("Đang thực hiện kiểm tra slot và trừ 1 buổi tập..."):
                                 try:
                                     bk_res = BookingApi.create_booking(
@@ -418,18 +417,17 @@ def render_student_page(user: Dict[str, Any]):
                                         enrollment_id=chosen_enroll_id,
                                         student_note=student_note.strip() if student_note else None
                                     )
-                                    st.success(f"🎉 Đặt lịch ca tập thành công (Mã đơn: #{bk_res.get('id')})! Ca tập đang chờ HLV phê duyệt.")
+                                    st.success(f"Đặt lịch ca tập thành công (Mã đơn: #{bk_res.get('id')})! Ca tập đang chờ HLV phê duyệt.")
                                     st.session_state["student_active_tab"] = NAV_MY_SCHEDULE
-                                    st.balloons()
                                     st.rerun()
                                 except ApiException as e:
-                                    st.error(f"❌ Không thể đặt lịch [{e.status_code}]: {e.message}")
+                                    st.error(f"Không thể đặt lịch [{e.status_code}]: {e.message}")
                                 except Exception as ex:
-                                    st.error(f"❌ Lỗi hệ thống: {str(ex)}")
+                                    st.error(f"Lỗi hệ thống: {str(ex)}")
 
         else:
             # 2. ĐẶT BUỔI HỌC THỬ MIỄN PHÍ (TRIAL)
-            st.info("💡 **Chính sách học thử:** Mỗi học viên được đặt 01 buổi học thử miễn phí với mỗi Huấn luyện viên.")
+            st.info("**Chính sách học thử:** Mỗi học viên được đặt 01 buổi học thử miễn phí với mỗi Huấn luyện viên.")
 
             all_pts = []
             try:
@@ -440,7 +438,7 @@ def render_student_page(user: Dict[str, Any]):
             if not all_pts:
                 st.warning("Hiện chưa có Huấn luyện viên nào khả dụng.")
             else:
-                pt_map = {p["id"]: f"{p['fullName']} (⭐ {float(p.get('averageRating', 0)):.1f} - {p.get('experienceYears', 0)} năm KN)" for p in all_pts}
+                pt_map = {p["id"]: f"{p['fullName']} ({float(p.get('averageRating', 0)):.1f} sao - {p.get('experienceYears', 0)} năm KN)" for p in all_pts}
                 chosen_pt_id = st.selectbox(
                     "Chọn Huấn luyện viên bạn muốn học thử:",
                     options=list(pt_map.keys()),
@@ -453,13 +451,13 @@ def render_student_page(user: Dict[str, Any]):
                 try:
                     slots = StudentApi.get_pt_slots(chosen_pt_id)
                 except Exception as ex:
-                    st.error(f"❌ Lỗi: {str(ex)}")
+                    st.error(f"Lỗi: {str(ex)}")
 
                 if not slots:
                     st.info(f"Huấn luyện viên **{chosen_pt.get('fullName')}** chưa mở khung giờ trống nào.")
                 else:
                     slot_map = {
-                        s["id"]: f"Slot #{s['id']} | {format_booking_datetime(s.get('startTime'))} ➔ {format_booking_datetime(s.get('endTime'))}"
+                        s["id"]: f"Slot #{s['id']} | {format_booking_datetime(s.get('startTime'))} - {format_booking_datetime(s.get('endTime'))}"
                         for s in slots
                     }
 
@@ -477,12 +475,12 @@ def render_student_page(user: Dict[str, Any]):
                     )
 
                     with st.container(border=True):
-                        st.markdown("#### 🎁 Chi Tiết Buổi Học Thử (TRIAL)")
+                        st.markdown("#### Chi Tiết Buổi Học Thử (TRIAL)")
                         st.markdown(f"- **Huấn luyện viên:** `{chosen_pt.get('fullName')}`")
                         st.markdown(f"- **Khu vực hoạt động:** `{chosen_pt.get('availableLocations')}`")
                         st.markdown(f"- **Chi phí:** `0 đ (Miễn phí)`")
 
-                        if st.button("🚀 Đặt Buổi Học Thử Ngay", type="primary", use_container_width=True):
+                        if st.button("Đặt Buổi Học Thử Ngay", type="primary", use_container_width=True):
                             with st.spinner("Đang gửi yêu cầu đặt lịch học thử..."):
                                 try:
                                     bk_res = BookingApi.create_booking(
@@ -491,20 +489,19 @@ def render_student_page(user: Dict[str, Any]):
                                         enrollment_id=None,
                                         student_note=student_note.strip() if student_note else None
                                     )
-                                    st.success(f"🎉 Đặt buổi học thử thành công (Mã đơn: #{bk_res.get('id')})! Đang chờ HLV phê duyệt.")
+                                    st.success(f"Đặt buổi học thử thành công (Mã đơn: #{bk_res.get('id')})! Đang chờ HLV phê duyệt.")
                                     st.session_state["student_active_tab"] = NAV_MY_SCHEDULE
-                                    st.balloons()
                                     st.rerun()
                                 except ApiException as e:
-                                    st.error(f"❌ Không thể đặt học thử [{e.status_code}]: {e.message}")
+                                    st.error(f"Không thể đặt học thử [{e.status_code}]: {e.message}")
                                 except Exception as ex:
-                                    st.error(f"❌ Lỗi: {str(ex)}")
+                                    st.error(f"Lỗi: {str(ex)}")
 
     # -------------------------------------------------------------------------
     # TAB 4: LỊCH CỦA TÔI (MILESTONE 6 - HIỆU)
     # -------------------------------------------------------------------------
     elif active_tab == NAV_MY_SCHEDULE:
-        st.subheader("🗓️ Lịch Tập Luyện Của Tôi")
+        st.subheader("Lịch Tập Luyện Của Tôi")
         st.caption("Theo dõi tiến độ duyệt lịch, các ca tập sắp diễn ra và lịch sử tập luyện.")
 
         col_st_filter, col_st_refresh = st.columns([4, 1])
@@ -513,17 +510,17 @@ def render_student_page(user: Dict[str, Any]):
                 "Lọc ca tập theo trạng thái:",
                 ["ALL", "PENDING", "CONFIRMED", "COMPLETED", "CANCELLED"],
                 format_func=lambda x: {
-                    "ALL": "📌 Tất cả ca tập",
-                    "PENDING": "⏳ Chờ HLV duyệt (PENDING)",
-                    "CONFIRMED": "✅ Đã xác nhận / Sắp tới (CONFIRMED)",
-                    "COMPLETED": "🎉 Đã hoàn thành (COMPLETED)",
-                    "CANCELLED": "❌ Đã hủy (CANCELLED)"
+                    "ALL": "Tất cả ca tập",
+                    "PENDING": "Chờ HLV duyệt (PENDING)",
+                    "CONFIRMED": "Đã xác nhận / Sắp tới (CONFIRMED)",
+                    "COMPLETED": "Đã hoàn thành (COMPLETED)",
+                    "CANCELLED": "Đã hủy (CANCELLED)"
                 }.get(x, x),
                 index=0
             )
         with col_st_refresh:
             st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
-            if st.button("🔄 Làm mới", key="btn_refresh_my_schedule", use_container_width=True):
+            if st.button("Làm mới", key="btn_refresh_my_schedule", use_container_width=True):
                 st.rerun()
 
         my_bookings: List[Dict[str, Any]] = []
@@ -531,9 +528,9 @@ def render_student_page(user: Dict[str, Any]):
             st_param = None if status_filter == "ALL" else status_filter
             my_bookings = BookingApi.get_my_bookings(status=st_param)
         except ApiException as e:
-            st.error(f"❌ Lỗi tải lịch tập [{e.status_code}]: {e.message}")
+            st.error(f"Lỗi tải lịch tập [{e.status_code}]: {e.message}")
         except Exception as ex:
-            st.error(f"❌ Lỗi: {str(ex)}")
+            st.error(f"Lỗi: {str(ex)}")
 
         render_booking_table(
             bookings=my_bookings,
@@ -544,12 +541,12 @@ def render_student_page(user: Dict[str, Any]):
     # TAB 5: KHÓA HỌC CỦA TÔI & TẢI HỢP ĐỒNG PDF (MILESTONE 5)
     # -------------------------------------------------------------------------
     elif active_tab == NAV_COURSES:
-        st.subheader("📜 Danh Sách Gói Tập Đã Đăng Ký & Hợp Đồng")
+        st.subheader("Danh Sách Gói Tập Đã Đăng Ký & Hợp Đồng")
         st.caption("Quản lý tiến độ buổi tập và tải hợp đồng dịch vụ đã ký điện tử.")
 
         if not my_enrollments:
             st.info("Bạn chưa đăng ký khóa học nào. Hãy khám phá và chọn Huấn luyện viên phù hợp ở Tab 1 nhé!")
-            if st.button("🔍 Khám phá Huấn luyện viên ngay", type="primary"):
+            if st.button("Khám phá Huấn luyện viên ngay", type="primary"):
                 st.session_state["student_active_tab"] = NAV_EXPLORE
                 st.rerun()
         else:
@@ -568,14 +565,14 @@ def render_student_page(user: Dict[str, Any]):
                 with st.container(border=True):
                     col_top_title, col_top_status = st.columns([3, 1])
                     with col_top_title:
-                        st.markdown(f"#### 🏋️ {c_title} • PTC-HD-{e_id:06d}")
+                        st.markdown(f"#### {c_title} • PTC-HD-{e_id:06d}")
                     with col_top_status:
                         st.markdown(f"<div style='text-align: right;'><b>Trạng thái:</b> <code>{e_status}</code></div>", unsafe_allow_html=True)
 
                     c_info1, c_info2 = st.columns(2)
                     with c_info1:
                         st.markdown(f"**Huấn luyện viên phụ trách:** `{pt_name}`")
-                        st.markdown(f"**📍 Địa điểm tập cố định:** `{loc}`")
+                        st.markdown(f"**Địa điểm tập cố định:** `{loc}`")
                         st.markdown(f"**Học phí đã thanh toán:** `{format_currency_vnd(price)}`")
 
                     with c_info2:
@@ -589,14 +586,14 @@ def render_student_page(user: Dict[str, Any]):
                     col_bk_action, col_dl = st.columns([2, 1])
                     with col_bk_action:
                         if rem_s > 0 and e_status == "ACTIVE":
-                            if st.button(f"📅 Đặt lịch tập cho gói này", key=f"btn_book_from_enroll_{e_id}", type="primary"):
+                            if st.button(f"Đặt lịch tập cho gói này", key=f"btn_book_from_enroll_{e_id}", type="primary"):
                                 st.session_state["student_active_tab"] = NAV_BOOKING
                                 st.rerun()
                     with col_dl:
                         try:
                             pdf_bytes = StudentApi.download_contract(e_id)
                             st.download_button(
-                                label="📄 Tải Hợp Đồng PDF",
+                                label="Tải Hợp Đồng PDF",
                                 data=pdf_bytes,
                                 file_name=f"HopDong_PTConnect_{e_id}.pdf",
                                 mime="application/pdf",
@@ -607,7 +604,7 @@ def render_student_page(user: Dict[str, Any]):
                             st.caption(f"*(Chưa tải được hợp đồng: {str(dl_err)})*")
 
                     # GIÁO ÁN VÀ BÀI TẬP HUẤN LUYỆN
-                    with st.expander("📋 Xem Giáo Án & Bài Tập Của Khóa Học", expanded=False):
+                    with st.expander("Xem Giáo Án & Bài Tập Của Khóa Học", expanded=False):
                         plans = []
                         try:
                             plans = StudentApi.get_workout_plans(e_id)
@@ -615,17 +612,17 @@ def render_student_page(user: Dict[str, Any]):
                             plans = []
 
                         if not plans:
-                            st.info("💡 Huấn luyện viên chưa tải lên giáo án cho khóa học này. Hãy liên hệ HLV để nhận lộ trình tập luyện!")
+                            st.info("Huấn luyện viên chưa tải lên giáo án cho khóa học này. Hãy liên hệ HLV để nhận lộ trình tập luyện!")
                         else:
                             for plan in plans:
-                                st.markdown(f"##### 📑 {plan.get('title')}")
+                                st.markdown(f"##### {plan.get('title')}")
                                 p_goal = plan.get("goal")
                                 p_start = plan.get("startDate")
                                 p_end = plan.get("endDate")
                                 if p_goal:
-                                    st.caption(f"🎯 **Mục tiêu:** {p_goal}")
+                                    st.caption(f"**Mục tiêu:** {p_goal}")
                                 if p_start and p_end:
-                                    st.caption(f"🗓️ **Thời hạn:** từ `{p_start}` đến `{p_end}`")
+                                    st.caption(f"**Thời hạn:** từ `{p_start}` đến `{p_end}`")
 
                                 workouts = plan.get("workouts", [])
                                 if not workouts:
@@ -649,16 +646,16 @@ def render_student_page(user: Dict[str, Any]):
     # TAB 6: VÍ TIỀN & NẠP TIỀN (MILESTONE 5)
     # -------------------------------------------------------------------------
     elif active_tab == NAV_WALLET:
-        st.subheader("💳 Quản Lý Ví Điện Tử Nội Bộ & Nạp Tiền")
+        st.subheader("Quản Lý Ví Điện Tử Nội Bộ & Nạp Tiền")
         st.caption("Ví điện tử nội bộ phục vụ thanh toán hợp đồng khóa học và xử lý đền bù minh bạch.")
 
         col_w_info, col_w_topup = st.columns([1, 1])
 
         with col_w_info:
             with st.container(border=True):
-                st.markdown("#### 👛 Thông Tin Số Dư Ví")
+                st.markdown("#### Thông Tin Số Dư Ví")
                 st.markdown(f"**Chủ tài khoản:** {full_name}")
-                st.markdown(f"**Trạng thái ví:** `🟢 {wallet_data.get('status', 'ACTIVE')}`")
+                st.markdown(f"**Trạng thái ví:** `{wallet_data.get('status', 'ACTIVE')}`")
                 st.markdown(
                     f"""
                     <div style="background: #e3f2fd; padding: 1.2rem; border-radius: 10px; margin: 1rem 0; border-left: 5px solid #1976d2;">
@@ -670,11 +667,11 @@ def render_student_page(user: Dict[str, Any]):
                     """,
                     unsafe_allow_html=True
                 )
-                st.caption("🔒 *Lưu ý: Tiền trong ví chỉ dùng trong môi trường giả lập nền tảng PT Connect.*")
+                st.caption("*Lưu ý: Tiền trong ví chỉ dùng trong môi trường giả lập nền tảng PT Connect.*")
 
         with col_w_topup:
             with st.container(border=True):
-                st.markdown("#### ⚡ Nạp Tiền Vào Ví")
+                st.markdown("#### Nạp Tiền Vào Ví")
 
                 st.markdown("**Chọn nhanh mệnh giá:**")
                 q_cols = st.columns(4)
@@ -707,26 +704,26 @@ def render_student_page(user: Dict[str, Any]):
                     "Phương thức nạp mô phỏng:",
                     options=["BANK_TRANSFER", "CREDIT_CARD", "CASH"],
                     format_func=lambda x: {
-                        "BANK_TRANSFER": "🏦 Chuyển khoản ngân hàng (Quét mã VNPAY QR / MoMo / VietQR)",
-                        "CREDIT_CARD": "💳 Thẻ tín dụng / Ghi nợ quốc tế (Visa, Mastercard)",
-                        "CASH": "💵 Nạp tiền mặt tại quầy lễ tân"
+                        "BANK_TRANSFER": "Chuyển khoản ngân hàng (Quét mã VNPAY QR / MoMo / VietQR)",
+                        "CREDIT_CARD": "Thẻ tín dụng / Ghi nợ quốc tế (Visa, Mastercard)",
+                        "CASH": "Nạp tiền mặt tại quầy lễ tân"
                     }.get(x, x),
                     key="student_topup_payment_method"
                 )
 
-                if st.button("🚀 Nạp Tiền Ngay", type="primary", use_container_width=True):
+                if st.button("Nạp Tiền Ngay", type="primary", use_container_width=True):
                     with st.spinner("Đang xử lý nạp tiền vào ví..."):
                         try:
                             topup_res = StudentApi.topup_wallet(amount=entered_amount, payment_method=method_code)
-                            st.success(f"✅ Nạp thành công {format_currency_vnd(entered_amount)}! Mã GD: {topup_res.get('transactionRef')}")
+                            st.success(f"Nạp thành công {format_currency_vnd(entered_amount)}! Mã GD: {topup_res.get('transactionRef')}")
                             st.rerun()
                         except ApiException as e:
-                            st.error(f"❌ Nạp tiền thất bại [{e.status_code}]: {e.message}")
+                            st.error(f"Nạp tiền thất bại [{e.status_code}]: {e.message}")
                         except Exception as ex:
-                            st.error(f"❌ Lỗi: {str(ex)}")
+                            st.error(f"Lỗi: {str(ex)}")
 
         st.markdown("---")
-        st.subheader("📜 Lịch Sử Giao Dịch Tài Chính")
+        st.subheader("Lịch Sử Giao Dịch Tài Chính")
         txns = wallet_data.get("transactions", [])
         if not txns:
             st.info("Chưa có giao dịch tài chính nào phát sinh.")
@@ -734,7 +731,7 @@ def render_student_page(user: Dict[str, Any]):
             table_data = []
             for t in txns:
                 txn_type = t.get("paymentType", "")
-                type_badge = "🟢 NẠP TIỀN" if txn_type == "TOPUP" else ("🔴 MUA KHÓA" if txn_type == "PURCHASE_PACKAGE" else txn_type)
+                type_badge = "NẠP TIỀN" if txn_type == "TOPUP" else ("MUA KHÓA" if txn_type == "PURCHASE_PACKAGE" else txn_type)
                 amt = t.get("amount", 0)
                 amt_str = f"+{format_currency_vnd(amt)}" if txn_type in ["TOPUP", "REFUND", "COMPENSATION"] else f"-{format_currency_vnd(amt)}"
                 table_data.append({
@@ -751,14 +748,14 @@ def render_student_page(user: Dict[str, Any]):
     # TAB 7: HỒ SƠ CÁ NHÂN & CẬP NHẬT AVATAR (MILESTONE 6 - HIỆU)
     # -------------------------------------------------------------------------
     elif active_tab == NAV_PROFILE:
-        st.subheader("👤 Hồ Sơ Cá Nhân & Ảnh Đại Diện")
+        st.subheader("Hồ Sơ Cá Nhân & Ảnh Đại Diện")
         st.caption("Cập nhật ảnh đại diện để đồng bộ trên toàn bộ hệ thống đặt lịch.")
 
         # Widget Quản lý & Tải lên Avatar (Milestone 6 - Hiệu)
         render_avatar_management(user, "STUDENT")
 
         with st.container(border=True):
-            st.markdown("### 📋 Thông Tin Tài Khoản")
+            st.markdown("### Thông Tin Tài Khoản")
             c_info_a, c_info_b = st.columns(2)
             with c_info_a:
                 st.markdown(f"**Họ và tên:** {full_name}")
@@ -766,4 +763,4 @@ def render_student_page(user: Dict[str, Any]):
             with c_info_b:
                 st.markdown(f"**Số điện thoại:** `{phone}`")
                 st.markdown(f"**Vai trò hệ thống:** `Học viên (STUDENT)`")
-                st.markdown(f"**Trạng thái tài khoản:** `🟢 {status}`")
+                st.markdown(f"**Trạng thái tài khoản:** `{status}`")
