@@ -222,24 +222,29 @@ Sau khi mở giao diện tại [http://localhost:8501](http://localhost:8501), b
 
 ---
 
-## Nạp lại dữ liệu mẫu Demo (Seed Data Generator)
+## Nạp dữ liệu mẫu Demo (Seed Demo Data)
 
-Hệ thống có sẵn script Python độc lập tự động sinh dữ liệu thực tế, chuẩn ràng buộc Foreign Key và giữ nguyên 100% font tiếng Việt có dấu.
+Hệ thống đã có sẵn các tài khoản kiểm thử cơ bản (`admin@ptconnect.vn`, `pt.hoangc@ptconnect.vn`, `student.a@ptconnect.vn` / Mật khẩu: `Password123@`) từ `init.sql`.
 
-Nếu bạn muốn nạp bộ dữ liệu demo đầy đủ có sẵn:
+Nếu bạn muốn nạp thêm bộ dữ liệu demo đầy đủ (~35 học viên, 8 huấn luyện viên, 180 khung giờ tập, hợp đồng, ví tiền, lịch tập và đánh giá sao) mà **đảm bảo 100% chuẩn font tiếng Việt có dấu trên mọi hệ điều hành (Windows PowerShell, CMD, macOS, Linux)**:
+
+### Cách 1: Nạp file `seed_demo.sql` có sẵn (Khuyên dùng - Nhanh nhất & không cần cài Python)
+Chạy lần lượt 2 lệnh sau tại thư mục gốc dự án:
 ```bash
-# Trên Windows PowerShell:
-Get-Content ./database/seed_demo.sql -Encoding UTF8 | docker exec -i ptconnect-mysql mysql -uroot -proot123 --default-character-set=utf8mb4 ptconnect
+# Bước 1: Copy file SQL vào trong container MySQL
+docker cp database/seed_demo.sql ptconnect-mysql:/tmp/seed_demo.sql
 
-# Trên Linux / macOS / Git Bash:
-docker exec -i ptconnect-mysql mysql -uroot -proot123 ptconnect < database/seed_demo.sql
+# Bước 2: Thực thi file SQL trực tiếp bên trong container
+docker exec ptconnect-mysql mysql -uroot -proot123 --default-character-set=utf8mb4 ptconnect -e "source /tmp/seed_demo.sql;"
 ```
+*(Phương pháp `docker cp` kết hợp `source` giúp tránh hoàn toàn lỗi bảng mã ASCII của PowerShell trên Windows, giữ nguyên vẹn 100% font tiếng Việt có dấu).*
 
-Hoặc sinh lại một bộ dữ liệu hoàn toàn mới bằng script Python:
+### Cách 2: Tự động sinh và nạp dữ liệu bằng Script Python
+Nếu muốn tự động tạo một bộ dữ liệu hoàn toàn mới và nạp thẳng vào database:
 ```bash
-python frontend/tools/generate_data.py
+python frontend/tools/generate_data.py --import
 ```
-*Script sẽ tự động tạo hơn 30 học viên, 8 huấn luyện viên, 180 khung giờ tập, hợp đồng, thanh toán ví và nạp trực tiếp vào container MySQL `ptconnect-mysql`.*
+*(Lưu ý: Yêu cầu cài đặt thư viện trước bằng lệnh `pip install faker bcrypt`. Cờ `--import` sẽ tự động copy và nạp dữ liệu vào container với chuẩn bảng mã `utf8mb4`).*
 
 ---
 
