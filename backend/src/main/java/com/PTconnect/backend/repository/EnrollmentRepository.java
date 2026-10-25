@@ -13,6 +13,7 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
     List<Enrollment> findByPtId(Long ptId);
     List<Enrollment> findByStatus(EnrollmentStatus status);
     Optional<Enrollment> findByStudentIdAndCourseId(Long studentId, Long courseId);
+    List<Enrollment> findByStudentIdAndCourseIdAndStatus(Long studentId, Long courseId, EnrollmentStatus status);
 
     // Khóa bi quan phục vụ trừ/hoàn buổi tập an toàn đa luồng (Milestone 6)
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)

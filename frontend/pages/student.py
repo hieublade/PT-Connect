@@ -7,7 +7,7 @@ from api.auth_api import AuthApi
 from api.client import ApiException
 from components.pt_card import render_pt_card, format_currency_vnd
 from components.booking_table import render_booking_table, format_booking_datetime
-from components.avatar_uploader import render_avatar_management
+from components.avatar_uploader import render_avatar_management, normalize_avatar_url
 
 
 def render_student_page(user: Dict[str, Any]):
@@ -17,7 +17,7 @@ def render_student_page(user: Dict[str, Any]):
     email = user.get("email", "")
     phone = user.get("phone", "Chưa cập nhật")
     status = user.get("status", "ACTIVE")
-    avatar_url = user.get("avatarUrl")
+    avatar_url = normalize_avatar_url(user.get("avatarUrl"))
 
     # Tải dữ liệu Ví & Danh sách hợp đồng
     wallet_data: Dict[str, Any] = {}
@@ -204,7 +204,7 @@ def render_student_page(user: Dict[str, Any]):
                 with st.container(border=True):
                     col_p1, col_p2 = st.columns([1, 3])
                     with col_p1:
-                        avatar = pt_profile.get("avatarUrl") or "https://api.dicebear.com/7.x/avataaars/svg?seed=" + pt_profile.get("fullName", "").replace(" ", "")
+                        avatar = normalize_avatar_url(pt_profile.get("avatarUrl")) or "https://api.dicebear.com/7.x/avataaars/svg?seed=" + pt_profile.get("fullName", "").replace(" ", "")
                         st.image(avatar, width=130)
                     with col_p2:
                         st.markdown(f"### {pt_profile.get('fullName')}")
@@ -214,6 +214,15 @@ def render_student_page(user: Dict[str, Any]):
                         )
                         st.markdown(f"**Giới thiệu:** {pt_profile.get('bio') or 'Chưa có tiểu sử.'}")
                         st.markdown(f"**Khu vực nhận dạy:** `{pt_profile.get('availableLocations')}`")
+                        pt_phone = pt_profile.get("phone")
+                        pt_email = pt_profile.get("email")
+                        contacts = []
+                        if pt_phone:
+                            contacts.append(f"📞 **SĐT / Zalo:** `{pt_phone}`")
+                        if pt_email:
+                            contacts.append(f"✉️ **Email:** `{pt_email}`")
+                        if contacts:
+                            st.markdown(" • ".join(contacts))
                         if pt_profile.get("locationPricingNote"):
                             st.caption(f"*Chính sách giá/di chuyển:* {pt_profile.get('locationPricingNote')}")
 
@@ -246,56 +255,70 @@ def render_student_page(user: Dict[str, Any]):
                             with col_c_buy:
                                 st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
                                 with st.expander("Mua Gói Tập Này", expanded=False):
-                                    st.markdown(f"**Học phí thanh toán:** `{format_currency_vnd(c_price)}`")
-                                    st.markdown(f"**Số dư ví hiện tại:** `{format_currency_vnd(wallet_balance)}`")
-
-                                    has_enough_money = (float(wallet_balance) >= float(c_price))
-
-                                    if not has_enough_money:
-                                        shortage = float(c_price) - float(wallet_balance)
-                                        st.error(f"Số dư ví không đủ! Cần thêm `{format_currency_vnd(shortage)}`.")
-                                        if st.button("Nạp tiền ngay vào ví", key=f"btn_go_wallet_{c_id}"):
-                                            st.session_state["student_active_tab"] = NAV_WALLET
-                                            st.rerun()
-                                    else:
-                                        st.success("Bạn đủ số dư ví để thanh toán gói tập này.")
-
-                                    loc_suggestions = [loc.strip() for loc in pt_profile.get("availableLocations", "").split(";") if loc.strip()]
-                                    loc_options = loc_suggestions + ["Địa điểm khác (tự nhập)"]
-
-                                    chosen_loc_type = st.selectbox(
-                                        "Chọn địa điểm tập luyện cố định:",
-                                        loc_options,
-                                        key=f"loc_select_{c_id}"
+                                    existing_active_enroll = next(
+                                        (e for e in my_enrollments if e.get("courseId") == c_id and e.get("status") == "ACTIVE" and e.get("remainingSessions", 0) > 0),
+                                        None
                                     )
 
-                                    if chosen_loc_type == "Địa điểm khác (tự nhập)":
-                                        training_location = st.text_input(
-                                            "Nhập địa điểm chi tiết:",
-                                            placeholder="Ví dụ: Phòng tập FitZone số 12 Cầu Giấy",
-                                            key=f"loc_custom_{c_id}"
+                                    if existing_active_enroll:
+                                        rem_s = existing_active_enroll.get("remainingSessions", 0)
+                                        tot_s = existing_active_enroll.get("totalSessions", c_sessions)
+                                        st.warning(
+                                            f"⚠️ **Bạn đang theo học khóa này:** Hợp đồng hiện tại còn **{rem_s}/{tot_s} buổi** chưa hoàn thành. "
+                                            f"Theo quy định, bạn chỉ có thể đăng ký tiếp khóa học này sau khi đã tập xong toàn bộ {tot_s}/{tot_s} buổi."
                                         )
+                                        st.button("Đang Theo Học (Không Thể Mua Trùng)", key=f"btn_confirm_buy_{c_id}", disabled=True)
                                     else:
-                                        training_location = chosen_loc_type
+                                        st.markdown(f"**Học phí thanh toán:** `{format_currency_vnd(c_price)}`")
+                                        st.markdown(f"**Số dư ví hiện tại:** `{format_currency_vnd(wallet_balance)}`")
 
-                                    if st.button("Xác Nhận Thanh Toán & Ký Hợp Đồng", key=f"btn_confirm_buy_{c_id}", type="primary", disabled=not has_enough_money):
-                                        if not training_location or not training_location.strip():
-                                            st.error("Vui lòng chọn hoặc nhập địa điểm tập luyện cố định.")
+                                        has_enough_money = (float(wallet_balance) >= float(c_price))
+
+                                        if not has_enough_money:
+                                            shortage = float(c_price) - float(wallet_balance)
+                                            st.error(f"Số dư ví không đủ! Cần thêm `{format_currency_vnd(shortage)}`.")
+                                            if st.button("Nạp tiền ngay vào ví", key=f"btn_go_wallet_{c_id}"):
+                                                st.session_state["student_active_tab"] = NAV_WALLET
+                                                st.rerun()
                                         else:
-                                            with st.spinner("Đang thực hiện giao dịch nguyên tử trừ ví & sinh hợp đồng PDF..."):
-                                                try:
-                                                    enroll_res = StudentApi.purchase_course(
-                                                        course_id=c_id,
-                                                        training_location=training_location.strip(),
-                                                        payment_method="WALLET"
-                                                    )
-                                                    st.success(f"Chúc mừng bạn đã mua khóa học thành công! Mã hợp đồng: PTC-HD-{enroll_res.get('id'):06d}")
-                                                    st.session_state["student_active_tab"] = NAV_COURSES
-                                                    st.rerun()
-                                                except ApiException as e:
-                                                    st.error(f"Mua khóa học thất bại [{e.status_code}]: {e.message}")
-                                                except Exception as ex:
-                                                    st.error(f"Lỗi: {str(ex)}")
+                                            st.success("Bạn đủ số dư ví để thanh toán gói tập này.")
+
+                                        loc_suggestions = [loc.strip() for loc in pt_profile.get("availableLocations", "").split(";") if loc.strip()]
+                                        loc_options = loc_suggestions + ["Địa điểm khác (tự nhập)"]
+
+                                        chosen_loc_type = st.selectbox(
+                                            "Chọn địa điểm tập luyện cố định:",
+                                            loc_options,
+                                            key=f"loc_select_{c_id}"
+                                        )
+
+                                        if chosen_loc_type == "Địa điểm khác (tự nhập)":
+                                            training_location = st.text_input(
+                                                "Nhập địa điểm chi tiết:",
+                                                placeholder="Ví dụ: Phòng tập FitZone số 12 Cầu Giấy",
+                                                key=f"loc_custom_{c_id}"
+                                            )
+                                        else:
+                                            training_location = chosen_loc_type
+
+                                        if st.button("Xác Nhận Thanh Toán & Ký Hợp Đồng", key=f"btn_confirm_buy_{c_id}", type="primary", disabled=not has_enough_money):
+                                            if not training_location or not training_location.strip():
+                                                st.error("Vui lòng chọn hoặc nhập địa điểm tập luyện cố định.")
+                                            else:
+                                                with st.spinner("Đang thực hiện giao dịch nguyên tử trừ ví & sinh hợp đồng PDF..."):
+                                                    try:
+                                                        enroll_res = StudentApi.purchase_course(
+                                                            course_id=c_id,
+                                                            training_location=training_location.strip(),
+                                                            payment_method="WALLET"
+                                                        )
+                                                        st.success(f"Chúc mừng bạn đã mua khóa học thành công! Mã hợp đồng: PTC-HD-{enroll_res.get('id'):06d}")
+                                                        st.session_state["student_active_tab"] = NAV_COURSES
+                                                        st.rerun()
+                                                    except ApiException as e:
+                                                        st.error(f"Mua khóa học thất bại [{e.status_code}]: {e.message}")
+                                                    except Exception as ex:
+                                                        st.error(f"Lỗi: {str(ex)}")
 
                 st.markdown("---")
 
@@ -303,7 +326,13 @@ def render_student_page(user: Dict[str, Any]):
                 st.markdown(f"#### Khung Giờ Rảnh Khả Dụng Trong Tương Lai ({len(pt_slots)})")
                 st.caption("Chỉ hiển thị các slot ở trạng thái AVAILABLE và chưa bắt đầu.")
                 if not pt_slots:
-                    st.info("Huấn luyện viên chưa mở khung giờ rảnh nào sắp tới.")
+                    contact_parts = []
+                    if pt_profile.get("phone"):
+                        contact_parts.append(f"📞 SĐT/Zalo: `{pt_profile.get('phone')}`")
+                    if pt_profile.get("email"):
+                        contact_parts.append(f"✉️ Email: `{pt_profile.get('email')}`")
+                    contact_text = f" qua {' hoặc '.join(contact_parts)}" if contact_parts else ""
+                    st.info(f"Huấn luyện viên hiện chưa mở khung giờ rảnh nào sắp tới. Vui lòng liên hệ HLV{contact_text} để mở lịch tập.")
                 else:
                     slots_data = []
                     for s in pt_slots:
@@ -382,7 +411,21 @@ def render_student_page(user: Dict[str, Any]):
                     st.error(f"Lỗi tải khung giờ trống của HLV: {str(ex)}")
 
                 if not slots:
-                    st.info(f"Huấn luyện viên **{chosen_enroll.get('ptName')}** hiện chưa mở khung giờ trống nào trong tương lai. Vui lòng liên hệ HLV để mở thêm lịch.")
+                    pt_phone = None
+                    pt_email = None
+                    try:
+                        p_info = StudentApi.get_pt_profile(pt_id)
+                        pt_phone = p_info.get("phone")
+                        pt_email = p_info.get("email")
+                    except Exception:
+                        pass
+                    contact_parts = []
+                    if pt_phone:
+                        contact_parts.append(f"📞 Hotline/Zalo: **{pt_phone}**")
+                    if pt_email:
+                        contact_parts.append(f"✉️ Email: **{pt_email}**")
+                    contact_text = f" qua {' hoặc '.join(contact_parts)}" if contact_parts else ""
+                    st.info(f"Huấn luyện viên **{chosen_enroll.get('ptName')}** hiện chưa mở khung giờ trống nào trong tương lai. Vui lòng liên hệ HLV{contact_text} để mở thêm lịch.")
                 else:
                     slot_map = {
                         s["id"]: f"Slot #{s['id']} | {format_booking_datetime(s.get('startTime'))} - {format_booking_datetime(s.get('endTime'))}"
@@ -454,7 +497,13 @@ def render_student_page(user: Dict[str, Any]):
                     st.error(f"Lỗi: {str(ex)}")
 
                 if not slots:
-                    st.info(f"Huấn luyện viên **{chosen_pt.get('fullName')}** chưa mở khung giờ trống nào.")
+                    contact_parts = []
+                    if chosen_pt.get("phone"):
+                        contact_parts.append(f"📞 Hotline/Zalo: **{chosen_pt.get('phone')}**")
+                    if chosen_pt.get("email"):
+                        contact_parts.append(f"✉️ Email: **{chosen_pt.get('email')}**")
+                    contact_text = f" qua {' hoặc '.join(contact_parts)}" if contact_parts else ""
+                    st.info(f"Huấn luyện viên **{chosen_pt.get('fullName')}** chưa mở khung giờ trống nào. Vui lòng liên hệ HLV{contact_text} để được hỗ trợ mở lịch.")
                 else:
                     slot_map = {
                         s["id"]: f"Slot #{s['id']} | {format_booking_datetime(s.get('startTime'))} - {format_booking_datetime(s.get('endTime'))}"

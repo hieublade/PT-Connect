@@ -49,6 +49,23 @@ public class EnrollmentServiceImpl implements IEnrollmentService {
             throw new BadRequestException("Khóa học hiện không còn mở bán");
         }
 
+        // Kiểm tra học viên có đang theo học khóa này không (chưa hoàn thành hết số buổi)
+        List<Enrollment> existingActiveEnrollments = enrollmentRepository
+                .findByStudentIdAndCourseIdAndStatus(student.getId(), course.getId(), EnrollmentStatus.ACTIVE);
+        Enrollment activeEnrollment = existingActiveEnrollments.stream()
+                .filter(e -> e.getRemainingSessions() != null && e.getRemainingSessions() > 0)
+                .findFirst()
+                .orElse(null);
+
+        if (activeEnrollment != null) {
+            int rem = activeEnrollment.getRemainingSessions();
+            int tot = activeEnrollment.getTotalSessions();
+            log.warn("Học viên {} cố gắng đăng ký trùng khóa học ID {} khi còn {}/{} buổi",
+                    studentEmail, course.getId(), rem, tot);
+            throw new BadRequestException("Bạn đang có một hợp đồng cho khóa học này còn hiệu lực (còn "
+                    + rem + "/" + tot + " buổi chưa hoàn thành). Vui lòng hoàn thành toàn bộ buổi tập trước khi đăng ký tiếp!");
+        }
+
         if (request.getTrainingLocation() == null || request.getTrainingLocation().trim().isEmpty()) {
             throw new BadRequestException("Địa điểm tập luyện cố định không được để trống");
         }

@@ -14,6 +14,16 @@ def ensure_avatar_dir():
     AVATAR_STATIC_DIR.mkdir(parents=True, exist_ok=True)
 
 
+def normalize_avatar_url(avatar_url: str | None) -> str | None:
+    """Chuẩn hóa avatar_url về relative URL nếu là ảnh tĩnh cục bộ để tương thích cả localhost lẫn domain/ngrok."""
+    if not avatar_url:
+        return None
+    if "app/static/avatars/" in avatar_url:
+        fname = avatar_url.split("app/static/avatars/")[-1]
+        return f"/app/static/avatars/{fname}"
+    return avatar_url
+
+
 def get_local_avatar_file(avatar_url: str) -> Path | None:
     """Kiểm tra nếu avatar_url là đường dẫn tĩnh cục bộ và trả về file path."""
     if not avatar_url:
@@ -87,7 +97,10 @@ def render_avatar_management(user: Dict[str, Any], user_role: str = "STUDENT") -
                 if uploaded_file is not None:
                     col_file_prev, col_file_btn = st.columns([1, 2])
                     with col_file_prev:
-                        st.image(uploaded_file, width=100, caption="Ảnh vừa chọn")
+                        try:
+                            st.image(uploaded_file, width=100, caption="Ảnh vừa chọn")
+                        except Exception:
+                            st.error("Tệp không hợp lệ!")
                     with col_file_btn:
                         st.markdown(f"**Tệp:** `{uploaded_file.name}` ({round(uploaded_file.size / 1024, 1)} KB)")
                         if st.button("Lưu Ảnh Tải Lên Làm Avatar", key=f"btn_save_uploaded_{user_role}", type="primary"):
@@ -97,8 +110,8 @@ def render_avatar_management(user: Dict[str, Any], user_role: str = "STUDENT") -
                                 target_path = AVATAR_STATIC_DIR / safe_filename
                                 target_path.write_bytes(uploaded_file.getbuffer())
 
-                                # Tạo đường link tĩnh phục vụ bởi Streamlit
-                                final_avatar_url = f"http://localhost:8501/app/static/avatars/{safe_filename}"
+                                # Tạo đường link tĩnh phục vụ bởi Streamlit (dạng relative URL để tương thích cả localhost, ngrok và domain)
+                                final_avatar_url = f"/app/static/avatars/{safe_filename}"
                                 AuthApi.update_avatar(final_avatar_url)
 
                                 st.success("Đã cập nhật ảnh đại diện từ máy tính thành công!")
