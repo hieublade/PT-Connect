@@ -171,7 +171,7 @@ docker compose up -d --build
 ```
 
 **Quá trình tự động diễn ra:**
-1. **Container `ptconnect-mysql` (MySQL 8.0):** Tải image MySQL, cấu hình bảng mã tiếng Việt `utf8mb4_unicode_ci`, tự động nạp toàn bộ cấu trúc Schema (`init.sql`), bộ Trigger nghiệp vụ (`02_trigger.sql`) và dữ liệu mẫu (`seed_demo.sql`).
+1. **Container `ptconnect-mysql` (MySQL 8.0):** Tải image MySQL, cấu hình bảng mã tiếng Việt `utf8mb4_unicode_ci`, tự động nạp cấu trúc Schema (`01_init.sql`) và bộ Trigger nghiệp vụ (`02_trigger.sql`). Dữ liệu mẫu demo mở rộng (`seed_demo.sql`) có thể nạp riêng khi cần.
 2. **Container `ptconnect-backend` (Spring Boot 3.3.4):** Chạy quy trình Multi-stage build (tải dependencies Maven, biên dịch source code Java 17 thành file `app.jar` và chạy trên nền Java Runtime nhẹ). Container tự động chờ MySQL hoàn toàn **Healthy** mới khởi động.
 3. **Container `ptconnect-frontend` (Streamlit Python 3.11):** Cài đặt các thư viện trực quan hóa dữ liệu và kết nối an toàn tới Backend.
 
@@ -226,7 +226,16 @@ Sau khi mở giao diện tại [http://localhost:8501](http://localhost:8501), b
 
 Hệ thống có sẵn script Python độc lập tự động sinh dữ liệu thực tế, chuẩn ràng buộc Foreign Key và giữ nguyên 100% font tiếng Việt có dấu.
 
-Nếu bạn muốn tạo lại bộ dữ liệu mới:
+Nếu bạn muốn nạp bộ dữ liệu demo đầy đủ có sẵn:
+```bash
+# Trên Windows PowerShell:
+Get-Content ./database/seed_demo.sql -Encoding UTF8 | docker exec -i ptconnect-mysql mysql -uroot -proot123 --default-character-set=utf8mb4 ptconnect
+
+# Trên Linux / macOS / Git Bash:
+docker exec -i ptconnect-mysql mysql -uroot -proot123 ptconnect < database/seed_demo.sql
+```
+
+Hoặc sinh lại một bộ dữ liệu hoàn toàn mới bằng script Python:
 ```bash
 python frontend/tools/generate_data.py
 ```
