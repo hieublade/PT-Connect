@@ -212,20 +212,31 @@ def render_pt_page(user: Dict[str, Any]):
         st.subheader("Quản Lý Khung Giờ Rảnh (Availability Slots)")
         st.caption("Mở các khung giờ trống để học viên có thể đăng ký đặt lịch tập luyện.")
 
-        with st.expander("Thêm Khung Giờ Rảnh Mới", expanded=False):
+        with st.expander("Thêm Khung Giờ Rảnh Mới", expanded=True):
             with st.form("form_create_slot"):
                 st.markdown("**Chọn ngày và khoảng thời gian khả dụng:**")
                 col_d, col_st, col_et = st.columns(3)
+
+                time_options = [
+                    f"{h:02d}:{m:02d}"
+                    for h in range(5, 24)
+                    for m in (0, 15, 30, 45)
+                ]
+
                 with col_d:
-                    s_date = st.date_input("Ngày rảnh:", min_value=date.today(), value=date.today() + timedelta(days=1))
+                    s_date = st.date_input("Ngày rảnh:", min_value=date.today(), value=date.today() + timedelta(days=1), key="slot_date_input")
                 with col_st:
-                    s_start_time = st.time_input("Giờ bắt đầu:", value=time(9, 0))
+                    def_start_idx = time_options.index("09:00") if "09:00" in time_options else 0
+                    s_start_str = st.selectbox("Giờ bắt đầu:", options=time_options, index=def_start_idx, key="slot_start_select")
                 with col_et:
-                    s_end_time = st.time_input("Giờ kết thúc:", value=time(10, 30))
+                    def_end_idx = time_options.index("10:30") if "10:30" in time_options else 0
+                    s_end_str = st.selectbox("Giờ kết thúc:", options=time_options, index=def_end_idx, key="slot_end_select")
 
                 btn_add_slot = st.form_submit_button("Mở Khung Giờ", type="primary", use_container_width=True)
 
                 if btn_add_slot:
+                    s_start_time = datetime.strptime(s_start_str, "%H:%M").time()
+                    s_end_time = datetime.strptime(s_end_str, "%H:%M").time()
                     dt_start = datetime.combine(s_date, s_start_time)
                     dt_end = datetime.combine(s_date, s_end_time)
 
@@ -236,7 +247,7 @@ def render_pt_page(user: Dict[str, Any]):
                     else:
                         try:
                             PTApi.create_slot(dt_start.isoformat(), dt_end.isoformat())
-                            st.success("Mở khung giờ rảnh thành công!")
+                            st.success(f"Mở khung giờ rảnh {s_start_str} - {s_end_str} ({s_date.strftime('%d/%m/%Y')}) thành công!")
                             st.rerun()
                         except ApiException as e:
                             st.error(f"Lỗi mở slot [{e.status_code}]: {e.message}")

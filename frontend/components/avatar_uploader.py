@@ -97,7 +97,10 @@ def render_avatar_management(user: Dict[str, Any], user_role: str = "STUDENT") -
                 if uploaded_file is not None:
                     col_file_prev, col_file_btn = st.columns([1, 2])
                     with col_file_prev:
-                        st.image(uploaded_file, width=100, caption="Ảnh vừa chọn")
+                        try:
+                            st.image(uploaded_file, width=100, caption="Ảnh vừa chọn")
+                        except Exception:
+                            st.error("Tệp không hợp lệ!")
                     with col_file_btn:
                         st.markdown(f"**Tệp:** `{uploaded_file.name}` ({round(uploaded_file.size / 1024, 1)} KB)")
                         if st.button("Lưu Ảnh Tải Lên Làm Avatar", key=f"btn_save_uploaded_{user_role}", type="primary"):
