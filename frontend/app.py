@@ -8,7 +8,6 @@ from pages.student import render_student_page
 # Cấu hình trang Streamlit
 st.set_page_config(
     page_title="PT Connect - Nền tảng kết nối Huấn luyện viên cá nhân",
-    page_icon="🏋️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -57,7 +56,6 @@ def render_sidebar(user: dict):
         st.markdown(
             """
             <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 1.2rem;">
-                <span style="font-size: 2.2rem;">🏋️</span>
                 <div>
                     <h3 style="margin: 0; font-size: 1.25rem; font-weight: 700; color: #FF4B4B;">PT Connect</h3>
                 </div>
@@ -78,9 +76,9 @@ def render_sidebar(user: dict):
         }.get(role, "role-student")
 
         role_display = {
-            "STUDENT": "👨‍🎓 Học viên",
-            "PT": "🏋️ Huấn luyện viên",
-            "ADMIN": "👑 Quản trị viên"
+            "STUDENT": "Học viên",
+            "PT": "Huấn luyện viên",
+            "ADMIN": "Quản trị viên"
         }.get(role, role)
 
         with st.container(border=True):
@@ -92,9 +90,9 @@ def render_sidebar(user: dict):
         st.markdown("---")
 
         # Nút đăng xuất tài khoản
-        if st.button("🚪 Đăng xuất", use_container_width=True, type="secondary"):
+        if st.button("Đăng xuất", use_container_width=True, type="secondary"):
             clear_auth_session()
-            st.toast("Đã đăng xuất thành công!", icon="👋")
+            st.toast("Đã đăng xuất thành công!")
             st.rerun()
 
 

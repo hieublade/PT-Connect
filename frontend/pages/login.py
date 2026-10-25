@@ -10,12 +10,6 @@ def is_valid_email(email: str) -> bool:
     return bool(re.match(pattern, email.strip())) if email else False
 
 
-def set_demo_credentials(email: str, password: str):
-    """Callback gán nhanh thông tin tài khoản mẫu vào session_state."""
-    st.session_state["demo_login_email"] = email
-    st.session_state["demo_login_password"] = password
-
-
 def render_login_page():
     """Hiển thị giao diện Đăng nhập và Đăng ký tài khoản (Milestone 3)."""
 
@@ -27,7 +21,7 @@ def render_login_page():
         st.markdown(
             """
             <div style="text-align: center; margin-bottom: 2rem;">
-                <h1 style="font-size: 2.6rem; margin-bottom: 0.3rem;">🏋️ PT Connect</h1>
+                <h1 style="font-size: 2.6rem; margin-bottom: 0.3rem;">PT Connect</h1>
                 <p style="color: #6c757d; font-size: 1.05rem; margin-top: 0;">
                     Nền tảng kết nối Học viên & Huấn luyện viên cá nhân chuyên nghiệp
                 </p>
@@ -37,7 +31,7 @@ def render_login_page():
         )
 
         # Tab Đăng nhập và Đăng ký
-        tab_login, tab_register = st.tabs(["🔑 Đăng nhập", "📝 Đăng ký tài khoản"])
+        tab_login, tab_register = st.tabs(["Đăng nhập", "Đăng ký tài khoản"])
 
         # =====================================================================
         # TAB 1: ĐĂNG NHẬP (LOGIN)
@@ -46,34 +40,28 @@ def render_login_page():
             st.markdown("#### Đăng nhập vào hệ thống")
             st.caption("Nhập email và mật khẩu của bạn để tiếp tục.")
 
-            # Lấy thông tin demo nếu có
-            default_email = st.session_state.get("demo_login_email", "")
-            default_password = st.session_state.get("demo_login_password", "")
-
             with st.form("form_login", clear_on_submit=False):
                 email = st.text_input(
                     "Email đăng nhập",
-                    value=default_email,
                     placeholder="example@ptconnect.vn"
                 )
                 password = st.text_input(
                     "Mật khẩu",
-                    value=default_password,
                     type="password",
                     placeholder="Nhập mật khẩu của bạn"
                 )
 
                 submit_login = st.form_submit_button(
-                    "🚀 Đăng nhập",
+                    "Đăng nhập",
                     use_container_width=True,
                     type="primary"
                 )
 
                 if submit_login:
                     if not email.strip():
-                        st.error("⚠️ Vui lòng nhập địa chỉ Email.")
+                        st.error("Vui lòng nhập địa chỉ Email.")
                     elif not password:
-                        st.error("⚠️ Vui lòng nhập Mật khẩu.")
+                        st.error("Vui lòng nhập Mật khẩu.")
                     else:
                         with st.spinner("Đang xác thực thông tin..."):
                             try:
@@ -83,40 +71,17 @@ def render_login_page():
                                 full_name = user.get("fullName", email)
                                 role = user.get("role", "STUDENT")
 
-                                st.toast(f"Đăng nhập thành công! Chào mừng {full_name} ({role}).", icon="🎉")
+                                st.toast(f"Đăng nhập thành công! Chào mừng {full_name} ({role}).")
                                 st.rerun()
                             except ApiException as e:
                                 if e.status_code == 401:
-                                    st.error("❌ Email hoặc mật khẩu không chính xác.")
+                                    st.error("Email hoặc mật khẩu không chính xác.")
                                 elif e.status_code == 403:
-                                    st.error("⛔ Tài khoản của bạn hiện đang bị khóa hoặc chưa được cấp quyền truy cập.")
+                                    st.error("Tài khoản của bạn hiện đang bị khóa hoặc chưa được cấp quyền truy cập.")
                                 else:
-                                    st.error(f"❌ {e.message}")
+                                    st.error(f"{e.message}")
                             except Exception as ex:
-                                st.error(f"❌ Lỗi kết nối: {str(ex)}")
-
-            # Gợi ý tài khoản demo kiểm thử
-            with st.expander("💡 Tài khoản mẫu để kiểm thử nhanh (Demo Accounts)"):
-                st.caption("Bấm nút bên dưới để tự động điền tài khoản mẫu có sẵn trong database (Mật khẩu: **Password123@**):")
-                c1, c2, c3 = st.columns(3)
-                c1.button(
-                    "👨‍🎓 Học viên (Student A)",
-                    on_click=set_demo_credentials,
-                    args=("student.a@ptconnect.vn", "Password123@"),
-                    use_container_width=True
-                )
-                c2.button(
-                    "🏋️ PT (Hoàng C)",
-                    on_click=set_demo_credentials,
-                    args=("pt.hoangc@ptconnect.vn", "Password123@"),
-                    use_container_width=True
-                )
-                c3.button(
-                    "👑 Quản trị viên (Admin)",
-                    on_click=set_demo_credentials,
-                    args=("admin@ptconnect.vn", "Password123@"),
-                    use_container_width=True
-                )
+                                st.error(f"Lỗi kết nối: {str(ex)}")
 
         # =====================================================================
         # TAB 2: ĐĂNG KÝ (REGISTER)
@@ -128,7 +93,7 @@ def render_login_page():
             role_choice = st.radio(
                 "Bạn muốn đăng ký với vai trò gì?",
                 options=["STUDENT", "PT"],
-                format_func=lambda x: "👨‍🎓 Học viên (Student)" if x == "STUDENT" else "🏋️ Huấn luyện viên cá nhân (PT)",
+                format_func=lambda x: "Học viên (Student)" if x == "STUDENT" else "Huấn luyện viên cá nhân (PT)",
                 horizontal=True
             )
 
@@ -156,7 +121,7 @@ def render_login_page():
 
                 if role_choice == "PT":
                     st.markdown("---")
-                    st.markdown("##### 🏋️ Thông tin hồ sơ Huấn luyện viên (PT)")
+                    st.markdown("##### Thông tin hồ sơ Huấn luyện viên (PT)")
                     reg_exp = st.number_input(
                         "Số năm kinh nghiệm *",
                         min_value=0,
@@ -180,10 +145,10 @@ def render_login_page():
                         "Đường dẫn chứng chỉ / Bằng cấp (tùy chọn)",
                         placeholder="https://example.com/certificate-pt.pdf"
                     )
-                    st.info("ℹ️ **Lưu ý:** Hồ sơ Huấn luyện viên mới đăng ký sẽ ở trạng thái **PENDING** và cần được Quản trị viên (Admin) duyệt trước khi mở bán khóa học.")
+                    st.info("**Lưu ý:** Hồ sơ Huấn luyện viên mới đăng ký sẽ ở trạng thái **PENDING** và cần được Quản trị viên (Admin) duyệt trước khi mở bán khóa học.")
 
                 submit_register = st.form_submit_button(
-                    "✨ Hoàn tất đăng ký",
+                    "Hoàn tất đăng ký",
                     use_container_width=True,
                     type="primary"
                 )
@@ -191,17 +156,17 @@ def render_login_page():
                 if submit_register:
                     # Client-side validation
                     if not reg_name.strip():
-                        st.error("⚠️ Vui lòng nhập Họ và tên.")
+                        st.error("Vui lòng nhập Họ và tên.")
                     elif not reg_phone.strip():
-                        st.error("⚠️ Vui lòng nhập Số điện thoại.")
+                        st.error("Vui lòng nhập Số điện thoại.")
                     elif not is_valid_email(reg_email):
-                        st.error("⚠️ Địa chỉ Email không đúng định dạng.")
+                        st.error("Địa chỉ Email không đúng định dạng.")
                     elif len(reg_pwd) < 6:
-                        st.error("⚠️ Mật khẩu phải có độ dài tối thiểu 6 ký tự.")
+                        st.error("Mật khẩu phải có độ dài tối thiểu 6 ký tự.")
                     elif reg_pwd != reg_confirm:
-                        st.error("⚠️ Mật khẩu xác nhận không trùng khớp.")
+                        st.error("Mật khẩu xác nhận không trùng khớp.")
                     elif role_choice == "PT" and not reg_locations.strip():
-                        st.error("⚠️ Huấn luyện viên vui lòng nhập Khu vực nhận dạy.")
+                        st.error("Huấn luyện viên vui lòng nhập Khu vực nhận dạy.")
                     else:
                         payload = {
                             "fullName": reg_name.strip(),
@@ -221,11 +186,11 @@ def render_login_page():
                                 auth_data = AuthApi.register(payload)
                                 save_auth_session(auth_data)
                                 if role_choice == "PT":
-                                    st.toast("🎉 Đăng ký Huấn luyện viên thành công! Hồ sơ đang chờ Admin duyệt.", icon="🏋️")
+                                    st.toast("Đăng ký Huấn luyện viên thành công! Hồ sơ đang chờ Admin duyệt.")
                                 else:
-                                    st.toast("🎉 Đăng ký tài khoản thành công! Ví điện tử 0đ đã được kích hoạt.", icon="✅")
+                                    st.toast("Đăng ký tài khoản thành công! Ví điện tử 0đ đã được kích hoạt.")
                                 st.rerun()
                             except ApiException as e:
-                                st.error(f"❌ {e.message}")
+                                st.error(f"{e.message}")
                             except Exception as ex:
-                                st.error(f"❌ Lỗi đăng ký: {str(ex)}")
+                                st.error(f"Lỗi đăng ký: {str(ex)}")
