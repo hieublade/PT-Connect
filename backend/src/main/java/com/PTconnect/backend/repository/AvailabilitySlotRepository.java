@@ -18,10 +18,6 @@ public interface AvailabilitySlotRepository extends JpaRepository<AvailabilitySl
 
     List<AvailabilitySlot> findByPtIdOrderByStartTimeAsc(Long ptId);
 
-    List<AvailabilitySlot> findByPtIdAndStatusOrderByStartTimeAsc(Long ptId, SlotStatus status);
-
-    boolean existsByPtIdAndStartTime(Long ptId, LocalDateTime startTime);
-
     // Kiểm tra trùng/chồng thời gian khi tạo hoặc cập nhật slot
     @Query("SELECT s FROM AvailabilitySlot s WHERE s.pt.id = :ptId " +
            "AND (:excludeId IS NULL OR s.id != :excludeId) " +

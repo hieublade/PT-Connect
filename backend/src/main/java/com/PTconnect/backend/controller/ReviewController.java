@@ -2,10 +2,9 @@ package com.PTconnect.backend.controller;
 
 import com.PTconnect.backend.dto.request.CreateReviewRequest;
 import com.PTconnect.backend.dto.response.ReviewResponse;
-import com.PTconnect.backend.entity.User;
-import com.PTconnect.backend.exception.UnauthorizedException;
 import com.PTconnect.backend.service.IReviewService;
 import com.PTconnect.backend.util.ApiResponse;
+import com.PTconnect.backend.util.SecurityUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -26,20 +25,6 @@ public class ReviewController {
 
     private final IReviewService reviewService;
 
-    private String getCurrentUserEmail(Authentication auth) {
-        if (auth == null || !auth.isAuthenticated()) {
-            throw new UnauthorizedException("Chưa đăng nhập");
-        }
-        Object principal = auth.getPrincipal();
-        if (principal instanceof User user) {
-            return user.getEmail();
-        }
-        if (principal instanceof String email) {
-            return email;
-        }
-        return auth.getName();
-    }
-
     /**
      * Học viên tạo đánh giá cho ca tập đã hoàn thành (POST /api/v1/reviews)
      */
@@ -47,7 +32,7 @@ public class ReviewController {
     public ResponseEntity<ApiResponse<ReviewResponse>> createReview(
             Authentication authentication,
             @Valid @RequestBody CreateReviewRequest request) {
-        String studentEmail = getCurrentUserEmail(authentication);
+        String studentEmail = SecurityUtils.getCurrentUserEmail(authentication);
         ReviewResponse response = reviewService.createReview(studentEmail, request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.created("Gửi đánh giá Huấn luyện viên thành công! Cảm ơn bạn đã phản hồi.", response));
@@ -67,7 +52,7 @@ public class ReviewController {
      */
     @GetMapping("/my")
     public ResponseEntity<ApiResponse<List<ReviewResponse>>> getMyReviews(Authentication authentication) {
-        String studentEmail = getCurrentUserEmail(authentication);
+        String studentEmail = SecurityUtils.getCurrentUserEmail(authentication);
         List<ReviewResponse> reviews = reviewService.getMyReviews(studentEmail);
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách đánh giá của tôi thành công", reviews));
     }

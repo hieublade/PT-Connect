@@ -29,12 +29,6 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(HttpStatus.CONFLICT.value(), "Khung giờ này vừa có người khác đặt trước hoặc xung đột dữ liệu!"));
     }
 
-    @ExceptionHandler(InvalidBookingException.class)
-    public ResponseEntity<ApiResponse<Object>> handleInvalidBookingException(InvalidBookingException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(HttpStatus.BAD_REQUEST.value(), ex.getMessage()));
-    }
-
     @ExceptionHandler(InsufficientBalanceException.class)
     public ResponseEntity<ApiResponse<Object>> handleInsufficientBalanceException(InsufficientBalanceException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -55,6 +49,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiResponse<Object>> handleIllegalArgumentException(IllegalArgumentException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(HttpStatus.BAD_REQUEST.value(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ApiResponse<Object>> handleIllegalStateException(IllegalStateException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ApiResponse.error(HttpStatus.BAD_REQUEST.value(), ex.getMessage()));
     }

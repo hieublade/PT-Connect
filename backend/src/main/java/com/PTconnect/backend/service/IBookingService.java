@@ -12,8 +12,6 @@ import java.util.List;
  */
 public interface IBookingService {
 
-    boolean canBookSlot(Long slotId, Long studentId);
-
     void validateBookingRequest(Long slotId, Long studentId, Long enrollmentId);
 
     BookingResponse createBooking(String studentEmail, CreateBookingRequest request);

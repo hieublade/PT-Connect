@@ -2,7 +2,6 @@ package com.PTconnect.backend.service;
 
 import com.PTconnect.backend.dto.request.CreateWorkoutPlanRequest;
 import com.PTconnect.backend.dto.request.CreateWorkoutRequest;
-import com.PTconnect.backend.dto.response.EnrollmentResponse;
 import com.PTconnect.backend.dto.response.WorkoutPlanResponse;
 import com.PTconnect.backend.dto.response.WorkoutResponse;
 
@@ -17,8 +16,6 @@ public interface IWorkoutPlanService {
     List<WorkoutPlanResponse> getPlansByEnrollment(String userEmail, Long enrollmentId);
 
     List<WorkoutPlanResponse> getPlansByPt(String ptEmail);
-
-    List<EnrollmentResponse> getPtEnrollments(String ptEmail);
 
     void deletePlan(String ptEmail, Long planId);
 

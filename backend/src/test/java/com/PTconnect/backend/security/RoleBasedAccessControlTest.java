@@ -5,10 +5,12 @@ import com.PTconnect.backend.config.JwtUtil;
 import com.PTconnect.backend.config.SecurityConfig;
 import com.PTconnect.backend.controller.AdminController;
 import com.PTconnect.backend.controller.PTController;
+import com.PTconnect.backend.controller.PTProfileController;
 import com.PTconnect.backend.controller.PublicController;
 import com.PTconnect.backend.controller.StudentController;
 import com.PTconnect.backend.service.IAdminPTService;
 import com.PTconnect.backend.service.IAdminStatisticsService;
+import com.PTconnect.backend.service.IPTProfileService;
 import com.PTconnect.backend.service.IPTService;
 import com.PTconnect.backend.service.IUserService;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,21 +29,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * Ma trận phân quyền Role × API (Milestone 3 - Huy).
- *
- * <p>Ma trận kiểm tra:</p>
- * <pre>
- *   Role        | /api/public/health | /api/student/dashboard | /api/pt/courses | /api/admin/users
- *   ------------+--------------------+------------------------+-----------------+------------------
- *   Anonymous   |      200 OK        |    401 Unauthorized    | 401 Unauth      | 401 Unauth
- *   STUDENT     |      200 OK        |        200 OK          | 403 Forbidden   | 403 Forbidden
- *   PT          |      200 OK        |     403 Forbidden      |     200 OK      | 403 Forbidden
- *   ADMIN       |      200 OK        |     403 Forbidden      | 403 Forbidden   |     200 OK
- * </pre>
  */
 @WebMvcTest(controllers = {
         PublicController.class,
         StudentController.class,
         PTController.class,
+        PTProfileController.class,
         AdminController.class
 })
 @Import({SecurityConfig.class, JwtUtil.class, JwtFilter.class})
@@ -60,6 +53,9 @@ class RoleBasedAccessControlTest {
 
     @MockitoBean
     private IPTService ptService;
+
+    @MockitoBean
+    private IPTProfileService ptProfileService;
 
     @MockitoBean
     private IAdminPTService adminPTService;
@@ -90,6 +86,13 @@ class RoleBasedAccessControlTest {
         @DisplayName("GET /api/public/health → 200 OK")
         void givenAnonymous_whenGetPublicHealth_thenReturn200() throws Exception {
             mockMvc.perform(get("/api/public/health"))
+                    .andExpect(status().isOk());
+        }
+
+        @Test
+        @DisplayName("GET /api/v1/pt-profiles → 200 OK (Public browsing)")
+        void givenAnonymous_whenGetPublicPtProfiles_thenReturn200() throws Exception {
+            mockMvc.perform(get("/api/v1/pt-profiles"))
                     .andExpect(status().isOk());
         }
 

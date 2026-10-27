@@ -1,3 +1,7 @@
 __pycache__/
 venv/
 .venv/
+.env*
+*.log
+static/avatars/*
+!static/avatars/.gitkeep

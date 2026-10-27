@@ -49,13 +49,6 @@ public class Attendance {
     @Builder.Default
     private AttendanceStatus status = AttendanceStatus.PRESENT;
 
-    // OTP được quản lý trong bộ nhớ / Service runtime (OtpUtil), không lưu trực tiếp vào bảng DB
-    @Transient
-    private String otpCode;
-
-    @Transient
-    private LocalDateTime otpExpiresAt;
-
     // Phương thức kiểm tra điểm danh 2 phía hoàn tất
     public boolean isFullyConfirmed() {
         return Boolean.TRUE.equals(this.studentConfirmed) && Boolean.TRUE.equals(this.ptConfirmed);

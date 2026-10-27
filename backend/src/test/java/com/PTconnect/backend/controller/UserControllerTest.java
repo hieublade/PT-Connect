@@ -32,11 +32,20 @@ class UserControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
+    @Autowired
+    private JwtUtil jwtUtil;
+
     @MockitoBean
     private IUserService userService;
 
+    private String userToken;
+    private String adminToken;
+
     @BeforeEach
     void setUp() {
+        userToken = jwtUtil.generateToken("student.a@ptconnect.vn", "STUDENT");
+        adminToken = jwtUtil.generateToken("admin@ptconnect.vn", "ADMIN");
+
         UserDTO student = UserDTO.builder()
                 .id(1L)
                 .fullName("Nguyen Van A")
@@ -66,8 +75,22 @@ class UserControllerTest {
     }
 
     @Test
-    void testGetUsersReturns200AndUserList() throws Exception {
+    void testAnonymousGetUsersReturns401() throws Exception {
         mockMvc.perform(get("/api/v1/users"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void testStudentGetUsersReturns403() throws Exception {
+        mockMvc.perform(get("/api/v1/users")
+                        .header("Authorization", "Bearer " + userToken))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void testGetUsersReturns200AndUserList() throws Exception {
+        mockMvc.perform(get("/api/v1/users")
+                        .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value(200))
                 .andExpect(jsonPath("$.message").value("Lấy dữ liệu thành công"))
@@ -78,7 +101,8 @@ class UserControllerTest {
 
     @Test
     void testGetUsersByRoleReturns200() throws Exception {
-        mockMvc.perform(get("/api/v1/users?role=STUDENT"))
+        mockMvc.perform(get("/api/v1/users?role=STUDENT")
+                        .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value(200))
                 .andExpect(jsonPath("$.data[*].role", everyItem(is("STUDENT"))));

@@ -1,6 +1,7 @@
 package com.PTconnect.backend.entity;
 
 import com.PTconnect.backend.entity.enums.WalletStatus;
+import com.PTconnect.backend.exception.InsufficientBalanceException;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -58,7 +59,7 @@ public class Wallet {
 
         BigDecimal remainingBalance = this.balance.subtract(amount);
         if (remainingBalance.compareTo(this.lockedBalance) < 0) {
-            throw new IllegalStateException("Số dư khả dụng không đủ");
+            throw new InsufficientBalanceException("Số dư khả dụng không đủ");
         }
 
         this.balance = remainingBalance;

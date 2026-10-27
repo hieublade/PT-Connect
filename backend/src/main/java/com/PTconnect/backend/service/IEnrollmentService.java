@@ -14,4 +14,6 @@ public interface IEnrollmentService {
     EnrollmentResponse getEnrollmentById(String userEmail, Long enrollmentId);
 
     byte[] getContractPdf(String userEmail, Long enrollmentId);
+
+    List<EnrollmentResponse> getPtEnrollments(String ptEmail);
 }

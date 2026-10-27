@@ -48,7 +48,13 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("*"));
+        configuration.setAllowedOriginPatterns(List.of(
+                "http://localhost:8501",
+                "http://127.0.0.1:8501",
+                "http://localhost:3000",
+                "http://127.0.0.1:3000",
+                "http://localhost:8080"
+        ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
@@ -67,7 +73,7 @@ public class SecurityConfig {
                         // 1. Endpoint cap nhat avatar bat buoc phai dang nhap (first-match)
                         .requestMatchers("/api/v1/users/avatar", "/api/users/avatar").authenticated()
 
-                        // 2. Cac endpoint cong khai (Auth, Public Health, va User API Milestone 2)
+                        // 2. Cac endpoint cong khai (Auth, Public Health)
                         .requestMatchers(
                                 "/auth/register",
                                 "/auth/login",
@@ -75,39 +81,41 @@ public class SecurityConfig {
                                 "/api/v1/auth/login",
                                 "/api/public/**",
                                 "/api/v1/public/**",
-                                "/api/v1/users/**",
                                 "/error"
                         ).permitAll()
 
-                        // 3. Endpoint thong tin ca nhan (can dang nhap bat ky role nao)
+                        // 3. Ho so HLV va danh sach khoa hoc cong khai cho khach vang lai xem
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/pt-profiles/**", "/api/pt-profiles/**").permitAll()
+
+                        // 4. Endpoint thong tin ca nhan (can dang nhap bat ky role nao)
                         .requestMatchers("/auth/me", "/api/v1/auth/me").authenticated()
 
-                        // 3. Milestone 6: Booking endpoints
+                        // 5. Milestone 6: Booking endpoints
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/bookings", "/api/bookings").hasRole("STUDENT")
                         .requestMatchers("/api/v1/bookings/my", "/api/bookings/my").hasRole("STUDENT")
                         .requestMatchers("/api/v1/pt/bookings/**", "/api/pt/bookings/**").hasRole("PT")
                         .requestMatchers("/api/v1/bookings/**", "/api/bookings/**").authenticated()
 
-                        // 4. Phan quyen theo Role co san
+                        // 6. Phan quyen theo Role co san
                         .requestMatchers("/api/student/**", "/api/v1/student/**").hasRole("STUDENT")
                         .requestMatchers("/api/pt/**", "/api/v1/pt/**").hasRole("PT")
                         .requestMatchers("/api/admin/**", "/api/v1/admin/**").hasRole("ADMIN")
 
-                        // 5. Milestone 5: Chuc nang Student, Wallet va Enrollment
+                        // 7. Milestone 5: Chuc nang Student, Wallet va Enrollment
                         .requestMatchers("/api/v1/wallet/topup", "/api/wallet/topup").hasRole("STUDENT")
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/enrollments", "/api/enrollments").hasRole("STUDENT")
                         .requestMatchers("/api/v1/enrollments/my", "/api/enrollments/my").hasRole("STUDENT")
                         .requestMatchers("/api/v1/wallet/**", "/api/wallet/**").authenticated()
                         .requestMatchers("/api/v1/enrollments/**", "/api/enrollments/**").authenticated()
-                        .requestMatchers("/api/v1/pt-profiles/**", "/api/pt-profiles/**").authenticated()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/users", "/api/users").hasRole("ADMIN")
                         .requestMatchers("/api/v1/users/**", "/api/users/**").authenticated()
 
-                        // 6. Milestone 7: Chuc nang Diem danh, Huy lich va Danh gia (Review)
+                        // 8. Milestone 7: Chuc nang Diem danh, Huy lich va Danh gia (Review)
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/reviews", "/api/reviews").hasRole("STUDENT")
                         .requestMatchers("/api/v1/reviews/**", "/api/reviews/**").permitAll()
                         .requestMatchers("/api/v1/attendance/**", "/api/attendance/**").authenticated()
 
-                        // 7. Tat ca cac request con lai bat buoc phai dang nhap
+                        // 9. Tat ca cac request con lai bat buoc phai dang nhap
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex

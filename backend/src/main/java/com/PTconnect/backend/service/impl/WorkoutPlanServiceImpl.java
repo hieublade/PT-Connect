@@ -2,7 +2,6 @@ package com.PTconnect.backend.service.impl;
 
 import com.PTconnect.backend.dto.request.CreateWorkoutPlanRequest;
 import com.PTconnect.backend.dto.request.CreateWorkoutRequest;
-import com.PTconnect.backend.dto.response.EnrollmentResponse;
 import com.PTconnect.backend.dto.response.WorkoutPlanResponse;
 import com.PTconnect.backend.dto.response.WorkoutResponse;
 import com.PTconnect.backend.entity.*;
@@ -129,21 +128,6 @@ public class WorkoutPlanServiceImpl implements IWorkoutPlanService {
         return workoutPlanRepository.findByPtIdOrderByCreatedAtDesc(ptProfile.getId()).stream()
                 .map(WorkoutPlanResponse::fromEntity)
                 .collect(Collectors.toList());
-    }
-
-    @Override
-    public List<EnrollmentResponse> getPtEnrollments(String ptEmail) {
-        PTProfile ptProfile = ptProfileRepository.findByPtEmail(ptEmail)
-                .orElseThrow(() -> new UnauthorizedException("Chỉ Huấn luyện viên mới có quyền xem danh sách hợp đồng"));
-
-        return enrollmentRepository.findByPtId(ptProfile.getId()).stream()
-                .sorted((e1, e2) -> {
-                    LocalDateTime t1 = e1.getCreatedAt() != null ? e1.getCreatedAt() : LocalDateTime.MIN;
-                    LocalDateTime t2 = e2.getCreatedAt() != null ? e2.getCreatedAt() : LocalDateTime.MIN;
-                    return t2.compareTo(t1);
-                })
-                .map(EnrollmentResponse::fromEntity)
-                .toList();
     }
 
     @Override

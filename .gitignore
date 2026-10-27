@@ -1,5 +1,24 @@
-# Secrets
+# Secrets & Environment variables
 .env
+.env.*
+*.env
+
+# Uploads & User runtime generated files
+backend/uploads/
+uploads/
+frontend/static/avatars/*
+!frontend/static/avatars/.gitkeep
+
+# Certificates & Private Keys
+*.pem
+*.key
+*.crt
+*.p12
+*.jks
+
+# Logs
+*.log
+logs/
 
 # Java / Maven
 backend/target/
@@ -16,7 +35,5 @@ venv/
 .vscode/
 *.iml
 .DS_Store
-
-# Static avatars uploads
-frontend/static/avatars/*
-!frontend/static/avatars/.gitkeep
+Thumbs.db
+desktop.ini

@@ -4,10 +4,9 @@ import com.PTconnect.backend.dto.request.LoginRequest;
 import com.PTconnect.backend.dto.request.RegisterRequest;
 import com.PTconnect.backend.dto.response.AuthResponse;
 import com.PTconnect.backend.dto.response.UserDTO;
-import com.PTconnect.backend.entity.User;
-import com.PTconnect.backend.exception.UnauthorizedException;
 import com.PTconnect.backend.service.IAuthService;
 import com.PTconnect.backend.util.ApiResponse;
+import com.PTconnect.backend.util.SecurityUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -37,17 +36,7 @@ public class AuthController {
 
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<UserDTO>> getMe(Authentication authentication) {
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new UnauthorizedException("Vui lòng đăng nhập để thực hiện chức năng này");
-        }
-
-        String email;
-        if (authentication.getPrincipal() instanceof User user) {
-            email = user.getEmail();
-        } else {
-            email = authentication.getName();
-        }
-
+        String email = SecurityUtils.getCurrentUserEmail(authentication);
         UserDTO userDTO = authService.getMe(email);
         return ResponseEntity.ok(ApiResponse.success("Lấy thông tin tài khoản thành công", userDTO));
     }

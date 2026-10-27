@@ -52,17 +52,6 @@ public class BookingServiceImpl implements IBookingService {
     private final PaymentRepository paymentRepository;
 
     @Override
-    public boolean canBookSlot(Long slotId, Long studentId) {
-        try {
-            validateBookingRequest(slotId, studentId, null);
-            return true;
-        } catch (Exception e) {
-            log.debug("Slot {} không khả dụng cho student {}: {}", slotId, studentId, e.getMessage());
-            return false;
-        }
-    }
-
-    @Override
     public void validateBookingRequest(Long slotId, Long studentId, Long enrollmentId) {
         AvailabilitySlot slot = slotRepository.findById(slotId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy khung giờ với ID: " + slotId));

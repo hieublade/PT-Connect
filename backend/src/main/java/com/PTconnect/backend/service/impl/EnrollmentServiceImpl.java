@@ -5,7 +5,9 @@ import com.PTconnect.backend.dto.response.EnrollmentResponse;
 import com.PTconnect.backend.entity.*;
 import com.PTconnect.backend.entity.enums.*;
 import com.PTconnect.backend.exception.BadRequestException;
+import com.PTconnect.backend.exception.InsufficientBalanceException;
 import com.PTconnect.backend.exception.ResourceNotFoundException;
+import com.PTconnect.backend.exception.UnauthorizedException;
 import com.PTconnect.backend.repository.*;
 import com.PTconnect.backend.service.IEnrollmentService;
 import com.PTconnect.backend.util.ContractPdfGenerator;
@@ -32,6 +34,7 @@ public class EnrollmentServiceImpl implements IEnrollmentService {
     private final UserRepository userRepository;
     private final WalletRepository walletRepository;
     private final PaymentRepository paymentRepository;
+    private final PTProfileRepository ptProfileRepository;
     private final ContractPdfGenerator contractPdfGenerator;
 
     @Override
@@ -81,7 +84,7 @@ public class EnrollmentServiceImpl implements IEnrollmentService {
         BigDecimal availableBalance = wallet.getBalance().subtract(wallet.getLockedBalance());
         if (availableBalance.compareTo(coursePrice) < 0) {
             log.warn("Học viên {} không đủ số dư ví: cần {}, hiện có {}", studentEmail, coursePrice, availableBalance);
-            throw new BadRequestException("Số dư ví không đủ để thanh toán khóa học. Vui lòng nạp thêm tiền!");
+            throw new InsufficientBalanceException("Số dư ví không đủ để thanh toán khóa học. Vui lòng nạp thêm tiền!");
         }
 
         // 1. Trừ tiền ví thông qua nghiệp vụ đóng gói trong Entity
@@ -198,6 +201,21 @@ public class EnrollmentServiceImpl implements IEnrollmentService {
         }
 
         return pdfBytes;
+    }
+
+    @Override
+    public List<EnrollmentResponse> getPtEnrollments(String ptEmail) {
+        PTProfile ptProfile = ptProfileRepository.findByPtEmail(ptEmail)
+                .orElseThrow(() -> new UnauthorizedException("Chỉ Huấn luyện viên mới có quyền xem danh sách hợp đồng"));
+
+        return enrollmentRepository.findByPtId(ptProfile.getId()).stream()
+                .sorted((e1, e2) -> {
+                    LocalDateTime t1 = e1.getCreatedAt() != null ? e1.getCreatedAt() : LocalDateTime.MIN;
+                    LocalDateTime t2 = e2.getCreatedAt() != null ? e2.getCreatedAt() : LocalDateTime.MIN;
+                    return t2.compareTo(t1);
+                })
+                .map(EnrollmentResponse::fromEntity)
+                .toList();
     }
 
     private void validateAccess(User user, Enrollment enrollment) {

@@ -3,10 +3,9 @@ package com.PTconnect.backend.controller;
 import com.PTconnect.backend.dto.request.StudentCheckInRequest;
 import com.PTconnect.backend.dto.response.AttendanceResponse;
 import com.PTconnect.backend.dto.response.StartAttendanceResponse;
-import com.PTconnect.backend.entity.User;
-import com.PTconnect.backend.exception.UnauthorizedException;
 import com.PTconnect.backend.service.IAttendanceService;
 import com.PTconnect.backend.util.ApiResponse;
+import com.PTconnect.backend.util.SecurityUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -24,20 +23,6 @@ public class AttendanceController {
 
     private final IAttendanceService attendanceService;
 
-    private String getCurrentUserEmail(Authentication auth) {
-        if (auth == null || !auth.isAuthenticated()) {
-            throw new UnauthorizedException("Chưa đăng nhập");
-        }
-        Object principal = auth.getPrincipal();
-        if (principal instanceof User user) {
-            return user.getEmail();
-        }
-        if (principal instanceof String email) {
-            return email;
-        }
-        return auth.getName();
-    }
-
     /**
      * Huấn luyện viên mở phiên điểm danh và lấy mã OTP 6 số (POST /api/v1/attendance/{bookingId}/start)
      */
@@ -45,7 +30,7 @@ public class AttendanceController {
     public ResponseEntity<ApiResponse<StartAttendanceResponse>> startAttendance(
             Authentication authentication,
             @PathVariable Long bookingId) {
-        String ptEmail = getCurrentUserEmail(authentication);
+        String ptEmail = SecurityUtils.getCurrentUserEmail(authentication);
         StartAttendanceResponse response = attendanceService.startAttendance(ptEmail, bookingId);
         return ResponseEntity.ok(ApiResponse.success("Mở phiên điểm danh thành công", response));
     }
@@ -58,7 +43,7 @@ public class AttendanceController {
             Authentication authentication,
             @PathVariable Long bookingId,
             @Valid @RequestBody StudentCheckInRequest request) {
-        String studentEmail = getCurrentUserEmail(authentication);
+        String studentEmail = SecurityUtils.getCurrentUserEmail(authentication);
         AttendanceResponse response = attendanceService.studentCheckIn(studentEmail, bookingId, request);
         return ResponseEntity.ok(ApiResponse.success("Học viên xác nhận điểm danh thành công", response));
     }
@@ -70,7 +55,7 @@ public class AttendanceController {
     public ResponseEntity<ApiResponse<AttendanceResponse>> ptConfirmAttendance(
             Authentication authentication,
             @PathVariable Long bookingId) {
-        String ptEmail = getCurrentUserEmail(authentication);
+        String ptEmail = SecurityUtils.getCurrentUserEmail(authentication);
         AttendanceResponse response = attendanceService.ptConfirmAttendance(ptEmail, bookingId);
         return ResponseEntity.ok(ApiResponse.success("Huấn luyện viên xác nhận điểm danh thành công", response));
     }
@@ -83,7 +68,7 @@ public class AttendanceController {
             Authentication authentication,
             @PathVariable Long bookingId,
             @RequestParam(required = false, defaultValue = "Học viên không có mặt tại buổi tập") String reason) {
-        String ptEmail = getCurrentUserEmail(authentication);
+        String ptEmail = SecurityUtils.getCurrentUserEmail(authentication);
         AttendanceResponse response = attendanceService.markAbsent(ptEmail, bookingId, reason);
         return ResponseEntity.ok(ApiResponse.success("Đã ghi nhận học viên vắng mặt (buổi tập vẫn được tính)", response));
     }
@@ -95,7 +80,7 @@ public class AttendanceController {
     public ResponseEntity<ApiResponse<AttendanceResponse>> getAttendance(
             Authentication authentication,
             @PathVariable Long bookingId) {
-        String userEmail = getCurrentUserEmail(authentication);
+        String userEmail = SecurityUtils.getCurrentUserEmail(authentication);
         AttendanceResponse response = attendanceService.getAttendanceByBookingId(userEmail, bookingId);
         return ResponseEntity.ok(ApiResponse.success("Lấy thông tin điểm danh thành công", response));
     }

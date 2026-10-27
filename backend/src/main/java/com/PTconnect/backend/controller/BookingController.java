@@ -3,11 +3,10 @@ package com.PTconnect.backend.controller;
 import com.PTconnect.backend.dto.request.CreateBookingRequest;
 import com.PTconnect.backend.dto.request.RejectBookingRequest;
 import com.PTconnect.backend.dto.response.BookingResponse;
-import com.PTconnect.backend.entity.User;
 import com.PTconnect.backend.entity.enums.BookingStatus;
-import com.PTconnect.backend.exception.UnauthorizedException;
 import com.PTconnect.backend.service.IBookingService;
 import com.PTconnect.backend.util.ApiResponse;
+import com.PTconnect.backend.util.SecurityUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -27,20 +26,6 @@ public class BookingController {
 
     private final IBookingService bookingService;
 
-    private String getCurrentUserEmail(Authentication auth) {
-        if (auth == null || !auth.isAuthenticated()) {
-            throw new UnauthorizedException("Chưa đăng nhập");
-        }
-        Object principal = auth.getPrincipal();
-        if (principal instanceof User user) {
-            return user.getEmail();
-        }
-        if (principal instanceof String email) {
-            return email;
-        }
-        return auth.getName();
-    }
-
     // -------------------------------------------------------------
     // 1. Phía Học viên (Student Booking Endpoints)
     // -------------------------------------------------------------
@@ -49,7 +34,7 @@ public class BookingController {
     public ResponseEntity<ApiResponse<BookingResponse>> createBooking(
             Authentication authentication,
             @Valid @RequestBody CreateBookingRequest request) {
-        String email = getCurrentUserEmail(authentication);
+        String email = SecurityUtils.getCurrentUserEmail(authentication);
         BookingResponse response = bookingService.createBooking(email, request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.created("Đặt lịch ca tập thành công (chờ Huấn luyện viên phê duyệt)", response));
@@ -59,7 +44,7 @@ public class BookingController {
     public ResponseEntity<ApiResponse<List<BookingResponse>>> getMyBookings(
             Authentication authentication,
             @RequestParam(required = false) BookingStatus status) {
-        String email = getCurrentUserEmail(authentication);
+        String email = SecurityUtils.getCurrentUserEmail(authentication);
         List<BookingResponse> bookings = bookingService.getMyBookings(email, status);
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách lịch tập của tôi thành công", bookings));
     }
@@ -68,7 +53,7 @@ public class BookingController {
     public ResponseEntity<ApiResponse<BookingResponse>> getBookingById(
             Authentication authentication,
             @PathVariable Long id) {
-        String email = getCurrentUserEmail(authentication);
+        String email = SecurityUtils.getCurrentUserEmail(authentication);
         BookingResponse booking = bookingService.getBookingById(email, id);
         return ResponseEntity.ok(ApiResponse.success("Lấy thông tin chi tiết đơn đặt lịch thành công", booking));
     }
@@ -81,7 +66,7 @@ public class BookingController {
     public ResponseEntity<ApiResponse<List<BookingResponse>>> getPTBookings(
             Authentication authentication,
             @RequestParam(required = false) BookingStatus status) {
-        String email = getCurrentUserEmail(authentication);
+        String email = SecurityUtils.getCurrentUserEmail(authentication);
         List<BookingResponse> bookings = bookingService.getPTBookings(email, status);
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách đơn đặt lịch thành công", bookings));
     }
@@ -90,7 +75,7 @@ public class BookingController {
     public ResponseEntity<ApiResponse<BookingResponse>> confirmBooking(
             Authentication authentication,
             @PathVariable Long id) {
-        String email = getCurrentUserEmail(authentication);
+        String email = SecurityUtils.getCurrentUserEmail(authentication);
         BookingResponse response = bookingService.confirmBooking(email, id);
         return ResponseEntity.ok(ApiResponse.success("Xác nhận ca tập thành công", response));
     }
@@ -100,7 +85,7 @@ public class BookingController {
             Authentication authentication,
             @PathVariable Long id,
             @RequestBody(required = false) RejectBookingRequest request) {
-        String email = getCurrentUserEmail(authentication);
+        String email = SecurityUtils.getCurrentUserEmail(authentication);
         if (request == null) {
             request = RejectBookingRequest.builder().reason("Huấn luyện viên bận đột xuất").build();
         }
@@ -117,7 +102,7 @@ public class BookingController {
             Authentication authentication,
             @PathVariable Long id,
             @RequestBody(required = false) com.PTconnect.backend.dto.request.CancelBookingRequest request) {
-        String email = getCurrentUserEmail(authentication);
+        String email = SecurityUtils.getCurrentUserEmail(authentication);
         if (request == null) {
             request = com.PTconnect.backend.dto.request.CancelBookingRequest.builder()
                     .reason("Học viên hủy lịch ca tập")
@@ -132,7 +117,7 @@ public class BookingController {
             Authentication authentication,
             @PathVariable Long id,
             @RequestBody(required = false) com.PTconnect.backend.dto.request.CancelBookingRequest request) {
-        String email = getCurrentUserEmail(authentication);
+        String email = SecurityUtils.getCurrentUserEmail(authentication);
         if (request == null) {
             request = com.PTconnect.backend.dto.request.CancelBookingRequest.builder()
                     .reason("Huấn luyện viên hủy lịch ca tập")
@@ -146,7 +131,7 @@ public class BookingController {
     public ResponseEntity<ApiResponse<com.PTconnect.backend.dto.response.CancelPreviewResponse>> previewCancelBooking(
             Authentication authentication,
             @PathVariable Long id) {
-        String email = getCurrentUserEmail(authentication);
+        String email = SecurityUtils.getCurrentUserEmail(authentication);
         com.PTconnect.backend.dto.response.CancelPreviewResponse response = bookingService.previewCancelBooking(email, id);
         return ResponseEntity.ok(ApiResponse.success("Xem trước chính sách hủy lịch thành công", response));
     }
