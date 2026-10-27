@@ -75,6 +75,11 @@ public class BookingServiceImpl implements IBookingService {
             throw new BadRequestException("Không thể đặt khung giờ đã trôi qua trong quá khứ");
         }
 
+        List<BookingStatus> activeStatuses = List.of(BookingStatus.PENDING, BookingStatus.CONFIRMED);
+        if (bookingRepository.existsOverlappingBookingForStudent(studentId, activeStatuses, slot.getStartTime(), slot.getEndTime())) {
+            throw new BadRequestException("Bạn đã có một ca tập khác trùng khung giờ này");
+        }
+
         if (enrollmentId != null) {
             Enrollment enrollment = enrollmentRepository.findById(enrollmentId)
                     .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hợp đồng với ID: " + enrollmentId));
@@ -93,6 +98,10 @@ public class BookingServiceImpl implements IBookingService {
 
             if (LocalDate.now().isAfter(enrollment.getEndDate())) {
                 throw new BadRequestException("Hợp đồng khóa học đã hết hạn sử dụng");
+            }
+
+            if (slot.getStartTime().toLocalDate().isAfter(enrollment.getEndDate())) {
+                throw new BadRequestException("Khung giờ tập vượt quá thời hạn sử dụng của hợp đồng (Hạn chót: " + enrollment.getEndDate() + ")");
             }
 
             if (!slot.getPt().getId().equals(enrollment.getPt().getId())) {
@@ -117,6 +126,11 @@ public class BookingServiceImpl implements IBookingService {
 
         if (slot.getStartTime().isBefore(LocalDateTime.now())) {
             throw new BadRequestException("Không thể đặt khung giờ đã trôi qua trong quá khứ");
+        }
+
+        List<BookingStatus> activeStatuses = List.of(BookingStatus.PENDING, BookingStatus.CONFIRMED);
+        if (bookingRepository.existsOverlappingBookingForStudent(student.getId(), activeStatuses, slot.getStartTime(), slot.getEndTime())) {
+            throw new BadRequestException("Bạn đã có một ca tập khác trùng khung giờ này");
         }
 
         BookingType bookingType = request.getBookingType() != null ? request.getBookingType() : BookingType.PACKAGE;
@@ -153,6 +167,10 @@ public class BookingServiceImpl implements IBookingService {
 
             if (LocalDate.now().isAfter(enrollment.getEndDate())) {
                 throw new BadRequestException("Hợp đồng khóa học đã hết hạn sử dụng");
+            }
+
+            if (slot.getStartTime().toLocalDate().isAfter(enrollment.getEndDate())) {
+                throw new BadRequestException("Khung giờ tập vượt quá thời hạn sử dụng của hợp đồng (Hạn chót: " + enrollment.getEndDate() + ")");
             }
 
             if (enrollment.getRemainingSessions() <= 0) {
@@ -501,7 +519,7 @@ public class BookingServiceImpl implements IBookingService {
             PT ptUser = ptProfile.getPt();
             Wallet ptWallet = walletRepository.findByUserId(ptUser.getId()).orElse(null);
             if (ptWallet != null) {
-                ptWallet.debit(result.getPenaltyAmount());
+                ptWallet.debitPenalty(result.getPenaltyAmount());
                 walletRepository.save(ptWallet);
 
                 String shortId = UUID.randomUUID().toString().substring(0, 8).toUpperCase();

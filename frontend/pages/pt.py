@@ -5,7 +5,7 @@ from api.client import ApiException
 from api.pt_api import PTApi
 from api.booking_api import BookingApi
 from api.auth_api import AuthApi
-from components.course_card import render_course_card
+from components.course_card import render_course_card, format_currency_vnd
 from components.slot_card import render_slot_card
 from components.booking_table import render_booking_table
 from components.avatar_uploader import render_avatar_management, normalize_avatar_url
@@ -90,21 +90,25 @@ def render_pt_page(user: Dict[str, Any]):
     # TAB 1: TỔNG QUAN
     # -------------------------------------------------------------------------
     with tab_overview:
-        c1, c2, c3, c4 = st.columns(4)
+        c1, c2, c3, c4, c5 = st.columns(5)
         avg_rating = profile_data.get("averageRating", 0)
         total_rev = profile_data.get("totalReviews", 0)
         exp_years = profile_data.get("experienceYears", 0)
 
-        # Lấy số lượng khóa học, slots và bookings
+        # Lấy số lượng khóa học, slots, bookings và thông tin ví PT
         courses_list: List[Dict[str, Any]] = []
         slots_list: List[Dict[str, Any]] = []
         pending_bookings: List[Dict[str, Any]] = []
+        wallet_data: Dict[str, Any] = {}
         try:
             courses_list = PTApi.get_courses()
             slots_list = PTApi.get_slots()
             pending_bookings = BookingApi.get_pt_bookings(status="PENDING")
+            wallet_data = PTApi.get_wallet()
         except Exception:
             pass
+
+        wallet_balance = float(wallet_data.get("balance", 0) or 0)
 
         with c1:
             st.metric(label="Ca tập chờ duyệt", value=f"{len(pending_bookings)} ca", delta="Cần xử lý" if pending_bookings else None)
@@ -115,6 +119,74 @@ def render_pt_page(user: Dict[str, Any]):
             st.metric(label="Khóa học của tôi", value=f"{len(courses_list)} khóa")
         with c4:
             st.metric(label="Đánh giá", value=f"{avg_rating:.1f}/5.0", delta=f"{total_rev} lượt review")
+        with c5:
+            if wallet_balance < 0:
+                st.metric(
+                    label="Số dư ví (Ghi nợ)",
+                    value=format_currency_vnd(wallet_balance),
+                    delta="Đang nợ phạt",
+                    delta_color="inverse",
+                    help="Số dư âm do bị phạt khi hủy ca tập sát giờ (< 24h). Khoản này sẽ được cấn trừ tự động."
+                )
+            elif wallet_balance > 0:
+                st.metric(
+                    label="Số dư ví PT",
+                    value=format_currency_vnd(wallet_balance),
+                    delta="Khả dụng",
+                    help="Số dư khả dụng trong ví điện tử của PT"
+                )
+            else:
+                st.metric(
+                    label="Số dư ví PT",
+                    value="0 ₫",
+                    help="Số dư trong ví điện tử của PT"
+                )
+
+        if wallet_balance < 0:
+            st.warning(
+                f"Tài khoản hiện đang ghi nợ **{format_currency_vnd(abs(wallet_balance))}** tiền phạt vi phạm do hủy ca tập sát giờ (< 24h). "
+                f"Khoản nợ này sẽ được cấn trừ tự động vào ví khi có giao dịch tiếp theo."
+            )
+
+        # Hiển thị lịch sử biến động ví và tiền phạt nếu có
+        transactions = wallet_data.get("transactions", [])
+        if transactions:
+            with st.expander("Lịch sử biến động ví & Chi tiết các khoản phạt"):
+                for txn in transactions:
+                    t_type = txn.get("paymentType", "")
+                    t_amt = txn.get("amount", 0)
+                    t_ref = txn.get("transactionRef", "")
+                    t_time = txn.get("createdAt", "")
+
+                    if t_type == "REFUND" or "PENALTY" in str(t_ref):
+                        type_badge = "Phạt hủy ca tập sát giờ (< 24h)"
+                        amt_display = f"-{format_currency_vnd(t_amt)}"
+                        card_bg = "#ffebee"
+                        border_color = "#c62828"
+                    elif t_type == "COMPENSATION" or "COMP" in str(t_ref):
+                        type_badge = "Được đền bù (Học viên hủy sát giờ < 24h)"
+                        amt_display = f"+{format_currency_vnd(t_amt)}"
+                        card_bg = "#e8f5e9"
+                        border_color = "#2e7d32"
+                    else:
+                        type_badge = t_type
+                        amt_display = format_currency_vnd(t_amt)
+                        card_bg = "#f5f5f5"
+                        border_color = "#9e9e9e"
+
+                    st.markdown(
+                        f"""
+                        <div style="background: {card_bg}; border-left: 4px solid {border_color}; padding: 8px 12px; border-radius: 4px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <div style="font-weight: 600; font-size: 0.95rem;">{type_badge}</div>
+                                <div style="font-size: 0.8rem; color: #555;">Mã GD: <code>{t_ref}</code> | Thời gian: {t_time}</div>
+                            </div>
+                            <div style="font-size: 1.1rem; font-weight: 700; color: {border_color};">{amt_display}</div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+
 
         st.markdown("---")
         with st.container(border=True):
@@ -336,7 +408,9 @@ def render_pt_page(user: Dict[str, Any]):
                 up_payload = {
                     "title": c.get("title"),
                     "description": c.get("description"),
-                    "basePrice": c.get("basePrice"),
+                    "totalSessions": int(c.get("totalSessions", 1)),
+                    "validityDays": int(c.get("validityDays", 30)),
+                    "basePrice": float(c.get("basePrice", 0)),
                     "status": new_status
                 }
                 try:

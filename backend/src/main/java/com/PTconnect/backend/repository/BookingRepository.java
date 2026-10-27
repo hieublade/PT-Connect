@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -37,6 +38,19 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     Optional<Booking> findByIdWithLock(@Param("id") Long id);
 
     boolean existsByEnrollmentIdAndStatusIn(Long enrollmentId, List<BookingStatus> statuses);
+
+    // Kiểm tra trùng giờ tập của Student
+    @Query("SELECT COUNT(b) > 0 FROM Booking b " +
+           "WHERE b.student.id = :studentId " +
+           "AND b.status IN :statuses " +
+           "AND b.slot.startTime < :endTime " +
+           "AND b.slot.endTime > :startTime")
+    boolean existsOverlappingBookingForStudent(
+            @Param("studentId") Long studentId,
+            @Param("statuses") List<BookingStatus> statuses,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime
+    );
 
     List<Booking> findAllByOrderByCreatedAtDesc();
 }

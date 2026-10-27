@@ -86,5 +86,6 @@ def render_pt_card(
                     on_select(pt)
                 else:
                     st.session_state["selected_pt_id"] = pt_id
-                    st.session_state["student_active_tab"] = "Chi Tiết & Mua Khóa"
+                    st.session_state["student_pt_select_box"] = pt_id
+                    st.session_state["switch_to_tab_name"] = "Chi Tiết"
                 st.rerun()

@@ -54,14 +54,19 @@ public class Wallet {
     }
 
     public void debit(BigDecimal amount) {
-    checkUsable(amount);
+        checkUsable(amount);
 
-    BigDecimal remainingBalance = this.balance.subtract(amount);
+        BigDecimal remainingBalance = this.balance.subtract(amount);
         if (remainingBalance.compareTo(this.lockedBalance) < 0) {
             throw new IllegalStateException("Số dư khả dụng không đủ");
         }
 
         this.balance = remainingBalance;
+    }
+
+    public void debitPenalty(BigDecimal amount) {
+        checkUsable(amount);
+        this.balance = this.balance.subtract(amount);
     }
 
     private void checkUsable(BigDecimal amount) {
