@@ -105,7 +105,6 @@ def render_admin_page(user: Dict[str, Any]):
     # -------------------------------------------------------------------------
     with tab_pending:
         st.subheader("Danh Sách Huấn Luyện Viên Đang Chờ Phê Duyệt")
-        st.caption("Xem xét thông tin năng lực, kinh nghiệm và chứng chỉ trước khi cấp quyền nhận học viên cho PT.")
 
         if not pending_pts:
             st.success("Hiện không có hồ sơ Huấn luyện viên nào đang chờ phê duyệt. Tất cả hồ sơ đã được xử lý!")
@@ -173,7 +172,6 @@ def render_admin_page(user: Dict[str, Any]):
     # -------------------------------------------------------------------------
     with tab_users:
         st.subheader("Quản Lý Người Dùng & Trạng Thái Hoạt Động")
-        st.caption("Quản trị viên có quyền khóa (SUSPENDED) hoặc mở khóa (ACTIVE) tài khoản khi phát hiện vi phạm chính sách.")
 
         col_filter, col_refresh = st.columns([3, 1])
         with col_filter:
