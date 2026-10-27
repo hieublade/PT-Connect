@@ -95,9 +95,9 @@ def render_admin_page(user: Dict[str, Any]):
 
     # 3. Các phân hệ chức năng Admin
     tab_pending, tab_users, tab_analytics = st.tabs([
-        f"Phê Duyệt PT ({len(pending_pts)})",
-        "Quản Lý Người Dùng & Khóa Tài Khoản",
-        "Phân Tích & Thống Kê"
+        f"Phê Duyệt ({len(pending_pts)})",
+        "Quản Lý Người Dùng",
+        "Thống Kê"
     ])
 
     # -------------------------------------------------------------------------
