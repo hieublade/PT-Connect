@@ -79,11 +79,11 @@ def render_pt_page(user: Dict[str, Any]):
     # Phân chia các Tab chức năng theo Milestone 6 & Milestone 8
     tab_overview, tab_bookings, tab_slots, tab_courses, tab_workout_plans, tab_profile = st.tabs([
         "Tổng Quan",
-        "Duyệt Booking & Lịch Dạy",
-        "Khung Giờ Rảnh (Slots)",
-        "Quản Lý Khóa Học",
-        "Giáo Án & Bài Tập",
-        "Hồ Sơ & Avatar"
+        "Duyệt lịch",
+        "Khung Giờ",
+        "Quản Lý Khóa",
+        "Giáo Án",
+        "Hồ Sơ"
     ])
 
     # -------------------------------------------------------------------------
@@ -209,7 +209,7 @@ def render_pt_page(user: Dict[str, Any]):
     # TAB 3: KHUNG GIỜ RẢNH (SLOTS)
     # -------------------------------------------------------------------------
     with tab_slots:
-        st.subheader("Quản Lý Khung Giờ Rảnh (Availability Slots)")
+        st.subheader("Quản Lý Khung Giờ Rảnh")
         st.caption("Mở các khung giờ trống để học viên có thể đăng ký đặt lịch tập luyện.")
 
         with st.expander("Thêm Khung Giờ Rảnh Mới", expanded=True):
