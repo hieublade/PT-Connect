@@ -74,7 +74,9 @@ def render_login_page():
                                 st.toast(f"Đăng nhập thành công! Chào mừng {full_name} ({role}).")
                                 st.rerun()
                             except ApiException as e:
-                                if e.status_code == 401:
+                                if e.message and not e.message.startswith("Máy chủ phản hồi"):
+                                    st.error(e.message)
+                                elif e.status_code == 401:
                                     st.error("Email hoặc mật khẩu không chính xác.")
                                 elif e.status_code == 403:
                                     st.error("Tài khoản của bạn hiện đang bị khóa hoặc chưa được cấp quyền truy cập.")

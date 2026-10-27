@@ -48,8 +48,7 @@ CREATE TABLE `wallets` (
   `currency` varchar(10) NOT NULL DEFAULT 'VND',
   `status` ENUM ('ACTIVE', 'FROZEN') NOT NULL DEFAULT 'ACTIVE',
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  CONSTRAINT `chk_wallet_balance` CHECK (`balance` >= 0),
-  CONSTRAINT `chk_wallet_locked` CHECK (`locked_balance` >= 0 AND `locked_balance` <= `balance`)
+  CONSTRAINT `chk_wallet_locked` CHECK (`locked_balance` >= 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Ví điện tử nội bộ phục vụ thanh toán khóa học và xử lý đền bù';
 
 CREATE TABLE `courses` (

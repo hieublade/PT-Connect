@@ -91,4 +91,9 @@ class PTApi:
         """Xóa một bài tập khỏi giáo án."""
         api_client.delete(f"/api/v1/pt/workout-plans/{plan_id}/workouts/{workout_id}")
 
+    @staticmethod
+    def get_wallet() -> Dict[str, Any]:
+        """Xem thông tin ví và lịch sử biến động số dư của PT."""
+        return api_client.get("/api/v1/wallet")
+
 

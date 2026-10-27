@@ -82,6 +82,54 @@ def render_student_page(user: Dict[str, Any]):
         "Hồ Sơ"
     ])
 
+    target_tab_to_switch = st.session_state.pop("switch_to_tab_name", None)
+    if target_tab_to_switch:
+        import streamlit.components.v1 as components
+        components.html(
+            f"""
+            <script>
+            (function() {{
+                const myIframe = window.frameElement;
+                if (myIframe) {{
+                    myIframe.style.display = 'none';
+                    if (myIframe.parentElement) {{
+                        myIframe.parentElement.style.display = 'none';
+                    }}
+                }}
+
+                function clickTargetTab() {{
+                    try {{
+                        const parentDoc = window.parent.document;
+                        if (!parentDoc) return false;
+                        const tabs = Array.from(parentDoc.querySelectorAll('button[data-baseweb="tab"], div[data-testid="stTabs"] button'));
+                        if (!tabs || tabs.length === 0) return false;
+                        let targetTab = tabs.find(t => (t.innerText || t.textContent || "").includes("{target_tab_to_switch}"));
+                        if (targetTab) {{
+                            targetTab.click();
+                            return true;
+                        }}
+                    }} catch (e) {{
+                        console.error(e);
+                    }}
+                    return false;
+                }}
+
+                if (!clickTargetTab()) {{
+                    let attempts = 0;
+                    const intervalId = setInterval(function() {{
+                        attempts++;
+                        if (clickTargetTab() || attempts > 20) {{
+                            clearInterval(intervalId);
+                        }}
+                    }}, 50);
+                }}
+            }})();
+            </script>
+            """,
+            height=0,
+            width=0
+        )
+
     # -------------------------------------------------------------------------
     # TAB 1: KHÁM PHÁ & TÌM KIẾM HUẤN LUYỆN VIÊN (MILESTONE 5)
     # -------------------------------------------------------------------------
@@ -117,8 +165,11 @@ def render_student_page(user: Dict[str, Any]):
             st.markdown(f"**Tìm thấy {len(pt_list)} Huấn luyện viên chuyên nghiệp:**")
 
             def handle_pt_selection(p):
-                st.session_state["selected_pt_id"] = p.get("id")
-                st.toast(f"Đã chọn Huấn luyện viên {p.get('fullName')}. Vui lòng chuyển sang tab Chi Tiết & Mua Khóa để tiếp tục.")
+                pt_id = p.get("id")
+                st.session_state["selected_pt_id"] = pt_id
+                st.session_state["student_pt_select_box"] = pt_id
+                st.session_state["switch_to_tab_name"] = "Chi Tiết"
+                st.toast(f"Đang mở hồ sơ chi tiết của Huấn luyện viên {p.get('fullName')}")
 
             cols_per_row = 2
             for i in range(0, len(pt_list), cols_per_row):
@@ -174,6 +225,7 @@ def render_student_page(user: Dict[str, Any]):
                 pt_profile = StudentApi.get_pt_profile(selected_pt_id)
                 pt_courses = StudentApi.get_pt_courses(selected_pt_id)
                 pt_slots = StudentApi.get_pt_slots(selected_pt_id)
+                pt_reviews = BookingApi.get_pt_reviews(selected_pt_id)
 
                 with st.container(border=True):
                     col_p1, col_p2 = st.columns([1, 3])
@@ -323,6 +375,32 @@ def render_student_page(user: Dict[str, Any]):
                         })
                     st.dataframe(slots_data, use_container_width=True)
 
+                st.markdown("---")
+
+                # DANH SÁCH ĐÁNH GIÁ TỪ HỌC VIÊN
+                st.markdown(f"#### Đánh Giá Từ Học Viên ({len(pt_reviews)})")
+                st.caption("Nhận xét thực tế từ các học viên đã hoàn thành ca tập cùng Huấn luyện viên.")
+
+                if not pt_reviews:
+                    st.info("Chưa có lượt đánh giá nào cho Huấn luyện viên này.")
+                else:
+                    for rev in pt_reviews:
+                        r_rating = rev.get("rating", 5)
+                        r_comment = rev.get("comment", "Không có nhận xét")
+                        r_student = rev.get("studentName", "Học viên")
+                        st.markdown(
+                            f"""
+                            <div style="background: #f9fbe7; border-left: 4px solid #827717; padding: 10px 14px; border-radius: 4px; margin-bottom: 8px;">
+                                <div style="display: flex; justify-content: space-between;">
+                                    <strong>{r_student}</strong>
+                                    <span>({r_rating}/5 sao)</span>
+                                </div>
+                                <div style="margin-top: 4px; color: #333;">{r_comment}</div>
+                            </div>
+                            """,
+                            unsafe_allow_html=True
+                        )
+
             except ApiException as e:
                 st.error(f"Lỗi tải hồ sơ PT [{e.status_code}]: {e.message}")
             except Exception as ex:
@@ -380,7 +458,21 @@ def render_student_page(user: Dict[str, Any]):
                 except Exception as ex:
                     st.error(f"Lỗi tải khung giờ trống của HLV: {str(ex)}")
 
-                if not slots:
+                # Lọc khung giờ còn nằm trong thời hạn hợp đồng
+                end_date_str = chosen_enroll.get("endDate")
+                valid_slots = []
+                for s in slots:
+                    try:
+                        s_date = datetime.fromisoformat(s.get("startTime", "")).date()
+                        if end_date_str:
+                            e_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+                            if s_date > e_date:
+                                continue
+                    except Exception:
+                        pass
+                    valid_slots.append(s)
+
+                if not valid_slots:
                     pt_phone = None
                     pt_email = None
                     try:
@@ -391,15 +483,18 @@ def render_student_page(user: Dict[str, Any]):
                         pass
                     contact_parts = []
                     if pt_phone:
-                        contact_parts.append(f"📞 Hotline/Zalo: **{pt_phone}**")
+                        contact_parts.append(f"Hotline/Zalo: **{pt_phone}**")
                     if pt_email:
-                        contact_parts.append(f"✉️ Email: **{pt_email}**")
+                        contact_parts.append(f"Email: **{pt_email}**")
                     contact_text = f" qua {' hoặc '.join(contact_parts)}" if contact_parts else ""
-                    st.info(f"Huấn luyện viên **{chosen_enroll.get('ptName')}** hiện chưa mở khung giờ trống nào trong tương lai. Vui lòng liên hệ HLV{contact_text} để mở thêm lịch.")
+                    if slots and end_date_str:
+                        st.warning(f"Các khung giờ hiện có của Huấn luyện viên đều diễn ra sau thời hạn kết thúc hợp đồng ({end_date_str}). Vui lòng liên hệ HLV{contact_text} để mở lịch trong thời hạn hợp đồng.")
+                    else:
+                        st.info(f"Huấn luyện viên **{chosen_enroll.get('ptName')}** hiện chưa mở khung giờ trống nào trong tương lai. Vui lòng liên hệ HLV{contact_text} để mở thêm lịch.")
                 else:
                     slot_map = {
                         s["id"]: f"Slot #{s['id']} | {format_booking_datetime(s.get('startTime'))} - {format_booking_datetime(s.get('endTime'))}"
-                        for s in slots
+                        for s in valid_slots
                     }
 
                     chosen_slot_id = st.selectbox(
@@ -468,9 +563,9 @@ def render_student_page(user: Dict[str, Any]):
                 if not slots:
                     contact_parts = []
                     if chosen_pt.get("phone"):
-                        contact_parts.append(f"📞 Hotline/Zalo: **{chosen_pt.get('phone')}**")
+                        contact_parts.append(f"Hotline/Zalo: **{chosen_pt.get('phone')}**")
                     if chosen_pt.get("email"):
-                        contact_parts.append(f"✉️ Email: **{chosen_pt.get('email')}**")
+                        contact_parts.append(f"Email: **{chosen_pt.get('email')}**")
                     contact_text = f" qua {' hoặc '.join(contact_parts)}" if contact_parts else ""
                     st.info(f"Huấn luyện viên **{chosen_pt.get('fullName')}** chưa mở khung giờ trống nào. Vui lòng liên hệ HLV{contact_text} để được hỗ trợ mở lịch.")
                 else:
