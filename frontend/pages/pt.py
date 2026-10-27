@@ -219,8 +219,6 @@ def render_pt_page(user: Dict[str, Any]):
     # -------------------------------------------------------------------------
     with tab_bookings:
         st.subheader("Quản Lý & Phê Duyệt Lịch Ca Tập")
-        st.caption("Phê duyệt hoặc từ chối các đơn đặt lịch của học viên theo gói hoặc học thử.")
-
         col_filter, col_refresh = st.columns([4, 1])
         with col_filter:
             filter_choice = st.selectbox(
@@ -282,8 +280,6 @@ def render_pt_page(user: Dict[str, Any]):
     # -------------------------------------------------------------------------
     with tab_slots:
         st.subheader("Quản Lý Khung Giờ Rảnh")
-        st.caption("Mở các khung giờ trống để học viên có thể đăng ký đặt lịch tập luyện.")
-
         with st.expander("Thêm Khung Giờ Rảnh Mới", expanded=True):
             with st.form("form_create_slot"):
                 st.markdown("**Chọn ngày và khoảng thời gian khả dụng:**")
@@ -355,7 +351,6 @@ def render_pt_page(user: Dict[str, Any]):
     # -------------------------------------------------------------------------
     with tab_courses:
         st.subheader("Danh Sách Khóa Học Cố Định")
-        st.caption("Các gói khóa học huấn luyện trọn gói theo quy định của hệ thống.")
 
         with st.expander("Thêm Khóa Học Mới", expanded=False):
             with st.form("form_create_course"):
@@ -442,8 +437,6 @@ def render_pt_page(user: Dict[str, Any]):
     # -------------------------------------------------------------------------
     with tab_workout_plans:
         st.subheader("Quản Lý Giáo Án & Bài Tập Huấn Luyện")
-        st.caption("Thiết lập lộ trình luyện tập cho từng học viên theo hợp đồng và giao bài tập chi tiết.")
-
         # Lấy danh sách hợp đồng của PT
         pt_enrollments: List[Dict[str, Any]] = []
         try:

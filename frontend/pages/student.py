@@ -135,7 +135,6 @@ def render_student_page(user: Dict[str, Any]):
     # -------------------------------------------------------------------------
     with tab_explore:
         st.subheader("Tìm Kiếm & Khám Phá Huấn Luyện Viên (PT)")
-        st.caption("Chỉ hiển thị các Huấn luyện viên đã được Admin phê duyệt (VERIFIED) và đang hoạt động (ACTIVE).")
 
         col_search, col_reset = st.columns([4, 1])
         with col_search:
@@ -189,7 +188,6 @@ def render_student_page(user: Dict[str, Any]):
     # -------------------------------------------------------------------------
     with tab_detail:
         st.subheader("Hồ Sơ Chi Tiết & Đăng Ký Khóa Học")
-        st.caption("Xem thông tin chi tiết, chứng chỉ và đăng ký gói tập phù hợp.")
 
         selected_pt_id = st.session_state.get("selected_pt_id")
 
@@ -411,8 +409,6 @@ def render_student_page(user: Dict[str, Any]):
     # -------------------------------------------------------------------------
     with tab_booking:
         st.subheader("Đặt Lịch Tập Cùng Huấn Luyện Viên")
-        st.caption("Hệ thống bảo vệ giao dịch chống đặt trùng (409 Conflict) với khóa bi quan PESSIMISTIC_WRITE.")
-
         booking_type_choice = st.radio(
             "Hình thức đặt lịch:",
             ["Đặt theo Gói Khóa Học (PACKAGE)", "Buổi Học Thử Miễn Phí (TRIAL)"],
@@ -614,7 +610,6 @@ def render_student_page(user: Dict[str, Any]):
     # -------------------------------------------------------------------------
     with tab_my_schedule:
         st.subheader("Lịch Tập Luyện Của Tôi")
-        st.caption("Theo dõi tiến độ duyệt lịch, các ca tập sắp diễn ra và lịch sử tập luyện.")
 
         col_st_filter, col_st_refresh = st.columns([4, 1])
         with col_st_filter:
@@ -654,7 +649,6 @@ def render_student_page(user: Dict[str, Any]):
     # -------------------------------------------------------------------------
     with tab_courses:
         st.subheader("Danh Sách Gói Tập Đã Đăng Ký & Hợp Đồng")
-        st.caption("Quản lý tiến độ buổi tập và tải hợp đồng dịch vụ đã ký điện tử.")
 
         if not my_enrollments:
             st.info("Bạn chưa đăng ký khóa học nào. Hãy khám phá và chọn Huấn luyện viên phù hợp ở tab Khám Phá PT nhé!")
@@ -757,7 +751,6 @@ def render_student_page(user: Dict[str, Any]):
     # -------------------------------------------------------------------------
     with tab_wallet:
         st.subheader("Quản Lý Ví Điện Tử Nội Bộ & Nạp Tiền")
-        st.caption("Ví điện tử nội bộ phục vụ thanh toán hợp đồng khóa học và xử lý đền bù minh bạch.")
 
         col_w_info, col_w_topup = st.columns([1, 1])
 
@@ -859,7 +852,6 @@ def render_student_page(user: Dict[str, Any]):
     # -------------------------------------------------------------------------
     with tab_profile:
         st.subheader("Hồ Sơ Cá Nhân & Ảnh Đại Diện")
-        st.caption("Cập nhật ảnh đại diện để đồng bộ trên toàn bộ hệ thống đặt lịch.")
 
         # Widget Quản lý & Tải lên Avatar (Milestone 6 - Hiệu)
         render_avatar_management(user, "STUDENT")
