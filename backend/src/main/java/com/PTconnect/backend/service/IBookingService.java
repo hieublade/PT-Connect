@@ -12,8 +12,6 @@ import java.util.List;
  */
 public interface IBookingService {
 
-    void validateBookingRequest(Long slotId, Long studentId, Long enrollmentId);
-
     BookingResponse createBooking(String studentEmail, CreateBookingRequest request);
 
     List<BookingResponse> getMyBookings(String studentEmail, BookingStatus status);

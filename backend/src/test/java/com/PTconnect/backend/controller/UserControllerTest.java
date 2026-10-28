@@ -70,41 +70,32 @@ class UserControllerTest {
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        when(userService.getAllUsers()).thenReturn(List.of(student, pt));
-        when(userService.getUsersByRole(Role.STUDENT)).thenReturn(List.of(student));
+        when(userService.getUserById(1L)).thenReturn(student);
     }
 
     @Test
-    void testAnonymousGetUsersReturns401() throws Exception {
-        mockMvc.perform(get("/api/v1/users"))
+    void testAnonymousGetUserByIdReturns401() throws Exception {
+        mockMvc.perform(get("/api/v1/users/1"))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void testStudentGetUsersReturns403() throws Exception {
-        mockMvc.perform(get("/api/v1/users")
+    void testAuthenticatedGetUserByIdReturns200() throws Exception {
+        mockMvc.perform(get("/api/v1/users/1")
                         .header("Authorization", "Bearer " + userToken))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.data.id").value(1))
+                .andExpect(jsonPath("$.data.email").value("student.a@ptconnect.vn"))
+                .andExpect(jsonPath("$.data.passwordHash").doesNotExist());
     }
 
     @Test
-    void testGetUsersReturns200AndUserList() throws Exception {
-        mockMvc.perform(get("/api/v1/users")
+    void testAdminGetUserByIdReturns200() throws Exception {
+        mockMvc.perform(get("/api/v1/users/1")
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value(200))
-                .andExpect(jsonPath("$.message").value("Lấy dữ liệu thành công"))
-                .andExpect(jsonPath("$.data", hasSize(greaterThanOrEqualTo(1))))
-                .andExpect(jsonPath("$.data[0].passwordHash").doesNotExist())
-                .andExpect(jsonPath("$.data[0].email").isNotEmpty());
-    }
-
-    @Test
-    void testGetUsersByRoleReturns200() throws Exception {
-        mockMvc.perform(get("/api/v1/users?role=STUDENT")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value(200))
-                .andExpect(jsonPath("$.data[*].role", everyItem(is("STUDENT"))));
+                .andExpect(jsonPath("$.data.id").value(1));
     }
 }

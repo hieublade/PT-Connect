@@ -15,20 +15,11 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping({"/api/v1/users", "/api/users"})
+@RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
 public class UserController {
 
     private final IUserService userService;
-
-    @GetMapping
-    public ResponseEntity<ApiResponse<List<UserDTO>>> getUsers(
-            @RequestParam(required = false) Role role) {
-        List<UserDTO> users = (role != null)
-                ? userService.getUsersByRole(role)
-                : userService.getAllUsers();
-        return ResponseEntity.ok(ApiResponse.success(users));
-    }
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<UserDTO>> getUserById(@PathVariable Long id) {

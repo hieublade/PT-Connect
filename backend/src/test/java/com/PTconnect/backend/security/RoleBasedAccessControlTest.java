@@ -10,8 +10,10 @@ import com.PTconnect.backend.controller.PublicController;
 import com.PTconnect.backend.controller.StudentController;
 import com.PTconnect.backend.service.IAdminPTService;
 import com.PTconnect.backend.service.IAdminStatisticsService;
+import com.PTconnect.backend.service.IPTCourseService;
 import com.PTconnect.backend.service.IPTProfileService;
 import com.PTconnect.backend.service.IPTService;
+import com.PTconnect.backend.service.IPTSlotService;
 import com.PTconnect.backend.service.IUserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -58,6 +60,12 @@ class RoleBasedAccessControlTest {
     private IPTProfileService ptProfileService;
 
     @MockitoBean
+    private IPTCourseService ptCourseService;
+
+    @MockitoBean
+    private IPTSlotService ptSlotService;
+
+    @MockitoBean
     private IAdminPTService adminPTService;
 
     @MockitoBean
@@ -83,9 +91,9 @@ class RoleBasedAccessControlTest {
     class AnonymousTests {
 
         @Test
-        @DisplayName("GET /api/public/health → 200 OK")
+        @DisplayName("GET /api/v1/public/health → 200 OK")
         void givenAnonymous_whenGetPublicHealth_thenReturn200() throws Exception {
-            mockMvc.perform(get("/api/public/health"))
+            mockMvc.perform(get("/api/v1/public/health"))
                     .andExpect(status().isOk());
         }
 
@@ -97,23 +105,23 @@ class RoleBasedAccessControlTest {
         }
 
         @Test
-        @DisplayName("GET /api/student/dashboard → 401 Unauthorized")
+        @DisplayName("GET /api/v1/student/dashboard → 401 Unauthorized")
         void givenAnonymous_whenGetStudentDashboard_thenReturn401() throws Exception {
-            mockMvc.perform(get("/api/student/dashboard"))
+            mockMvc.perform(get("/api/v1/student/dashboard"))
                     .andExpect(status().isUnauthorized());
         }
 
         @Test
-        @DisplayName("GET /api/pt/courses → 401 Unauthorized")
+        @DisplayName("GET /api/v1/pt/courses → 401 Unauthorized")
         void givenAnonymous_whenGetPtCourses_thenReturn401() throws Exception {
-            mockMvc.perform(get("/api/pt/courses"))
+            mockMvc.perform(get("/api/v1/pt/courses"))
                     .andExpect(status().isUnauthorized());
         }
 
         @Test
-        @DisplayName("GET /api/admin/users → 401 Unauthorized")
+        @DisplayName("GET /api/v1/admin/users → 401 Unauthorized")
         void givenAnonymous_whenGetAdminUsers_thenReturn401() throws Exception {
-            mockMvc.perform(get("/api/admin/users"))
+            mockMvc.perform(get("/api/v1/admin/users"))
                     .andExpect(status().isUnauthorized());
         }
     }
@@ -127,33 +135,33 @@ class RoleBasedAccessControlTest {
     class StudentTokenTests {
 
         @Test
-        @DisplayName("GET /api/public/health → 200 OK")
+        @DisplayName("GET /api/v1/public/health → 200 OK")
         void givenStudentToken_whenGetPublicHealth_thenReturn200() throws Exception {
-            mockMvc.perform(get("/api/public/health")
+            mockMvc.perform(get("/api/v1/public/health")
                             .header("Authorization", "Bearer " + studentToken))
                     .andExpect(status().isOk());
         }
 
         @Test
-        @DisplayName("GET /api/student/dashboard → 200 OK")
+        @DisplayName("GET /api/v1/student/dashboard → 200 OK")
         void givenStudentToken_whenGetStudentDashboard_thenReturn200() throws Exception {
-            mockMvc.perform(get("/api/student/dashboard")
+            mockMvc.perform(get("/api/v1/student/dashboard")
                             .header("Authorization", "Bearer " + studentToken))
                     .andExpect(status().isOk());
         }
 
         @Test
-        @DisplayName("GET /api/pt/courses → 403 Forbidden")
+        @DisplayName("GET /api/v1/pt/courses → 403 Forbidden")
         void givenStudentToken_whenGetPtCourses_thenReturn403() throws Exception {
-            mockMvc.perform(get("/api/pt/courses")
+            mockMvc.perform(get("/api/v1/pt/courses")
                             .header("Authorization", "Bearer " + studentToken))
                     .andExpect(status().isForbidden());
         }
 
         @Test
-        @DisplayName("GET /api/admin/users → 403 Forbidden")
+        @DisplayName("GET /api/v1/admin/users → 403 Forbidden")
         void givenStudentToken_whenGetAdminUsers_thenReturn403() throws Exception {
-            mockMvc.perform(get("/api/admin/users")
+            mockMvc.perform(get("/api/v1/admin/users")
                             .header("Authorization", "Bearer " + studentToken))
                     .andExpect(status().isForbidden());
         }
@@ -168,33 +176,33 @@ class RoleBasedAccessControlTest {
     class PtTokenTests {
 
         @Test
-        @DisplayName("GET /api/public/health → 200 OK")
+        @DisplayName("GET /api/v1/public/health → 200 OK")
         void givenPtToken_whenGetPublicHealth_thenReturn200() throws Exception {
-            mockMvc.perform(get("/api/public/health")
+            mockMvc.perform(get("/api/v1/public/health")
                             .header("Authorization", "Bearer " + ptToken))
                     .andExpect(status().isOk());
         }
 
         @Test
-        @DisplayName("GET /api/student/dashboard → 403 Forbidden")
+        @DisplayName("GET /api/v1/student/dashboard → 403 Forbidden")
         void givenPtToken_whenGetStudentDashboard_thenReturn403() throws Exception {
-            mockMvc.perform(get("/api/student/dashboard")
+            mockMvc.perform(get("/api/v1/student/dashboard")
                             .header("Authorization", "Bearer " + ptToken))
                     .andExpect(status().isForbidden());
         }
 
         @Test
-        @DisplayName("GET /api/pt/courses → 200 OK")
+        @DisplayName("GET /api/v1/pt/courses → 200 OK")
         void givenPtToken_whenGetPtCourses_thenReturn200() throws Exception {
-            mockMvc.perform(get("/api/pt/courses")
+            mockMvc.perform(get("/api/v1/pt/courses")
                             .header("Authorization", "Bearer " + ptToken))
                     .andExpect(status().isOk());
         }
 
         @Test
-        @DisplayName("GET /api/admin/users → 403 Forbidden")
+        @DisplayName("GET /api/v1/admin/users → 403 Forbidden")
         void givenPtToken_whenGetAdminUsers_thenReturn403() throws Exception {
-            mockMvc.perform(get("/api/admin/users")
+            mockMvc.perform(get("/api/v1/admin/users")
                             .header("Authorization", "Bearer " + ptToken))
                     .andExpect(status().isForbidden());
         }
@@ -209,33 +217,33 @@ class RoleBasedAccessControlTest {
     class AdminTokenTests {
 
         @Test
-        @DisplayName("GET /api/public/health → 200 OK")
+        @DisplayName("GET /api/v1/public/health → 200 OK")
         void givenAdminToken_whenGetPublicHealth_thenReturn200() throws Exception {
-            mockMvc.perform(get("/api/public/health")
+            mockMvc.perform(get("/api/v1/public/health")
                             .header("Authorization", "Bearer " + adminToken))
                     .andExpect(status().isOk());
         }
 
         @Test
-        @DisplayName("GET /api/student/dashboard → 403 Forbidden")
+        @DisplayName("GET /api/v1/student/dashboard → 403 Forbidden")
         void givenAdminToken_whenGetStudentDashboard_thenReturn403() throws Exception {
-            mockMvc.perform(get("/api/student/dashboard")
+            mockMvc.perform(get("/api/v1/student/dashboard")
                             .header("Authorization", "Bearer " + adminToken))
                     .andExpect(status().isForbidden());
         }
 
         @Test
-        @DisplayName("GET /api/pt/courses → 403 Forbidden")
+        @DisplayName("GET /api/v1/pt/courses → 403 Forbidden")
         void givenAdminToken_whenGetPtCourses_thenReturn403() throws Exception {
-            mockMvc.perform(get("/api/pt/courses")
+            mockMvc.perform(get("/api/v1/pt/courses")
                             .header("Authorization", "Bearer " + adminToken))
                     .andExpect(status().isForbidden());
         }
 
         @Test
-        @DisplayName("GET /api/admin/users → 200 OK")
+        @DisplayName("GET /api/v1/admin/users → 200 OK")
         void givenAdminToken_whenGetAdminUsers_thenReturn200() throws Exception {
-            mockMvc.perform(get("/api/admin/users")
+            mockMvc.perform(get("/api/v1/admin/users")
                             .header("Authorization", "Bearer " + adminToken))
                     .andExpect(status().isOk());
         }

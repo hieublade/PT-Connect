@@ -1,6 +1,7 @@
 package com.PTconnect.backend.policy;
 
 import com.PTconnect.backend.entity.Booking;
+import com.PTconnect.backend.entity.enums.Role;
 
 import java.time.LocalDateTime;
 
@@ -25,5 +26,5 @@ public interface CancellationPolicy {
     /**
      * Vai trò mà chính sách này phục vụ (STUDENT, PT, ADMIN).
      */
-    String getSupportedRole();
+    Role getSupportedRole();
 }

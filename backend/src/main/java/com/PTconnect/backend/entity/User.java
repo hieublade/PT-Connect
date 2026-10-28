@@ -58,4 +58,17 @@ public abstract class User {
     public abstract String getHomePage();
 
     public abstract String getDisplayRole();
+
+    // Hành vi nghiệp vụ quản lý trạng thái tài khoản (Encapsulation)
+    public void activate() {
+        this.status = UserStatus.ACTIVE;
+    }
+
+    public void suspend() {
+        this.status = UserStatus.SUSPENDED;
+    }
+
+    public void pending() {
+        this.status = UserStatus.PENDING;
+    }
 }

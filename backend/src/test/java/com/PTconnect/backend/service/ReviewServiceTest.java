@@ -87,10 +87,15 @@ class ReviewServiceTest {
     @Test
     @DisplayName("Không được đánh giá khi ca tập chưa COMPLETED")
     void testCreateReview_NotCompleted() {
-        booking.setStatus(BookingStatus.CONFIRMED);
+        Booking confirmedBooking = Booking.builder()
+                .id(100L)
+                .student(student)
+                .pt(ptProfile)
+                .status(BookingStatus.CONFIRMED)
+                .build();
 
         when(userRepository.findByEmail("student@test.com")).thenReturn(Optional.of(student));
-        when(bookingRepository.findById(100L)).thenReturn(Optional.of(booking));
+        when(bookingRepository.findById(100L)).thenReturn(Optional.of(confirmedBooking));
 
         CreateReviewRequest request = CreateReviewRequest.builder()
                 .bookingId(100L)

@@ -10,12 +10,12 @@ import com.PTconnect.backend.entity.enums.*;
 import com.PTconnect.backend.exception.BadRequestException;
 import com.PTconnect.backend.exception.BookingConflictException;
 import com.PTconnect.backend.exception.ResourceNotFoundException;
-import com.PTconnect.backend.exception.UnauthorizedException;
 import com.PTconnect.backend.policy.CancellationCalculationResult;
 import com.PTconnect.backend.policy.CancellationPolicy;
 import com.PTconnect.backend.policy.CancellationPolicyFactory;
 import com.PTconnect.backend.repository.*;
 import com.PTconnect.backend.service.IBookingService;
+import com.PTconnect.backend.service.IWalletService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -48,56 +48,7 @@ public class BookingServiceImpl implements IBookingService {
     private final PTProfileRepository ptProfileRepository;
     private final CancellationRepository cancellationRepository;
     private final CancellationPolicyFactory cancellationPolicyFactory;
-    private final WalletRepository walletRepository;
-    private final PaymentRepository paymentRepository;
-
-    @Override
-    public void validateBookingRequest(Long slotId, Long studentId, Long enrollmentId) {
-        AvailabilitySlot slot = slotRepository.findById(slotId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy khung giờ với ID: " + slotId));
-
-        if (slot.getStatus() != SlotStatus.AVAILABLE) {
-            throw new BadRequestException("Khung giờ này đã được đặt hoặc không còn khả dụng");
-        }
-
-        if (slot.getStartTime().isBefore(LocalDateTime.now())) {
-            throw new BadRequestException("Không thể đặt khung giờ đã trôi qua trong quá khứ");
-        }
-
-        List<BookingStatus> activeStatuses = List.of(BookingStatus.PENDING, BookingStatus.CONFIRMED);
-        if (bookingRepository.existsOverlappingBookingForStudent(studentId, activeStatuses, slot.getStartTime(), slot.getEndTime())) {
-            throw new BadRequestException("Bạn đã có một ca tập khác trùng khung giờ này");
-        }
-
-        if (enrollmentId != null) {
-            Enrollment enrollment = enrollmentRepository.findById(enrollmentId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hợp đồng với ID: " + enrollmentId));
-
-            if (!enrollment.getStudent().getId().equals(studentId)) {
-                throw new BadRequestException("Hợp đồng này không thuộc về bạn");
-            }
-
-            if (enrollment.getStatus() != EnrollmentStatus.ACTIVE) {
-                throw new BadRequestException("Hợp đồng này hiện không ở trạng thái hoạt động");
-            }
-
-            if (enrollment.getRemainingSessions() <= 0) {
-                throw new BadRequestException("Hợp đồng đã sử dụng hết số buổi tập");
-            }
-
-            if (LocalDate.now().isAfter(enrollment.getEndDate())) {
-                throw new BadRequestException("Hợp đồng khóa học đã hết hạn sử dụng");
-            }
-
-            if (slot.getStartTime().toLocalDate().isAfter(enrollment.getEndDate())) {
-                throw new BadRequestException("Khung giờ tập vượt quá thời hạn sử dụng của hợp đồng (Hạn chót: " + enrollment.getEndDate() + ")");
-            }
-
-            if (!slot.getPt().getId().equals(enrollment.getPt().getId())) {
-                throw new BadRequestException("Khung giờ không thuộc về Huấn luyện viên của hợp đồng này");
-            }
-        }
-    }
+    private final IWalletService walletService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -295,50 +246,15 @@ public class BookingServiceImpl implements IBookingService {
             throw new BadRequestException("Chỉ có thể từ chối đơn đặt lịch đang ở trạng thái chờ duyệt (PENDING)");
         }
 
-        // 1. Chuyển trạng thái booking sang CANCELLED
-        booking.cancel();
-
-        // 2. Trả slot về AVAILABLE
-        AvailabilitySlot slot = booking.getSlot();
-        if (slot != null) {
-            slot.release();
-            slotRepository.save(slot);
-        }
-
-        // 3. Hoàn lại 1 buổi tập nếu là gói PACKAGE (Encapsulation qua restoreSession)
-        if (booking.getBookingType() == BookingType.PACKAGE && booking.getEnrollment() != null) {
-            Enrollment enrollment = booking.getEnrollment();
-            enrollment.restoreSession();
-            enrollmentRepository.save(enrollment);
-        }
-
-        // 4. Ghi nhận nhật ký hủy lịch vào bảng cancellations
-        LocalDateTime startTime = (slot != null) ? slot.getStartTime() : LocalDateTime.now();
-        long minutesBefore = Math.max(0, Duration.between(LocalDateTime.now(), startTime).toMinutes());
-        double hoursVal = Math.min(999.0, Math.max(0.0, minutesBefore / 60.0));
-        BigDecimal hoursBefore = BigDecimal.valueOf(hoursVal).setScale(2, RoundingMode.HALF_UP);
-
         String reason = (request != null && request.getReason() != null && !request.getReason().isBlank())
                 ? request.getReason().trim()
                 : "Huấn luyện viên từ chối lịch ca tập";
 
-        Cancellation cancellation = Cancellation.builder()
-                .booking(booking)
-                .cancelledBy(ptProfile.getPt())
-                .cancelledByRole("PT")
-                .reason(reason)
-                .hoursBeforeSession(hoursBefore)
-                .refundAmount(booking.getSessionFee() != null ? booking.getSessionFee() : BigDecimal.ZERO)
-                .compensationAmount(BigDecimal.ZERO)
-                .penaltyAmount(BigDecimal.ZERO)
-                .status(CancellationStatus.PROCESSED)
-                .build();
-
-        cancellation = cancellationRepository.save(cancellation);
-        booking = bookingRepository.save(booking);
+        CancellationPolicy policy = cancellationPolicyFactory.getPolicy(Role.PT);
+        CancellationCalculationResult result = policy.calculate(booking, LocalDateTime.now(), reason, null);
 
         log.info("PT {} đã từ chối booking ID {} với lý do: {}", ptEmail, booking.getId(), reason);
-        return BookingResponse.fromEntity(booking, cancellation);
+        return executeCancellation(booking, ptProfile.getPt(), "PT", reason, null, result);
     }
 
     @Override
@@ -366,72 +282,12 @@ public class BookingServiceImpl implements IBookingService {
                 ? request.getReason().trim()
                 : "Học viên hủy lịch ca tập";
 
-        CancellationPolicy policy = cancellationPolicyFactory.getPolicy("STUDENT");
-        CancellationCalculationResult result = policy.calculate(booking, LocalDateTime.now(), reason, request != null ? request.getEvidenceUrl() : null);
+        String evidenceUrl = (request != null) ? request.getEvidenceUrl() : null;
 
-        // 1. Chuyển trạng thái booking sang CANCELLED
-        booking.cancel();
+        CancellationPolicy policy = cancellationPolicyFactory.getPolicy(Role.STUDENT);
+        CancellationCalculationResult result = policy.calculate(booking, LocalDateTime.now(), reason, evidenceUrl);
 
-        // 2. Trả slot về AVAILABLE
-        AvailabilitySlot slot = booking.getSlot();
-        if (slot != null) {
-            slot.release();
-            slotRepository.save(slot);
-        }
-
-        // 3. Khôi phục buổi tập nếu chính sách cho phép (đối với gói PACKAGE)
-        if (result.isRestoreSession() && booking.getBookingType() == BookingType.PACKAGE && booking.getEnrollment() != null) {
-            Enrollment enrollment = booking.getEnrollment();
-            enrollment.restoreSession();
-            enrollmentRepository.save(enrollment);
-        }
-
-        // 4. Đền bù cho PT nếu hủy sát giờ (< 24h)
-        if (result.getCompensationAmount().compareTo(BigDecimal.ZERO) > 0 && booking.getPt() != null && booking.getPt().getPt() != null) {
-            PT ptUser = booking.getPt().getPt();
-            Wallet ptWallet = walletRepository.findByUserId(ptUser.getId()).orElse(null);
-            if (ptWallet != null) {
-                ptWallet.credit(result.getCompensationAmount());
-                walletRepository.save(ptWallet);
-
-                String datePrefix = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-                String shortId = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-                String txnRef = "TXN_COMP_" + datePrefix + "_" + shortId;
-
-                Payment compPayment = Payment.builder()
-                        .wallet(ptWallet)
-                        .enrollment(booking.getEnrollment())
-                        .amount(result.getCompensationAmount())
-                        .paymentType(PaymentType.COMPENSATION)
-                        .paymentMethod(PaymentMethod.WALLET)
-                        .status(PaymentStatus.SUCCESS)
-                        .transactionRef(txnRef)
-                        .build();
-                paymentRepository.save(compPayment);
-                log.info("Đã đền bù {} vào ví PT {} cho booking ID {}", result.getCompensationAmount(), ptUser.getEmail(), bookingId);
-            }
-        }
-
-        // 5. Ghi nhật ký hủy lịch vào bảng cancellations
-        Cancellation cancellation = Cancellation.builder()
-                .booking(booking)
-                .cancelledBy(student)
-                .cancelledByRole("STUDENT")
-                .reason(reason)
-                .hoursBeforeSession(result.getHoursBeforeSession())
-                .refundAmount(result.getRefundAmount())
-                .compensationAmount(result.getCompensationAmount())
-                .penaltyAmount(result.getPenaltyAmount())
-                .evidenceUrl(request != null ? request.getEvidenceUrl() : null)
-                .status(CancellationStatus.PROCESSED)
-                .build();
-
-        cancellation = cancellationRepository.save(cancellation);
-        booking = bookingRepository.save(booking);
-
-        log.info("Student {} đã hủy booking ID {}: refund={}, comp={}, penalty={}",
-                studentEmail, booking.getId(), result.getRefundAmount(), result.getCompensationAmount(), result.getPenaltyAmount());
-        return BookingResponse.fromEntity(booking, cancellation);
+        return executeCancellation(booking, student, "STUDENT", reason, evidenceUrl, result);
     }
 
     @Override
@@ -459,10 +315,27 @@ public class BookingServiceImpl implements IBookingService {
                 ? request.getReason().trim()
                 : "Huấn luyện viên hủy lịch ca tập";
 
-        CancellationPolicy policy = cancellationPolicyFactory.getPolicy("PT");
-        CancellationCalculationResult result = policy.calculate(booking, LocalDateTime.now(), reason, request != null ? request.getEvidenceUrl() : null);
+        String evidenceUrl = (request != null) ? request.getEvidenceUrl() : null;
 
-        // 1. Chuyển trạng thái booking sang CANCELLED
+        CancellationPolicy policy = cancellationPolicyFactory.getPolicy(Role.PT);
+        CancellationCalculationResult result = policy.calculate(booking, LocalDateTime.now(), reason, evidenceUrl);
+
+        return executeCancellation(booking, ptProfile.getPt(), "PT", reason, evidenceUrl, result);
+    }
+
+    /**
+     * Phương thức điều phối cốt lõi dùng chung cho toàn bộ luồng hủy lịch.
+     * Thực thi State Transition, thu hồi Slot, hoàn buổi tập, giao dịch ví tiền và ghi nhận Cancellation.
+     */
+    private BookingResponse executeCancellation(
+            Booking booking,
+            User cancelledBy,
+            String cancelledByRole,
+            String reason,
+            String evidenceUrl,
+            CancellationCalculationResult result
+    ) {
+        // 1. Chuyển trạng thái booking sang CANCELLED (State Pattern / Entity tự bảo vệ)
         booking.cancel();
 
         // 2. Trả slot về AVAILABLE
@@ -472,79 +345,78 @@ public class BookingServiceImpl implements IBookingService {
             slotRepository.save(slot);
         }
 
-        // 3. Khôi phục buổi tập cho học viên nếu là PACKAGE
+        // 3. Khôi phục buổi tập nếu chính sách cho phép (đối với gói PACKAGE)
         if (result.isRestoreSession() && booking.getBookingType() == BookingType.PACKAGE && booking.getEnrollment() != null) {
             Enrollment enrollment = booking.getEnrollment();
             enrollment.restoreSession();
             enrollmentRepository.save(enrollment);
         }
 
-        String datePrefix = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        // 4. Xử lý ví tiền (đền bù / phạt)
+        handleWalletTransactions(booking, cancelledByRole, result);
 
-        // 4. Đền bù cho Student nếu PT hủy sát giờ (< 24h)
-        if (result.getCompensationAmount().compareTo(BigDecimal.ZERO) > 0 && booking.getStudent() != null) {
-            User student = booking.getStudent();
-            Wallet studentWallet = walletRepository.findByUserId(student.getId()).orElse(null);
-            if (studentWallet != null) {
-                studentWallet.credit(result.getCompensationAmount());
-                walletRepository.save(studentWallet);
-
-                String shortId = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-                Payment compPayment = Payment.builder()
-                        .wallet(studentWallet)
-                        .enrollment(booking.getEnrollment())
-                        .amount(result.getCompensationAmount())
-                        .paymentType(PaymentType.COMPENSATION)
-                        .paymentMethod(PaymentMethod.WALLET)
-                        .status(PaymentStatus.SUCCESS)
-                        .transactionRef("TXN_COMP_" + datePrefix + "_" + shortId)
-                        .build();
-                paymentRepository.save(compPayment);
-            }
-        }
-
-        // 5. Phạt PT nếu PT hủy sát giờ (< 24h)
-        if (result.getPenaltyAmount().compareTo(BigDecimal.ZERO) > 0) {
-            PT ptUser = ptProfile.getPt();
-            Wallet ptWallet = walletRepository.findByUserId(ptUser.getId()).orElse(null);
-            if (ptWallet != null) {
-                ptWallet.debitPenalty(result.getPenaltyAmount());
-                walletRepository.save(ptWallet);
-
-                String shortId = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-                Payment penaltyPayment = Payment.builder()
-                        .wallet(ptWallet)
-                        .enrollment(booking.getEnrollment())
-                        .amount(result.getPenaltyAmount())
-                        .paymentType(PaymentType.REFUND)
-                        .paymentMethod(PaymentMethod.WALLET)
-                        .status(PaymentStatus.SUCCESS)
-                        .transactionRef("TXN_PENALTY_" + datePrefix + "_" + shortId)
-                        .build();
-                paymentRepository.save(penaltyPayment);
-            }
-        }
-
-        // 6. Ghi nhật ký hủy lịch vào bảng cancellations
+        // 5. Ghi nhật ký hủy lịch vào bảng cancellations
         Cancellation cancellation = Cancellation.builder()
                 .booking(booking)
-                .cancelledBy(ptProfile.getPt())
-                .cancelledByRole("PT")
+                .cancelledBy(cancelledBy)
+                .cancelledByRole(cancelledByRole)
                 .reason(reason)
                 .hoursBeforeSession(result.getHoursBeforeSession())
                 .refundAmount(result.getRefundAmount())
                 .compensationAmount(result.getCompensationAmount())
                 .penaltyAmount(result.getPenaltyAmount())
-                .evidenceUrl(request != null ? request.getEvidenceUrl() : null)
+                .evidenceUrl(evidenceUrl)
                 .status(CancellationStatus.PROCESSED)
                 .build();
 
         cancellation = cancellationRepository.save(cancellation);
         booking = bookingRepository.save(booking);
 
-        log.info("PT {} đã hủy booking ID {}: refund={}, comp={}, penalty={}",
-                ptEmail, booking.getId(), result.getRefundAmount(), result.getCompensationAmount(), result.getPenaltyAmount());
+        log.info("{} {} đã hủy booking ID {}: refund={}, comp={}, penalty={}",
+                cancelledByRole, cancelledBy != null ? cancelledBy.getEmail() : "N/A",
+                booking.getId(), result.getRefundAmount(), result.getCompensationAmount(), result.getPenaltyAmount());
         return BookingResponse.fromEntity(booking, cancellation);
+    }
+
+    /**
+     * Xử lý giao dịch bồi hoàn hoặc xử phạt trên ví tài chính.
+     */
+    private void handleWalletTransactions(
+            Booking booking,
+            String cancelledByRole,
+            CancellationCalculationResult result
+    ) {
+        if ("STUDENT".equalsIgnoreCase(cancelledByRole)) {
+            // Học viên hủy: Nếu hủy sát giờ (< 24h), đền bù cho PT
+            if (result.getCompensationAmount().compareTo(BigDecimal.ZERO) > 0
+                    && booking.getPt() != null && booking.getPt().getPt() != null) {
+                walletService.processBookingCompensation(
+                        booking.getPt().getPt().getId(),
+                        booking.getEnrollment(),
+                        result.getCompensationAmount()
+                );
+            }
+        } else if ("PT".equalsIgnoreCase(cancelledByRole)) {
+            // Huấn luyện viên hủy:
+            // Đền bù cho Student nếu PT hủy sát giờ (< 24h)
+            if (result.getCompensationAmount().compareTo(BigDecimal.ZERO) > 0 && booking.getStudent() != null) {
+                walletService.processBookingCompensation(
+                        booking.getStudent().getId(),
+                        booking.getEnrollment(),
+                        result.getCompensationAmount()
+                );
+            }
+
+            // Phạt PT nếu PT hủy sát giờ (< 24h)
+            if (result.getPenaltyAmount().compareTo(BigDecimal.ZERO) > 0
+                    && booking.getPt() != null && booking.getPt().getPt() != null) {
+                walletService.processBookingPenalty(
+                        booking.getPt().getPt().getId(),
+                        booking.getEnrollment(),
+                        result.getPenaltyAmount()
+                );
+            }
+        }
     }
 
     @Override
@@ -556,11 +428,11 @@ public class BookingServiceImpl implements IBookingService {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn đặt lịch với ID: " + bookingId));
 
-        String role = "STUDENT";
+        Role role = Role.STUDENT;
         if (booking.getPt() != null && booking.getPt().getPt() != null && booking.getPt().getPt().getId().equals(user.getId())) {
-            role = "PT";
+            role = Role.PT;
         } else if (user.getRole() == Role.ADMIN) {
-            role = "ADMIN";
+            role = Role.ADMIN;
         }
 
         CancellationPolicy policy = cancellationPolicyFactory.getPolicy(role);
@@ -568,7 +440,7 @@ public class BookingServiceImpl implements IBookingService {
 
         return CancelPreviewResponse.builder()
                 .bookingId(bookingId)
-                .cancelledByRole(role)
+                .cancelledByRole(role.name())
                 .hoursBeforeSession(result.getHoursBeforeSession())
                 .restoreSession(result.isRestoreSession())
                 .refundAmount(result.getRefundAmount())

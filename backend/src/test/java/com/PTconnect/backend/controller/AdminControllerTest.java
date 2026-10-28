@@ -133,4 +133,38 @@ class AdminControllerTest {
                 .andExpect(jsonPath("$.data.verificationStatus").value("REJECTED"))
                 .andExpect(jsonPath("$.data.userStatus").value("PENDING"));
     }
+
+    @Test
+    @DisplayName("Admin lấy danh sách tất cả người dùng (200 OK)")
+    void testGetUsersSuccess() throws Exception {
+        UserDTO user = UserDTO.builder()
+                .id(1L)
+                .email("student@ptconnect.vn")
+                .role(Role.STUDENT)
+                .build();
+        when(userService.getAllUsers()).thenReturn(List.of(user));
+
+        mockMvc.perform(get("/api/v1/admin/users")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.data[0].email").value("student@ptconnect.vn"));
+    }
+
+    @Test
+    @DisplayName("Admin lấy danh sách người dùng theo Role (200 OK)")
+    void testGetUsersByRoleSuccess() throws Exception {
+        UserDTO ptUser = UserDTO.builder()
+                .id(2L)
+                .email("pt@ptconnect.vn")
+                .role(Role.PT)
+                .build();
+        when(userService.getUsersByRole(Role.PT)).thenReturn(List.of(ptUser));
+
+        mockMvc.perform(get("/api/v1/admin/users?role=PT")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.data[0].role").value("PT"));
+    }
 }

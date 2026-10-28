@@ -3,7 +3,6 @@ package com.PTconnect.backend.service.impl;
 import com.PTconnect.backend.dto.response.PendingPTResponse;
 import com.PTconnect.backend.dto.response.PTProfileResponse;
 import com.PTconnect.backend.entity.PTProfile;
-import com.PTconnect.backend.entity.enums.UserStatus;
 import com.PTconnect.backend.entity.enums.VerificationStatus;
 import com.PTconnect.backend.exception.ResourceNotFoundException;
 import com.PTconnect.backend.repository.PTProfileRepository;
@@ -37,9 +36,8 @@ public class AdminPTServiceImpl implements IAdminPTService {
         PTProfile profile = ptProfileRepository.findById(ptProfileId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hồ sơ PT với ID: " + ptProfileId));
 
-        profile.setVerificationStatus(VerificationStatus.VERIFIED);
+        profile.approve();
         if (profile.getPt() != null) {
-            profile.getPt().setStatus(UserStatus.ACTIVE);
             userRepository.save(profile.getPt());
         }
 
@@ -53,9 +51,8 @@ public class AdminPTServiceImpl implements IAdminPTService {
         PTProfile profile = ptProfileRepository.findById(ptProfileId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hồ sơ PT với ID: " + ptProfileId));
 
-        profile.setVerificationStatus(VerificationStatus.REJECTED);
+        profile.reject();
         if (profile.getPt() != null) {
-            profile.getPt().setStatus(UserStatus.PENDING);
             userRepository.save(profile.getPt());
         }
 

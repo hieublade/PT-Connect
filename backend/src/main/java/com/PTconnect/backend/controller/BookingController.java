@@ -1,8 +1,10 @@
 package com.PTconnect.backend.controller;
 
+import com.PTconnect.backend.dto.request.CancelBookingRequest;
 import com.PTconnect.backend.dto.request.CreateBookingRequest;
 import com.PTconnect.backend.dto.request.RejectBookingRequest;
 import com.PTconnect.backend.dto.response.BookingResponse;
+import com.PTconnect.backend.dto.response.CancelPreviewResponse;
 import com.PTconnect.backend.entity.enums.BookingStatus;
 import com.PTconnect.backend.service.IBookingService;
 import com.PTconnect.backend.util.ApiResponse;
@@ -30,7 +32,7 @@ public class BookingController {
     // 1. Phía Học viên (Student Booking Endpoints)
     // -------------------------------------------------------------
 
-    @PostMapping({"/api/v1/bookings", "/api/bookings"})
+    @PostMapping("/api/v1/bookings")
     public ResponseEntity<ApiResponse<BookingResponse>> createBooking(
             Authentication authentication,
             @Valid @RequestBody CreateBookingRequest request) {
@@ -40,7 +42,7 @@ public class BookingController {
                 .body(ApiResponse.created("Đặt lịch ca tập thành công (chờ Huấn luyện viên phê duyệt)", response));
     }
 
-    @GetMapping({"/api/v1/bookings/my", "/api/bookings/my"})
+    @GetMapping("/api/v1/bookings/my")
     public ResponseEntity<ApiResponse<List<BookingResponse>>> getMyBookings(
             Authentication authentication,
             @RequestParam(required = false) BookingStatus status) {
@@ -49,7 +51,7 @@ public class BookingController {
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách lịch tập của tôi thành công", bookings));
     }
 
-    @GetMapping({"/api/v1/bookings/{id}", "/api/bookings/{id}"})
+    @GetMapping("/api/v1/bookings/{id}")
     public ResponseEntity<ApiResponse<BookingResponse>> getBookingById(
             Authentication authentication,
             @PathVariable Long id) {
@@ -62,7 +64,7 @@ public class BookingController {
     // 2. Phía Huấn luyện viên (PT Booking Endpoints)
     // -------------------------------------------------------------
 
-    @GetMapping({"/api/v1/pt/bookings", "/api/pt/bookings"})
+    @GetMapping("/api/v1/pt/bookings")
     public ResponseEntity<ApiResponse<List<BookingResponse>>> getPTBookings(
             Authentication authentication,
             @RequestParam(required = false) BookingStatus status) {
@@ -71,7 +73,7 @@ public class BookingController {
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách đơn đặt lịch thành công", bookings));
     }
 
-    @PutMapping({"/api/v1/pt/bookings/{id}/confirm", "/api/pt/bookings/{id}/confirm"})
+    @PutMapping("/api/v1/pt/bookings/{id}/confirm")
     public ResponseEntity<ApiResponse<BookingResponse>> confirmBooking(
             Authentication authentication,
             @PathVariable Long id) {
@@ -80,7 +82,7 @@ public class BookingController {
         return ResponseEntity.ok(ApiResponse.success("Xác nhận ca tập thành công", response));
     }
 
-    @PutMapping({"/api/v1/pt/bookings/{id}/reject", "/api/pt/bookings/{id}/reject"})
+    @PutMapping("/api/v1/pt/bookings/{id}/reject")
     public ResponseEntity<ApiResponse<BookingResponse>> rejectBooking(
             Authentication authentication,
             @PathVariable Long id,
@@ -97,14 +99,14 @@ public class BookingController {
     // 3. Chính sách Hủy lịch & Bồi thường (Milestone 7 - Hưng & Thắng)
     // -------------------------------------------------------------
 
-    @PutMapping({"/api/v1/bookings/{id}/cancel", "/api/bookings/{id}/cancel"})
+    @PutMapping("/api/v1/bookings/{id}/cancel")
     public ResponseEntity<ApiResponse<BookingResponse>> cancelBookingByStudent(
             Authentication authentication,
             @PathVariable Long id,
-            @RequestBody(required = false) com.PTconnect.backend.dto.request.CancelBookingRequest request) {
+            @RequestBody(required = false) CancelBookingRequest request) {
         String email = SecurityUtils.getCurrentUserEmail(authentication);
         if (request == null) {
-            request = com.PTconnect.backend.dto.request.CancelBookingRequest.builder()
+            request = CancelBookingRequest.builder()
                     .reason("Học viên hủy lịch ca tập")
                     .build();
         }
@@ -112,14 +114,14 @@ public class BookingController {
         return ResponseEntity.ok(ApiResponse.success("Học viên hủy ca tập thành công theo chính sách", response));
     }
 
-    @PutMapping({"/api/v1/pt/bookings/{id}/cancel", "/api/pt/bookings/{id}/cancel"})
+    @PutMapping("/api/v1/pt/bookings/{id}/cancel")
     public ResponseEntity<ApiResponse<BookingResponse>> cancelBookingByPT(
             Authentication authentication,
             @PathVariable Long id,
-            @RequestBody(required = false) com.PTconnect.backend.dto.request.CancelBookingRequest request) {
+            @RequestBody(required = false) CancelBookingRequest request) {
         String email = SecurityUtils.getCurrentUserEmail(authentication);
         if (request == null) {
-            request = com.PTconnect.backend.dto.request.CancelBookingRequest.builder()
+            request = CancelBookingRequest.builder()
                     .reason("Huấn luyện viên hủy lịch ca tập")
                     .build();
         }
@@ -127,12 +129,13 @@ public class BookingController {
         return ResponseEntity.ok(ApiResponse.success("Huấn luyện viên hủy ca tập thành công theo chính sách", response));
     }
 
-    @GetMapping({"/api/v1/bookings/{id}/cancel-preview", "/api/bookings/{id}/cancel-preview"})
-    public ResponseEntity<ApiResponse<com.PTconnect.backend.dto.response.CancelPreviewResponse>> previewCancelBooking(
+    @GetMapping("/api/v1/bookings/{id}/cancel-preview")
+    public ResponseEntity<ApiResponse<CancelPreviewResponse>> previewCancelBooking(
             Authentication authentication,
             @PathVariable Long id) {
         String email = SecurityUtils.getCurrentUserEmail(authentication);
-        com.PTconnect.backend.dto.response.CancelPreviewResponse response = bookingService.previewCancelBooking(email, id);
+        CancelPreviewResponse response = bookingService.previewCancelBooking(email, id);
         return ResponseEntity.ok(ApiResponse.success("Xem trước chính sách hủy lịch thành công", response));
     }
 }
+

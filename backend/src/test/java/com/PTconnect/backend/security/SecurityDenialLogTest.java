@@ -13,7 +13,10 @@ import com.PTconnect.backend.controller.PublicController;
 import com.PTconnect.backend.controller.StudentController;
 import com.PTconnect.backend.service.IAdminPTService;
 import com.PTconnect.backend.service.IAdminStatisticsService;
+import com.PTconnect.backend.service.IPTCourseService;
+import com.PTconnect.backend.service.IPTProfileService;
 import com.PTconnect.backend.service.IPTService;
+import com.PTconnect.backend.service.IPTSlotService;
 import com.PTconnect.backend.service.IUserService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,6 +62,15 @@ class SecurityDenialLogTest {
     private IPTService ptService;
 
     @MockitoBean
+    private IPTProfileService ptProfileService;
+
+    @MockitoBean
+    private IPTCourseService ptCourseService;
+
+    @MockitoBean
+    private IPTSlotService ptSlotService;
+
+    @MockitoBean
     private IAdminPTService adminPTService;
 
     @MockitoBean
@@ -92,14 +104,14 @@ class SecurityDenialLogTest {
     }
 
     @Test
-    @DisplayName("Student gọi /api/admin/users → log chứa email + endpoint + ACCESS DENIED")
+    @DisplayName("Student gọi /api/v1/admin/users → log chứa email + endpoint + ACCESS DENIED")
     void givenStudentToken_whenCallAdminApi_thenLogContainsUserAndEndpointAndDenial()
             throws Exception {
 
         String studentEmail = "student.a@ptconnect.vn";
         String token = jwtUtil.generateToken(studentEmail, "STUDENT");
 
-        mockMvc.perform(get("/api/admin/users")
+        mockMvc.perform(get("/api/v1/admin/users")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isForbidden());
 
@@ -117,7 +129,7 @@ class SecurityDenialLogTest {
 
         assertThat(denialLog)
                 .as("Log phải chứa endpoint bị chặn")
-                .contains("/api/admin/users");
+                .contains("/api/v1/admin/users");
 
         assertThat(denialLog)
                 .as("Log phải chứa từ khóa ACCESS DENIED")
@@ -125,14 +137,14 @@ class SecurityDenialLogTest {
     }
 
     @Test
-    @DisplayName("Student gọi /api/pt/courses → log chứa email student + endpoint PT")
+    @DisplayName("Student gọi /api/v1/pt/courses → log chứa email student + endpoint PT")
     void givenStudentToken_whenCallPtApi_thenLogContainsStudentEmailAndPtEndpoint()
             throws Exception {
 
         String studentEmail = "student.b@ptconnect.vn";
         String token = jwtUtil.generateToken(studentEmail, "STUDENT");
 
-        mockMvc.perform(get("/api/pt/courses")
+        mockMvc.perform(get("/api/v1/pt/courses")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isForbidden());
 
@@ -142,18 +154,18 @@ class SecurityDenialLogTest {
 
         String denialLog = logs.get(0);
         assertThat(denialLog).contains(studentEmail);
-        assertThat(denialLog).contains("/api/pt/courses");
+        assertThat(denialLog).contains("/api/v1/pt/courses");
     }
 
     @Test
-    @DisplayName("PT gọi /api/admin/users → log chứa email PT + endpoint admin")
+    @DisplayName("PT gọi /api/v1/admin/users → log chứa email PT + endpoint admin")
     void givenPtToken_whenCallAdminApi_thenLogContainsPtEmailAndAdminEndpoint()
             throws Exception {
 
         String ptEmail = "pt.hoangc@ptconnect.vn";
         String token = jwtUtil.generateToken(ptEmail, "PT");
 
-        mockMvc.perform(get("/api/admin/users")
+        mockMvc.perform(get("/api/v1/admin/users")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isForbidden());
 
@@ -163,18 +175,18 @@ class SecurityDenialLogTest {
 
         String denialLog = logs.get(0);
         assertThat(denialLog).contains(ptEmail);
-        assertThat(denialLog).contains("/api/admin/users");
+        assertThat(denialLog).contains("/api/v1/admin/users");
     }
 
     @Test
-    @DisplayName("Admin gọi /api/student/dashboard → log chứa email admin + endpoint student")
+    @DisplayName("Admin gọi /api/v1/student/dashboard → log chứa email admin + endpoint student")
     void givenAdminToken_whenCallStudentApi_thenLogContainsAdminEmailAndStudentEndpoint()
             throws Exception {
 
         String adminEmail = "admin@ptconnect.vn";
         String token = jwtUtil.generateToken(adminEmail, "ADMIN");
 
-        mockMvc.perform(get("/api/student/dashboard")
+        mockMvc.perform(get("/api/v1/student/dashboard")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isForbidden());
 
@@ -184,14 +196,14 @@ class SecurityDenialLogTest {
 
         String denialLog = logs.get(0);
         assertThat(denialLog).contains(adminEmail);
-        assertThat(denialLog).contains("/api/student/dashboard");
+        assertThat(denialLog).contains("/api/v1/student/dashboard");
     }
 
     @Test
-    @DisplayName("Anonymous gọi /api/public/health → KHÔNG có log denial")
+    @DisplayName("Anonymous gọi /api/v1/public/health → KHÔNG có log denial")
     void givenAnonymous_whenCallPublicApi_thenNoDenialLog() throws Exception {
 
-        mockMvc.perform(get("/api/public/health"))
+        mockMvc.perform(get("/api/v1/public/health"))
                 .andExpect(status().isOk());
 
         List<String> logs = capturedMessages();

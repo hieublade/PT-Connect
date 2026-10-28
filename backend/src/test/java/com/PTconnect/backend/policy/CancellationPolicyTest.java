@@ -4,6 +4,7 @@ import com.PTconnect.backend.entity.AvailabilitySlot;
 import com.PTconnect.backend.entity.Booking;
 import com.PTconnect.backend.entity.enums.BookingStatus;
 import com.PTconnect.backend.entity.enums.BookingType;
+import com.PTconnect.backend.entity.enums.Role;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -204,5 +205,13 @@ class CancellationPolicyTest {
         assertTrue(rAdmin.isRestoreSession());
         assertEquals(0, BigDecimal.ZERO.compareTo(rAdmin.getCompensationAmount()));
         assertEquals(0, BigDecimal.ZERO.compareTo(rAdmin.getPenaltyAmount()));
+    }
+
+    @Test
+    @DisplayName("Lấy chính sách thông qua Enum Role Type-Safe")
+    void testPolymorphismViaRoleEnum() {
+        assertSame(studentPolicy, factory.getPolicy(Role.STUDENT));
+        assertSame(ptPolicy, factory.getPolicy(Role.PT));
+        assertSame(adminPolicy, factory.getPolicy(Role.ADMIN));
     }
 }

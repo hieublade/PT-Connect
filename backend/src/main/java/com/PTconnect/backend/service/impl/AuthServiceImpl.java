@@ -6,13 +6,11 @@ import com.PTconnect.backend.dto.request.RegisterRequest;
 import com.PTconnect.backend.dto.response.AuthResponse;
 import com.PTconnect.backend.dto.response.UserDTO;
 import com.PTconnect.backend.entity.*;
-import com.PTconnect.backend.entity.enums.Role;
 import com.PTconnect.backend.entity.enums.UserStatus;
-import com.PTconnect.backend.entity.enums.VerificationStatus;
 import com.PTconnect.backend.entity.enums.WalletStatus;
 import com.PTconnect.backend.exception.ResourceNotFoundException;
 import com.PTconnect.backend.exception.UnauthorizedException;
-import com.PTconnect.backend.repository.PTProfileRepository;
+import com.PTconnect.backend.handler.UserRegistrationHandler;
 import com.PTconnect.backend.repository.UserRepository;
 import com.PTconnect.backend.repository.WalletRepository;
 import com.PTconnect.backend.service.IAuthService;
@@ -22,16 +20,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements IAuthService {
 
     private final UserRepository userRepository;
-    private final PTProfileRepository ptProfileRepository;
     private final WalletRepository walletRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final List<UserRegistrationHandler> registrationHandlers;
 
     @Override
     @Transactional
@@ -43,54 +42,18 @@ public class AuthServiceImpl implements IAuthService {
         if (userRepository.existsByPhone(request.getPhone())) {
             throw new IllegalArgumentException("Số điện thoại đã được sử dụng: " + request.getPhone());
         }
-        if (request.getRole() != Role.STUDENT && request.getRole() != Role.PT) {
-            throw new IllegalArgumentException("Hệ thống chỉ hỗ trợ đăng ký cho vai trò STUDENT hoặc PT");
-        }
+
+        // Tìm Handler xử lý đăng ký phù hợp theo vai trò (OCP & Factory/Strategy Pattern)
+        UserRegistrationHandler handler = registrationHandlers.stream()
+                .filter(h -> h.supports(request.getRole()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Hệ thống chỉ hỗ trợ đăng ký cho vai trò STUDENT hoặc PT"));
 
         // 2. Mã hóa mật khẩu bằng BCrypt
         String passwordHash = passwordEncoder.encode(request.getPassword());
 
-        User savedUser;
-
-        // 3. Tạo Entity tương ứng theo Role trong cùng 1 Transaction
-        if (request.getRole() == Role.PT) {
-            PT pt = PT.builder()
-                    .fullName(request.getFullName())
-                    .email(request.getEmail())
-                    .passwordHash(passwordHash)
-                    .phone(request.getPhone())
-                    .role(Role.PT)
-                    .status(UserStatus.PENDING) // PT mới đăng ký ở trạng thái PENDING theo yêu cầu Milestone 3
-                    .build();
-            savedUser = userRepository.save(pt);
-
-            String locations = (request.getAvailableLocations() != null && !request.getAvailableLocations().isBlank())
-                    ? request.getAvailableLocations()
-                    : "Chưa cập nhật địa điểm";
-
-            PTProfile profile = PTProfile.builder()
-                    .pt((PT) savedUser)
-                    .bio(request.getBio())
-                    .experienceYears(request.getExperienceYears() != null ? request.getExperienceYears() : 0)
-                    .availableLocations(locations)
-                    .locationPricingNote(request.getLocationPricingNote())
-                    .certificateUrls(request.getCertificateUrls())
-                    .verificationStatus(VerificationStatus.PENDING) // PT mới đăng ký ở PENDING
-                    .build();
-
-            ptProfileRepository.save(profile);
-            ((PT) savedUser).setProfile(profile);
-        } else {
-            Student student = Student.builder()
-                    .fullName(request.getFullName())
-                    .email(request.getEmail())
-                    .passwordHash(passwordHash)
-                    .phone(request.getPhone())
-                    .role(Role.STUDENT)
-                    .status(UserStatus.ACTIVE)
-                    .build();
-            savedUser = userRepository.save(student);
-        }
+        // 3. Khởi tạo và lưu User/Profile thông qua Handler tương ứng (loại bỏ if-else và Downcasting)
+        User savedUser = handler.register(request, passwordHash);
 
         // 4. Tạo ví (Wallet) ban đầu với số dư 0 VND trong cùng Transaction
         Wallet wallet = Wallet.builder()
