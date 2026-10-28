@@ -1,3 +1,4 @@
+import json
 import re
 import streamlit as st
 from api.auth_api import AuthApi, save_auth_session
@@ -180,7 +181,11 @@ def render_login_page():
                             "experienceYears": int(reg_exp) if role_choice == "PT" else None,
                             "availableLocations": reg_locations.strip() if role_choice == "PT" else None,
                             "locationPricingNote": reg_pricing.strip() if reg_pricing else None,
-                            "certificateUrls": reg_certs.strip() if reg_certs else None
+                            "certificateUrls": (
+                                reg_certs.strip()
+                                if reg_certs.strip().startswith("[") and reg_certs.strip().endswith("]")
+                                else json.dumps([reg_certs.strip()])
+                            ) if reg_certs and reg_certs.strip() else None
                         }
 
                         with st.spinner("Đang tạo tài khoản và kích hoạt dịch vụ..."):
