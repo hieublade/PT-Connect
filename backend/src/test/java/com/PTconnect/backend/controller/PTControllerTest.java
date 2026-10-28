@@ -17,7 +17,9 @@ import com.PTconnect.backend.entity.enums.SlotStatus;
 import com.PTconnect.backend.entity.enums.UserStatus;
 import com.PTconnect.backend.entity.enums.VerificationStatus;
 import com.PTconnect.backend.exception.GlobalExceptionHandler;
-import com.PTconnect.backend.service.IPTService;
+import com.PTconnect.backend.service.IPTCourseService;
+import com.PTconnect.backend.service.IPTProfileService;
+import com.PTconnect.backend.service.IPTSlotService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -55,7 +57,13 @@ class PTControllerTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @MockitoBean
-    private IPTService ptService;
+    private IPTProfileService profileService;
+
+    @MockitoBean
+    private IPTCourseService courseService;
+
+    @MockitoBean
+    private IPTSlotService slotService;
 
     private String ptToken;
 
@@ -84,7 +92,7 @@ class PTControllerTest {
                 .verificationStatus(VerificationStatus.VERIFIED)
                 .build();
 
-        when(ptService.getProfile(eq("pt.hoangc@ptconnect.vn"))).thenReturn(profileResponse);
+        when(profileService.getProfile(eq("pt.hoangc@ptconnect.vn"))).thenReturn(profileResponse);
 
         mockMvc.perform(get("/api/v1/pt/profile")
                         .header("Authorization", "Bearer " + ptToken))
@@ -112,7 +120,7 @@ class PTControllerTest {
                 .availableLocations("Cầu Giấy, Hà Nội")
                 .build();
 
-        when(ptService.updateProfile(eq("pt.hoangc@ptconnect.vn"), any(UpdatePTProfileRequest.class)))
+        when(profileService.updateProfile(eq("pt.hoangc@ptconnect.vn"), any(UpdatePTProfileRequest.class)))
                 .thenReturn(updated);
 
         mockMvc.perform(put("/api/v1/pt/profile")
@@ -164,7 +172,7 @@ class PTControllerTest {
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        when(ptService.createCourse(eq("pt.hoangc@ptconnect.vn"), any(CreateCourseRequest.class)))
+        when(courseService.createCourse(eq("pt.hoangc@ptconnect.vn"), any(CreateCourseRequest.class)))
                 .thenReturn(courseResponse);
 
         mockMvc.perform(post("/api/v1/pt/courses")
@@ -205,7 +213,7 @@ class PTControllerTest {
                 .status(CourseStatus.ACTIVE)
                 .build();
 
-        when(ptService.getCourses(eq("pt.hoangc@ptconnect.vn"))).thenReturn(List.of(c));
+        when(courseService.getCourses(eq("pt.hoangc@ptconnect.vn"))).thenReturn(List.of(c));
 
         mockMvc.perform(get("/api/v1/pt/courses")
                         .header("Authorization", "Bearer " + ptToken))
@@ -228,7 +236,7 @@ class PTControllerTest {
                 .status(SlotStatus.AVAILABLE)
                 .build();
 
-        when(ptService.createSlot(eq("pt.hoangc@ptconnect.vn"), any(CreateSlotRequest.class)))
+        when(slotService.createSlot(eq("pt.hoangc@ptconnect.vn"), any(CreateSlotRequest.class)))
                 .thenReturn(slotResponse);
 
         String json = "{\"startTime\":\"2026-10-25T09:00:00\",\"endTime\":\"2026-10-25T10:00:00\"}";
@@ -245,7 +253,7 @@ class PTControllerTest {
     @Test
     @DisplayName("Tạo slot lỗi khi giờ bắt đầu trong quá khứ (400 Bad Request)")
     void testCreateSlotPastReturns400() throws Exception {
-        when(ptService.createSlot(eq("pt.hoangc@ptconnect.vn"), any(CreateSlotRequest.class)))
+        when(slotService.createSlot(eq("pt.hoangc@ptconnect.vn"), any(CreateSlotRequest.class)))
                 .thenThrow(new IllegalArgumentException("Thời gian bắt đầu slot không được ở trong quá khứ"));
 
         String json = "{\"startTime\":\"2020-01-01T09:00:00\",\"endTime\":\"2020-01-01T10:00:00\"}";
@@ -262,7 +270,7 @@ class PTControllerTest {
     @Test
     @DisplayName("Xóa slot AVAILABLE thành công (200 OK)")
     void testDeleteSlotSuccess() throws Exception {
-        doNothing().when(ptService).deleteSlot(eq("pt.hoangc@ptconnect.vn"), eq(5L));
+        doNothing().when(slotService).deleteSlot(eq("pt.hoangc@ptconnect.vn"), eq(5L));
 
         mockMvc.perform(delete("/api/v1/pt/slots/5")
                         .header("Authorization", "Bearer " + ptToken))

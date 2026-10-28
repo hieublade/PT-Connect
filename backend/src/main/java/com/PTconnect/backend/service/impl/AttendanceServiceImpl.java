@@ -262,7 +262,7 @@ public class AttendanceServiceImpl implements IAttendanceService {
                         List.of(BookingStatus.PENDING, BookingStatus.CONFIRMED)
                 );
                 if (!hasActiveBookings) {
-                    enrollment.setStatus(EnrollmentStatus.COMPLETED);
+                    enrollment.complete();
                     enrollmentRepository.save(enrollment);
                     log.info("Hợp đồng #{} đã hoàn tất toàn bộ số buổi tập -> Chuyển trạng thái sang COMPLETED", enrollment.getId());
                 }

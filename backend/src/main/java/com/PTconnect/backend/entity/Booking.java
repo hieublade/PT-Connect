@@ -11,13 +11,13 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "bookings")
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class Booking {
 
     @Id
+    @Setter
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
@@ -54,6 +54,7 @@ public class Booking {
     @Column(name = "session_fee", nullable = false, precision = 12, scale = 2)
     private BigDecimal sessionFee;
 
+    @Setter
     @Column(name = "student_note", length = 255)
     private String studentNote;
 
@@ -73,16 +74,28 @@ public class Booking {
         return this.enrollment != null ? this.enrollment.getTrainingLocation() : null;
     }
 
-    // Phương thức nghiệp vụ
+    // Phương thức nghiệp vụ tự bảo vệ trạng thái (Encapsulation / State Transition)
     public void confirm() {
+        if (this.status != BookingStatus.PENDING) {
+            throw new IllegalStateException("Chỉ có thể xác nhận đơn đặt lịch đang ở trạng thái PENDING. Trạng thái hiện tại: " + this.status);
+        }
         this.status = BookingStatus.CONFIRMED;
     }
 
     public void cancel() {
+        if (this.status == BookingStatus.CANCELLED) {
+            throw new IllegalStateException("Đơn đặt lịch đã ở trạng thái CANCELLED trước đó.");
+        }
+        if (this.status == BookingStatus.COMPLETED) {
+            throw new IllegalStateException("Không thể hủy ca tập đã hoàn thành (COMPLETED).");
+        }
         this.status = BookingStatus.CANCELLED;
     }
 
     public void complete() {
+        if (this.status != BookingStatus.CONFIRMED) {
+            throw new IllegalStateException("Chỉ có thể hoàn thành ca tập đã được xác nhận (CONFIRMED). Trạng thái hiện tại: " + this.status);
+        }
         this.status = BookingStatus.COMPLETED;
     }
 }

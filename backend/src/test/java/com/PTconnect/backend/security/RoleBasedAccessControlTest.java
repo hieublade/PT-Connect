@@ -10,8 +10,10 @@ import com.PTconnect.backend.controller.PublicController;
 import com.PTconnect.backend.controller.StudentController;
 import com.PTconnect.backend.service.IAdminPTService;
 import com.PTconnect.backend.service.IAdminStatisticsService;
+import com.PTconnect.backend.service.IPTCourseService;
 import com.PTconnect.backend.service.IPTProfileService;
 import com.PTconnect.backend.service.IPTService;
+import com.PTconnect.backend.service.IPTSlotService;
 import com.PTconnect.backend.service.IUserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -56,6 +58,12 @@ class RoleBasedAccessControlTest {
 
     @MockitoBean
     private IPTProfileService ptProfileService;
+
+    @MockitoBean
+    private IPTCourseService ptCourseService;
+
+    @MockitoBean
+    private IPTSlotService ptSlotService;
 
     @MockitoBean
     private IAdminPTService adminPTService;

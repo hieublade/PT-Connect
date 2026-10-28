@@ -11,13 +11,13 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "enrollments")
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class Enrollment {
 
     @Id
+    @Setter
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
@@ -51,6 +51,7 @@ public class Enrollment {
     @Column(name = "end_date", nullable = false)
     private LocalDate endDate;
 
+    @Setter
     @Column(name = "contract_url", nullable = false, length = 500)
     private String contractUrl;
 
@@ -62,7 +63,7 @@ public class Enrollment {
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    // Phương thức nghiệp vụ quản lý kho buổi tập (Encapsulation)
+    // Phương thức nghiệp vụ quản lý kho buổi tập và trạng thái (Encapsulation)
     public void consumeSession() {
         if (this.status != EnrollmentStatus.ACTIVE) {
             throw new IllegalStateException("Hợp đồng không ở trạng thái hoạt động (ACTIVE)");
@@ -74,10 +75,21 @@ public class Enrollment {
     }
 
     public void restoreSession() {
-        if (this.remainingSessions != null && this.totalSessions != null) {
-            if (this.remainingSessions < this.totalSessions) {
-                this.remainingSessions++;
-            }
+        if (this.status != EnrollmentStatus.ACTIVE) {
+            throw new IllegalStateException("Không thể hoàn buổi cho hợp đồng không ở trạng thái ACTIVE");
         }
+        if (this.remainingSessions != null && this.totalSessions != null) {
+            if (this.remainingSessions >= this.totalSessions) {
+                throw new IllegalStateException("Số buổi còn lại không thể vượt quá tổng số buổi của hợp đồng");
+            }
+            this.remainingSessions++;
+        }
+    }
+
+    public void complete() {
+        if (this.status != EnrollmentStatus.ACTIVE) {
+            throw new IllegalStateException("Chỉ có thể hoàn thành hợp đồng đang ở trạng thái ACTIVE");
+        }
+        this.status = EnrollmentStatus.COMPLETED;
     }
 }
