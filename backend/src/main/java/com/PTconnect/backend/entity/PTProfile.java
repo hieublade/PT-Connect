@@ -59,4 +59,19 @@ public class PTProfile {
 
     @Column(name = "updated_at", insertable = false, updatable = false)
     private LocalDateTime updatedAt;
+
+    // Phương thức nghiệp vụ quản lý quy trình xét duyệt (Encapsulation / Rich Domain Model)
+    public void approve() {
+        this.verificationStatus = VerificationStatus.VERIFIED;
+        if (this.pt != null) {
+            this.pt.activate();
+        }
+    }
+
+    public void reject() {
+        this.verificationStatus = VerificationStatus.REJECTED;
+        if (this.pt != null) {
+            this.pt.pending();
+        }
+    }
 }

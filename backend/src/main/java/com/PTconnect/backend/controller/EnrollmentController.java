@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping({"/api/v1", "/api"})
+@RequestMapping("/api/v1")
 @RequiredArgsConstructor
 public class EnrollmentController {
 
@@ -65,7 +65,7 @@ public class EnrollmentController {
         return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
     }
 
-    @GetMapping({"/pt/enrollments", "/enrollments/pt"})
+    @GetMapping("/pt/enrollments")
     public ResponseEntity<ApiResponse<List<EnrollmentResponse>>> getPtEnrollments(Authentication authentication) {
         String email = SecurityUtils.getCurrentUserEmail(authentication);
         List<EnrollmentResponse> enrollments = enrollmentService.getPtEnrollments(email);

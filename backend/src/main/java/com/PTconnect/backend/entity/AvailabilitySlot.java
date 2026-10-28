@@ -46,12 +46,5 @@ public class AvailabilitySlot {
     public void release() {
         this.status = SlotStatus.AVAILABLE;
     }
-
-    public void lock() {
-        this.status = SlotStatus.LOCKED;
-    }
-
-    public boolean isAvailable() {
-        return this.status == SlotStatus.AVAILABLE;
-    }
 }
+

@@ -11,7 +11,7 @@ import java.util.Map;
  * Controller cho cac endpoint cong khai (Public endpoints).
  */
 @RestController
-@RequestMapping({"/api/v1/public", "/api/public"})
+@RequestMapping("/api/v1/public")
 public class PublicController {
 
     @GetMapping("/health")

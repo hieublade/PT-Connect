@@ -8,8 +8,12 @@ import com.PTconnect.backend.exception.BadRequestException;
 import com.PTconnect.backend.exception.InsufficientBalanceException;
 import com.PTconnect.backend.exception.ResourceNotFoundException;
 import com.PTconnect.backend.exception.UnauthorizedException;
-import com.PTconnect.backend.repository.*;
+import com.PTconnect.backend.repository.CourseRepository;
+import com.PTconnect.backend.repository.EnrollmentRepository;
+import com.PTconnect.backend.repository.PTProfileRepository;
+import com.PTconnect.backend.repository.UserRepository;
 import com.PTconnect.backend.service.IEnrollmentService;
+import com.PTconnect.backend.service.IWalletService;
 import com.PTconnect.backend.util.ContractPdfGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,9 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -32,8 +34,7 @@ public class EnrollmentServiceImpl implements IEnrollmentService {
     private final EnrollmentRepository enrollmentRepository;
     private final CourseRepository courseRepository;
     private final UserRepository userRepository;
-    private final WalletRepository walletRepository;
-    private final PaymentRepository paymentRepository;
+    private final IWalletService walletService;
     private final PTProfileRepository ptProfileRepository;
     private final ContractPdfGenerator contractPdfGenerator;
 
@@ -73,29 +74,13 @@ public class EnrollmentServiceImpl implements IEnrollmentService {
             throw new BadRequestException("Địa điểm tập luyện cố định không được để trống");
         }
 
-        Wallet wallet = walletRepository.findByUserId(student.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ví của học viên"));
-
-        if (wallet.getStatus() != WalletStatus.ACTIVE) {
-            throw new BadRequestException("Ví của bạn đang bị khóa, không thể giao dịch");
-        }
-
         BigDecimal coursePrice = course.getBasePrice();
-        BigDecimal availableBalance = wallet.getBalance().subtract(wallet.getLockedBalance());
-        if (availableBalance.compareTo(coursePrice) < 0) {
-            log.warn("Học viên {} không đủ số dư ví: cần {}, hiện có {}", studentEmail, coursePrice, availableBalance);
-            throw new InsufficientBalanceException("Số dư ví không đủ để thanh toán khóa học. Vui lòng nạp thêm tiền!");
-        }
 
-        // 1. Trừ tiền ví thông qua nghiệp vụ đóng gói trong Entity
-        wallet.debit(coursePrice);
-        walletRepository.save(wallet);
-
-        // 2. Tính thời hạn khóa tập
+        // 1. Tính thời hạn khóa tập
         LocalDate startDate = LocalDate.now();
         LocalDate endDate = startDate.plusDays(course.getValidityDays());
 
-        // 3. Khởi tạo hợp đồng Enrollment (kho buổi ban đầu: remaining = total)
+        // 2. Khởi tạo hợp đồng Enrollment (kho buổi ban đầu: remaining = total)
         Enrollment enrollment = Enrollment.builder()
                 .student(student)
                 .course(course)
@@ -112,42 +97,28 @@ public class EnrollmentServiceImpl implements IEnrollmentService {
 
         Enrollment savedEnrollment = enrollmentRepository.save(enrollment);
 
-        // 4. Sinh mã giao dịch duy nhất
-        String datePrefix = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        String shortId = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-        String txnRef = "TXN_BUY_" + datePrefix + "_" + shortId;
+        // 3. Xử lý thanh toán tài chính qua IWalletService
+        Payment payment = walletService.processCoursePurchase(
+                student.getId(),
+                savedEnrollment,
+                coursePrice,
+                request.getPaymentMethod()
+        );
 
-        // 5. Cập nhật URL hợp đồng chính thức
+        // 4. Cập nhật URL hợp đồng chính thức
         String contractUrl = "/api/v1/enrollments/" + savedEnrollment.getId() + "/contract";
         savedEnrollment.setContractUrl(contractUrl);
         enrollmentRepository.save(savedEnrollment);
 
-        // 6. Ghi nhận giao dịch tài chính Payment
-        PaymentMethod method = (request.getPaymentMethod() != null)
-                ? request.getPaymentMethod()
-                : PaymentMethod.WALLET;
-
-        Payment payment = Payment.builder()
-                .wallet(wallet)
-                .enrollment(savedEnrollment)
-                .amount(coursePrice)
-                .paymentType(PaymentType.PURCHASE_PACKAGE)
-                .paymentMethod(method)
-                .status(PaymentStatus.SUCCESS)
-                .transactionRef(txnRef)
-                .build();
-
-        paymentRepository.save(payment);
-
-        // 7. Sinh hợp đồng điện tử PDF
+        // 5. Sinh hợp đồng điện tử PDF
         try {
-            contractPdfGenerator.generateContractPdf(savedEnrollment, txnRef);
+            contractPdfGenerator.generateContractPdf(savedEnrollment, payment.getTransactionRef());
         } catch (Exception e) {
             log.warn("Không thể sinh file PDF hợp đồng: {}", e.getMessage());
             // Vẫn tiếp tục nếu sinh file gặp trục trặc, hoặc để transactional xử lý
         }
 
-        log.info("Mua khóa học thành công! Enrollment ID: {}, TxnRef: {}", savedEnrollment.getId(), txnRef);
+        log.info("Mua khóa học thành công! Enrollment ID: {}, TxnRef: {}", savedEnrollment.getId(), payment.getTransactionRef());
         return EnrollmentResponse.fromEntity(savedEnrollment);
     }
 
@@ -195,8 +166,7 @@ public class EnrollmentServiceImpl implements IEnrollmentService {
 
         byte[] pdfBytes = contractPdfGenerator.getExistingContractPdf(enrollmentId);
         if (pdfBytes == null) {
-            List<Payment> payments = paymentRepository.findByEnrollmentId(enrollmentId);
-            String txnRef = payments.isEmpty() ? "TXN_CONTRACT_" + enrollmentId : payments.get(0).getTransactionRef();
+            String txnRef = walletService.getTransactionRefByEnrollmentId(enrollmentId);
             pdfBytes = contractPdfGenerator.generateContractPdf(enrollment, txnRef);
         }
 

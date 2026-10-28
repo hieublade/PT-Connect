@@ -9,13 +9,15 @@ import com.PTconnect.backend.service.IUserService;
 import com.PTconnect.backend.util.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping({"/api/v1/admin", "/api/admin"})
+@RequestMapping("/api/v1/admin")
 @RequiredArgsConstructor
 public class AdminController {
 
@@ -70,9 +72,21 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success("Lấy dữ liệu đặt lịch cho phân tích thành công", bookings));
     }
 
+    @GetMapping("/bookings/page")
+    public ResponseEntity<ApiResponse<Page<AdminBookingAnalyticsResponse>>> getBookingsPage(Pageable pageable) {
+        Page<AdminBookingAnalyticsResponse> page = adminStatisticsService.getBookingAnalytics(pageable);
+        return ResponseEntity.ok(ApiResponse.success("Lấy dữ liệu đặt lịch phân trang thành công", page));
+    }
+
     @GetMapping("/payments")
     public ResponseEntity<ApiResponse<List<AdminPaymentAnalyticsResponse>>> getPaymentsForAnalytics() {
         List<AdminPaymentAnalyticsResponse> payments = adminStatisticsService.getPaymentAnalytics();
         return ResponseEntity.ok(ApiResponse.success("Lấy dữ liệu thanh toán cho phân tích thành công", payments));
+    }
+
+    @GetMapping("/payments/page")
+    public ResponseEntity<ApiResponse<Page<AdminPaymentAnalyticsResponse>>> getPaymentsPage(Pageable pageable) {
+        Page<AdminPaymentAnalyticsResponse> page = adminStatisticsService.getPaymentAnalytics(pageable);
+        return ResponseEntity.ok(ApiResponse.success("Lấy dữ liệu thanh toán phân trang thành công", page));
     }
 }

@@ -54,10 +54,7 @@ class BookingServiceTest {
     private com.PTconnect.backend.policy.CancellationPolicyFactory cancellationPolicyFactory;
 
     @Mock
-    private WalletRepository walletRepository;
-
-    @Mock
-    private PaymentRepository paymentRepository;
+    private IWalletService walletService;
 
     @InjectMocks
     private BookingServiceImpl bookingService;
@@ -96,61 +93,62 @@ class BookingServiceTest {
     }
 
     @Test
-    @DisplayName("Validation thành công khi slot AVAILABLE trong tương lai và hợp đồng hợp lệ")
-    void validateBookingRequest_Success() {
-        when(slotRepository.findById(100L)).thenReturn(Optional.of(futureAvailableSlot));
-        when(enrollmentRepository.findById(200L)).thenReturn(Optional.of(activeEnrollment));
-
-        assertDoesNotThrow(() ->
-                bookingService.validateBookingRequest(100L, 2L, 200L)
-        );
-    }
-
-    @Test
-    @DisplayName("Ngoại lệ khi slot không ở trạng thái AVAILABLE")
-    void validateBookingRequest_SlotNotAvailable() {
-        futureAvailableSlot.setStatus(SlotStatus.BOOKED);
-        when(slotRepository.findById(100L)).thenReturn(Optional.of(futureAvailableSlot));
-
-        BadRequestException ex = assertThrows(BadRequestException.class, () ->
-                bookingService.validateBookingRequest(100L, 2L, 200L)
-        );
-        assertTrue(ex.getMessage().contains("không còn khả dụng"));
-    }
-
-    @Test
     @DisplayName("Ngoại lệ khi slot có thời gian trong quá khứ")
-    void validateBookingRequest_SlotInPast() {
+    void createBooking_SlotInPast_ThrowsBadRequestException() {
         futureAvailableSlot.setStartTime(LocalDateTime.now().minusHours(2));
-        when(slotRepository.findById(100L)).thenReturn(Optional.of(futureAvailableSlot));
+        CreateBookingRequest req = CreateBookingRequest.builder()
+                .slotId(100L)
+                .bookingType(BookingType.PACKAGE)
+                .enrollmentId(200L)
+                .build();
+
+        when(userRepository.findByEmail(student.getEmail())).thenReturn(Optional.of(student));
+        when(slotRepository.findByIdWithLock(100L)).thenReturn(Optional.of(futureAvailableSlot));
 
         BadRequestException ex = assertThrows(BadRequestException.class, () ->
-                bookingService.validateBookingRequest(100L, 2L, 200L)
+                bookingService.createBooking(student.getEmail(), req)
         );
         assertTrue(ex.getMessage().contains("quá khứ"));
     }
 
     @Test
     @DisplayName("Ngoại lệ khi hợp đồng đã hết số buổi tập (remainingSessions <= 0)")
-    void validateBookingRequest_NoRemainingSessions() {
+    void createBooking_NoRemainingSessions_ThrowsBadRequestException() {
         activeEnrollment.setRemainingSessions(0);
-        when(slotRepository.findById(100L)).thenReturn(Optional.of(futureAvailableSlot));
-        when(enrollmentRepository.findById(200L)).thenReturn(Optional.of(activeEnrollment));
+        CreateBookingRequest req = CreateBookingRequest.builder()
+                .slotId(100L)
+                .bookingType(BookingType.PACKAGE)
+                .enrollmentId(200L)
+                .build();
+
+        when(userRepository.findByEmail(student.getEmail())).thenReturn(Optional.of(student));
+        when(slotRepository.findByIdWithLock(100L)).thenReturn(Optional.of(futureAvailableSlot));
+        when(enrollmentRepository.findByIdWithLock(200L)).thenReturn(Optional.of(activeEnrollment));
 
         BadRequestException ex = assertThrows(BadRequestException.class, () ->
-                bookingService.validateBookingRequest(100L, 2L, 200L)
+                bookingService.createBooking(student.getEmail(), req)
         );
         assertTrue(ex.getMessage().contains("hết số buổi tập"));
     }
 
     @Test
     @DisplayName("Ngoại lệ khi hợp đồng không thuộc về học viên hiện tại")
-    void validateBookingRequest_WrongStudent() {
-        when(slotRepository.findById(100L)).thenReturn(Optional.of(futureAvailableSlot));
-        when(enrollmentRepository.findById(200L)).thenReturn(Optional.of(activeEnrollment));
+    void createBooking_WrongStudent_ThrowsBadRequestException() {
+        User otherStudent = Student.builder().id(999L).email("other@ptconnect.vn").build();
+        activeEnrollment.setStudent(otherStudent);
+
+        CreateBookingRequest req = CreateBookingRequest.builder()
+                .slotId(100L)
+                .bookingType(BookingType.PACKAGE)
+                .enrollmentId(200L)
+                .build();
+
+        when(userRepository.findByEmail(student.getEmail())).thenReturn(Optional.of(student));
+        when(slotRepository.findByIdWithLock(100L)).thenReturn(Optional.of(futureAvailableSlot));
+        when(enrollmentRepository.findByIdWithLock(200L)).thenReturn(Optional.of(activeEnrollment));
 
         BadRequestException ex = assertThrows(BadRequestException.class, () ->
-                bookingService.validateBookingRequest(100L, 999L, 200L)
+                bookingService.createBooking(student.getEmail(), req)
         );
         assertTrue(ex.getMessage().contains("không thuộc về bạn"));
     }

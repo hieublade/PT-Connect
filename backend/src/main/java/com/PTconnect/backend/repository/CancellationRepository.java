@@ -10,6 +10,5 @@ import java.util.Optional;
 public interface CancellationRepository extends JpaRepository<Cancellation, Long> {
 
     Optional<Cancellation> findByBookingId(Long bookingId);
-
-    boolean existsByBookingId(Long bookingId);
 }
+

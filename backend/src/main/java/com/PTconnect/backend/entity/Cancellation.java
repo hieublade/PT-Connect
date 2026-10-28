@@ -62,9 +62,5 @@ public class Cancellation {
     @Column(nullable = false)
     @Builder.Default
     private CancellationStatus status = CancellationStatus.PROCESSED;
-
-    // Alias cho createdAt
-    public LocalDateTime getCreatedAt() {
-        return this.cancelledAt;
-    }
 }
+

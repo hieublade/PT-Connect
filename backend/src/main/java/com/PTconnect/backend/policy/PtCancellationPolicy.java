@@ -3,11 +3,11 @@ package com.PTconnect.backend.policy;
 import com.PTconnect.backend.entity.Booking;
 import com.PTconnect.backend.entity.enums.BookingStatus;
 import com.PTconnect.backend.entity.enums.BookingType;
+import com.PTconnect.backend.entity.enums.Role;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.Duration;
 import java.time.LocalDateTime;
 
 /**
@@ -15,15 +15,15 @@ import java.time.LocalDateTime;
  * Triển khai chính xác bảng quy tắc mục 3.11 trong tài liệu đặc tả dự án.
  */
 @Component
-public class PtCancellationPolicy implements CancellationPolicy {
+public class PtCancellationPolicy extends BaseCancellationPolicy {
 
     public static final double ADVANCE_NOTICE_HOURS = 24.0;
     public static final BigDecimal COMPENSATION_RATE = BigDecimal.valueOf(0.20); // 20%
     public static final BigDecimal PENALTY_RATE = BigDecimal.valueOf(0.20);      // 20%
 
     @Override
-    public String getSupportedRole() {
-        return "PT";
+    public Role getSupportedRole() {
+        return Role.PT;
     }
 
     @Override
@@ -78,21 +78,5 @@ public class PtCancellationPolicy implements CancellationPolicy {
                 .explanation("Huấn luyện viên hủy sát giờ (< 24 giờ). Hoàn 1 buổi cho học viên, đền bù 20% ("
                         + compensation + " đ) vào ví Học viên và phạt 20% (" + penalty + " đ) trừ từ ví Huấn luyện viên.")
                 .build();
-    }
-
-    private BigDecimal calculateHoursBefore(Booking booking, LocalDateTime cancelTime) {
-        if (booking.getSlot() == null || booking.getSlot().getStartTime() == null) {
-            return BigDecimal.ZERO;
-        }
-        LocalDateTime startTime = booking.getSlot().getStartTime();
-        LocalDateTime effectiveCancelTime = cancelTime != null ? cancelTime : LocalDateTime.now();
-
-        if (effectiveCancelTime.isAfter(startTime)) {
-            return BigDecimal.ZERO;
-        }
-
-        long minutes = Duration.between(effectiveCancelTime, startTime).toMinutes();
-        double hours = Math.max(0.0, minutes / 60.0);
-        return BigDecimal.valueOf(hours).setScale(2, RoundingMode.HALF_UP);
     }
 }

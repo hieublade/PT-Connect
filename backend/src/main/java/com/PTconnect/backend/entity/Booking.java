@@ -68,15 +68,6 @@ public class Booking {
     @Column(name = "updated_at", insertable = false, updatable = false)
     private LocalDateTime updatedAt;
 
-    // Getter / Setter alias cho notes
-    public String getNotes() {
-        return this.studentNote;
-    }
-
-    public void setNotes(String notes) {
-        this.studentNote = notes;
-    }
-
     // Địa điểm tập tự động lấy theo hợp đồng (đối với PACKAGE)
     public String getTrainingLocation() {
         return this.enrollment != null ? this.enrollment.getTrainingLocation() : null;
@@ -94,20 +85,5 @@ public class Booking {
     public void complete() {
         this.status = BookingStatus.COMPLETED;
     }
-
-    public boolean isPending() {
-        return this.status == BookingStatus.PENDING;
-    }
-
-    public boolean isConfirmed() {
-        return this.status == BookingStatus.CONFIRMED;
-    }
-
-    public boolean isCompleted() {
-        return this.status == BookingStatus.COMPLETED;
-    }
-
-    public boolean isCancelled() {
-        return this.status == BookingStatus.CANCELLED;
-    }
 }
+

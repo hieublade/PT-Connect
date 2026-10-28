@@ -24,7 +24,7 @@ import java.util.List;
  * Hỗ trợ các chức năng Milestone 4: Profile, Courses, Availability Slots.
  */
 @RestController
-@RequestMapping({"/api/v1/pt", "/api/pt"})
+@RequestMapping("/api/v1/pt")
 @RequiredArgsConstructor
 public class PTController {
 

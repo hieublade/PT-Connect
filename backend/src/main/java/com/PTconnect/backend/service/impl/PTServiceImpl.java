@@ -58,16 +58,7 @@ public class PTServiceImpl implements IPTService {
         }
 
         return ptProfileRepository.findByPtId(user.getId())
-                .orElseGet(() -> {
-                    PTProfile newProfile = PTProfile.builder()
-                            .pt((PT) user)
-                            .bio("")
-                            .experienceYears(0)
-                            .availableLocations("Chưa cập nhật địa điểm")
-                            .verificationStatus(VerificationStatus.PENDING)
-                            .build();
-                    return ptProfileRepository.save(newProfile);
-                });
+                .orElseThrow(() -> new ResourceNotFoundException("Hồ sơ Huấn luyện viên chưa được khởi tạo. Vui lòng liên hệ quản trị viên!"));
     }
 
     @Override

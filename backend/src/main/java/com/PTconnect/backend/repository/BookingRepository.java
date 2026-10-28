@@ -4,6 +4,8 @@ import com.PTconnect.backend.entity.Booking;
 import com.PTconnect.backend.entity.enums.BookingStatus;
 import com.PTconnect.backend.entity.enums.BookingType;
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -24,8 +26,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByPtIdOrderByCreatedAtDesc(Long ptId);
 
     List<Booking> findByPtIdAndStatusOrderByCreatedAtDesc(Long ptId, BookingStatus status);
-
-    List<Booking> findByEnrollmentIdOrderByCreatedAtDesc(Long enrollmentId);
 
     Optional<Booking> findBySlotId(Long slotId);
 
@@ -53,4 +53,19 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     );
 
     List<Booking> findAllByOrderByCreatedAtDesc();
+
+    @Query("""
+           SELECT b, c FROM Booking b 
+           LEFT JOIN Cancellation c ON c.booking.id = b.id 
+           ORDER BY b.createdAt DESC
+           """)
+    List<Object[]> findBookingsWithCancellation();
+
+    @Query("""
+           SELECT b, c FROM Booking b 
+           LEFT JOIN Cancellation c ON c.booking.id = b.id 
+           ORDER BY b.createdAt DESC
+           """)
+    Page<Object[]> findBookingsWithCancellation(Pageable pageable);
 }
+
