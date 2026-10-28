@@ -26,7 +26,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiResponse<Object>> handleDataIntegrityViolationException(DataIntegrityViolationException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(ApiResponse.error(HttpStatus.CONFLICT.value(), "Khung giờ này vừa có người khác đặt trước hoặc xung đột dữ liệu!"));
+                .body(ApiResponse.error(HttpStatus.CONFLICT.value(), "Dữ liệu không hợp lệ hoặc vi phạm ràng buộc hệ thống!"));
     }
 
     @ExceptionHandler(InsufficientBalanceException.class)
