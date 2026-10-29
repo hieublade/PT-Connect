@@ -128,7 +128,7 @@ public class EnrollmentServiceImpl implements IEnrollmentService {
         User student = userRepository.findByEmail(studentEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy học viên với email: " + studentEmail));
 
-        List<Enrollment> enrollments = enrollmentRepository.findByStudentId(student.getId());
+        List<Enrollment> enrollments = enrollmentRepository.findByStudentIdWithDetails(student.getId());
         return enrollments.stream()
                 .sorted((e1, e2) -> {
                     LocalDateTime t1 = e1.getCreatedAt() != null ? e1.getCreatedAt() : LocalDateTime.MIN;
@@ -174,11 +174,12 @@ public class EnrollmentServiceImpl implements IEnrollmentService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<EnrollmentResponse> getPtEnrollments(String ptEmail) {
         PTProfile ptProfile = ptProfileRepository.findByPtEmail(ptEmail)
                 .orElseThrow(() -> new UnauthorizedException("Chỉ Huấn luyện viên mới có quyền xem danh sách hợp đồng"));
 
-        return enrollmentRepository.findByPtId(ptProfile.getId()).stream()
+        return enrollmentRepository.findByPtIdWithDetails(ptProfile.getId()).stream()
                 .sorted((e1, e2) -> {
                     LocalDateTime t1 = e1.getCreatedAt() != null ? e1.getCreatedAt() : LocalDateTime.MIN;
                     LocalDateTime t2 = e2.getCreatedAt() != null ? e2.getCreatedAt() : LocalDateTime.MIN;

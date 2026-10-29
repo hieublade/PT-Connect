@@ -39,3 +39,10 @@ Thumbs.db
 desktop.ini
 BACKEND_CODE_REVIEW.md
 SECURITY_AND_SECRETS_AUDIT.md
+
+# Agent artifacts & Study notes
+.agents/
+.archify/
+BACKEND_STUDY_GUIDE.md
+DAY_28_STUDY_NOTES.md
+
