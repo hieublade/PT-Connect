@@ -98,6 +98,7 @@ public class WorkoutPlanServiceImpl implements IWorkoutPlanService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<WorkoutPlanResponse> getPlansByEnrollment(String userEmail, Long enrollmentId) {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new UnauthorizedException("Chưa đăng nhập"));
@@ -120,6 +121,7 @@ public class WorkoutPlanServiceImpl implements IWorkoutPlanService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<WorkoutPlanResponse> getPlansByPt(String ptEmail) {
         PTProfile ptProfile = ptProfileRepository.findByPtEmail(ptEmail)
                 .orElseThrow(() -> new UnauthorizedException("Chỉ Huấn luyện viên mới có danh sách giáo án"));

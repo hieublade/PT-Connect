@@ -439,14 +439,21 @@ def render_pt_page(user: Dict[str, Any]):
         st.subheader("Quản Lý Giáo Án & Bài Tập Huấn Luyện")
         # Lấy danh sách hợp đồng của PT
         pt_enrollments: List[Dict[str, Any]] = []
+        has_enroll_err = False
         try:
             pt_enrollments = PTApi.get_enrollments()
-        except Exception:
-            pt_enrollments = []
+        except ApiException as e:
+            has_enroll_err = True
+            st.error(f"Lỗi tải danh sách hợp đồng học viên [{e.status_code}]: {e.message}")
+        except Exception as ex:
+            has_enroll_err = True
+            st.error(f"Không thể kết nối đến máy chủ để lấy hợp đồng: {str(ex)}")
 
         # 1. Soạn Giáo Án Mới
         with st.expander("Soạn Giáo Án Mới Cho Học Viên", expanded=False):
-            if not pt_enrollments:
+            if has_enroll_err:
+                st.warning("Đã xảy ra lỗi kết nối khi tải danh sách hợp đồng. Vui lòng kiểm tra lại dịch vụ Backend hoặc thử lại sau.")
+            elif not pt_enrollments:
                 st.info("Bạn chưa có học viên nào ký hợp đồng khóa học. Khi học viên mua khóa, danh sách hợp đồng sẽ xuất hiện tại đây để bạn soạn giáo án!")
             else:
                 enroll_options = {
@@ -513,12 +520,19 @@ def render_pt_page(user: Dict[str, Any]):
         # 2. Danh Sách Giáo Án Đã Tạo
         st.markdown("#### Danh Sách Giáo Án Đã Tạo")
         plans: List[Dict[str, Any]] = []
+        has_plan_err = False
         try:
             plans = PTApi.get_workout_plans()
-        except Exception:
-            plans = []
+        except ApiException as e:
+            has_plan_err = True
+            st.error(f"Lỗi tải danh sách giáo án [{e.status_code}]: {e.message}")
+        except Exception as ex:
+            has_plan_err = True
+            st.error(f"Lỗi kết nối khi tải danh sách giáo án: {str(ex)}")
 
-        if not plans:
+        if has_plan_err:
+            st.warning("Đã xảy ra lỗi khi tải danh sách giáo án.")
+        elif not plans:
             st.info("Chưa có giáo án nào được tạo. Hãy nhấn vào 'Soạn Giáo Án Mới Cho Học Viên' ở trên để bắt đầu thiết kế bài tập!")
         else:
             for p in plans:
