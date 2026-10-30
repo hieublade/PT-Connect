@@ -21,12 +21,10 @@ public class WorkoutPlan {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // N-1 với enrollments
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "enrollment_id", nullable = false)
     private Enrollment enrollment;
 
-    // N-1 với pt_profiles (pt_id trỏ pt_profiles.id)
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "pt_id", nullable = false)
     private PTProfile pt;

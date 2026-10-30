@@ -21,22 +21,18 @@ public class Booking {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // N-1 với users (student_id trỏ users.id)
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "student_id", nullable = false)
     private User student;
 
-    // N-1 với pt_profiles (pt_id trỏ pt_profiles.id, KHÔNG phải users.id)
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "pt_id", nullable = false)
     private PTProfile pt;
 
-    // N-1 với availability_slots (slot_id trỏ availability_slots.id)
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "slot_id", nullable = false)
     private AvailabilitySlot slot;
 
-    // N-1 với enrollments (NULL nếu là TRIAL; Bắt buộc có nếu là PACKAGE)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "enrollment_id")
     private Enrollment enrollment;
@@ -59,7 +55,8 @@ public class Booking {
     private String studentNote;
 
     // active_slot_id: cột sinh tự động (generated), chỉ đọc
-    // Chỉ khác NULL khi booking còn hiệu lực (status IN PENDING, CONFIRMED, COMPLETED)
+    // Chỉ khác NULL khi booking còn hiệu lực (status IN PENDING, CONFIRMED,
+    // COMPLETED)
     @Column(name = "active_slot_id", insertable = false, updatable = false)
     private Long activeSlotId;
 
@@ -77,7 +74,8 @@ public class Booking {
     // Phương thức nghiệp vụ tự bảo vệ trạng thái (Encapsulation / State Transition)
     public void confirm() {
         if (this.status != BookingStatus.PENDING) {
-            throw new IllegalStateException("Chỉ có thể xác nhận đơn đặt lịch đang ở trạng thái PENDING. Trạng thái hiện tại: " + this.status);
+            throw new IllegalStateException(
+                    "Chỉ có thể xác nhận đơn đặt lịch đang ở trạng thái PENDING. Trạng thái hiện tại: " + this.status);
         }
         this.status = BookingStatus.CONFIRMED;
     }
@@ -94,9 +92,9 @@ public class Booking {
 
     public void complete() {
         if (this.status != BookingStatus.CONFIRMED) {
-            throw new IllegalStateException("Chỉ có thể hoàn thành ca tập đã được xác nhận (CONFIRMED). Trạng thái hiện tại: " + this.status);
+            throw new IllegalStateException(
+                    "Chỉ có thể hoàn thành ca tập đã được xác nhận (CONFIRMED). Trạng thái hiện tại: " + this.status);
         }
         this.status = BookingStatus.COMPLETED;
     }
 }
-
