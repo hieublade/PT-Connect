@@ -11,6 +11,21 @@ from components.booking_table import render_booking_table
 from components.avatar_uploader import render_avatar_management, normalize_avatar_url
 
 
+@st.dialog("Xác nhận mở khung giờ")
+def confirm_create_slot_dialog(dt_start_iso: str, dt_end_iso: str, slot_label: str):
+    st.warning("Bạn chắc chắn muốn mở khung giờ này không?")
+    st.markdown(f"Khung giờ: **{slot_label}**")
+    if st.button("Xác nhận", type="primary", use_container_width=True):
+        try:
+            PTApi.create_slot(dt_start_iso, dt_end_iso)
+            st.success(f"Mở khung giờ rảnh {slot_label} thành công!")
+            st.rerun()
+        except ApiException as e:
+            st.error(f"Lỗi mở slot [{e.status_code}]: {e.message}")
+        except Exception as ex:
+            st.error(f"Lỗi ngoại lệ: {str(ex)}")
+
+
 def render_pt_page(user: Dict[str, Any]):
     """Giao diện chính dành cho Huấn luyện viên cá nhân (PT Dashboard - Milestone 6)."""
 
@@ -313,14 +328,8 @@ def render_pt_page(user: Dict[str, Any]):
                     elif dt_start < datetime.now():
                         st.error("Không thể mở khung giờ trong quá khứ!")
                     else:
-                        try:
-                            PTApi.create_slot(dt_start.isoformat(), dt_end.isoformat())
-                            st.success(f"Mở khung giờ rảnh {s_start_str} - {s_end_str} ({s_date.strftime('%d/%m/%Y')}) thành công!")
-                            st.rerun()
-                        except ApiException as e:
-                            st.error(f"Lỗi mở slot [{e.status_code}]: {e.message}")
-                        except Exception as ex:
-                            st.error(f"Lỗi ngoại lệ: {str(ex)}")
+                        slot_label = f"{s_start_str} - {s_end_str} ({s_date.strftime('%d/%m/%Y')})"
+                        confirm_create_slot_dialog(dt_start.isoformat(), dt_end.isoformat(), slot_label)
 
         # Danh sách slots của PT
         all_slots: List[Dict[str, Any]] = []
@@ -332,19 +341,8 @@ def render_pt_page(user: Dict[str, Any]):
         if not all_slots:
             st.info("Bạn chưa mở khung giờ rảnh nào. Hãy bấm 'Thêm Khung Giờ Rảnh Mới' ở trên để mở lịch nhé!")
         else:
-            def handle_delete_slot(s: Dict[str, Any]):
-                s_id = s.get("id")
-                try:
-                    PTApi.delete_slot(s_id)
-                    st.success(f"Đã xóa khung giờ #{s_id} thành công!")
-                    st.rerun()
-                except ApiException as e:
-                    st.error(f"Lỗi xóa slot [{e.status_code}]: {e.message}")
-                except Exception as ex:
-                    st.error(f"Lỗi: {str(ex)}")
-
             for slot_item in all_slots:
-                render_slot_card(slot_item, on_delete=handle_delete_slot)
+                render_slot_card(slot_item)
 
     # -------------------------------------------------------------------------
     # TAB 4: QUẢN LÝ KHÓA HỌC

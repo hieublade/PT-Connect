@@ -20,7 +20,6 @@ public class Attendance {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // 1-1 với bookings (booking_id UNIQUE)
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "booking_id", nullable = false, unique = true)
     private Booking booking;

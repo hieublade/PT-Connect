@@ -18,7 +18,6 @@ public class Workout {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // N-1 với workout_plans
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "plan_id", nullable = false)
     private WorkoutPlan plan;

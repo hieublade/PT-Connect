@@ -19,7 +19,6 @@ public class AvailabilitySlot {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // N-1 với pt_profiles (pt_id trỏ pt_profiles.id, KHÔNG phải users.id)
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "pt_id", nullable = false)
     private PTProfile pt;
@@ -47,4 +46,3 @@ public class AvailabilitySlot {
         this.status = SlotStatus.AVAILABLE;
     }
 }
-

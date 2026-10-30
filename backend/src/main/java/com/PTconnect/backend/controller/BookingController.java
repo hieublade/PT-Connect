@@ -18,19 +18,11 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * Controller phục vụ toàn bộ luồng Booking ca tập (Milestone 6).
- * Phụ trách bởi: Huy & Hưng.
- */
 @RestController
 @RequiredArgsConstructor
 public class BookingController {
 
     private final IBookingService bookingService;
-
-    // -------------------------------------------------------------
-    // 1. Phía Học viên (Student Booking Endpoints)
-    // -------------------------------------------------------------
 
     @PostMapping("/api/v1/bookings")
     public ResponseEntity<ApiResponse<BookingResponse>> createBooking(
@@ -59,10 +51,6 @@ public class BookingController {
         BookingResponse booking = bookingService.getBookingById(email, id);
         return ResponseEntity.ok(ApiResponse.success("Lấy thông tin chi tiết đơn đặt lịch thành công", booking));
     }
-
-    // -------------------------------------------------------------
-    // 2. Phía Huấn luyện viên (PT Booking Endpoints)
-    // -------------------------------------------------------------
 
     @GetMapping("/api/v1/pt/bookings")
     public ResponseEntity<ApiResponse<List<BookingResponse>>> getPTBookings(
@@ -95,10 +83,6 @@ public class BookingController {
         return ResponseEntity.ok(ApiResponse.success("Đã từ chối đơn đặt lịch và hoàn lại buổi tập", response));
     }
 
-    // -------------------------------------------------------------
-    // 3. Chính sách Hủy lịch & Bồi thường (Milestone 7 - Hưng & Thắng)
-    // -------------------------------------------------------------
-
     @PutMapping("/api/v1/bookings/{id}/cancel")
     public ResponseEntity<ApiResponse<BookingResponse>> cancelBookingByStudent(
             Authentication authentication,
@@ -126,7 +110,8 @@ public class BookingController {
                     .build();
         }
         BookingResponse response = bookingService.cancelBookingByPT(email, id, request);
-        return ResponseEntity.ok(ApiResponse.success("Huấn luyện viên hủy ca tập thành công theo chính sách", response));
+        return ResponseEntity
+                .ok(ApiResponse.success("Huấn luyện viên hủy ca tập thành công theo chính sách", response));
     }
 
     @GetMapping("/api/v1/bookings/{id}/cancel-preview")
@@ -138,4 +123,3 @@ public class BookingController {
         return ResponseEntity.ok(ApiResponse.success("Xem trước chính sách hủy lịch thành công", response));
     }
 }
-

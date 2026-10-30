@@ -18,17 +18,14 @@ public class Review {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // 1-1 với bookings (booking_id UNIQUE)
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "booking_id", nullable = false, unique = true)
     private Booking booking;
 
-    // N-1 với users (student_id trỏ users.id)
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "student_id", nullable = false)
     private User student;
 
-    // N-1 với pt_profiles (pt_id trỏ pt_profiles.id)
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "pt_id", nullable = false)
     private PTProfile pt;
