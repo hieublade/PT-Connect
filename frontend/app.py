@@ -1,9 +1,9 @@
 import streamlit as st
 from api.auth_api import clear_auth_session, get_current_user, is_authenticated
-from pages.admin import render_admin_page
-from pages.login import render_login_page
-from pages.pt import render_pt_page
-from pages.student import render_student_page
+from modules.login_view import LoginView
+from modules.student_home_view import StudentHomeView
+from modules.pt_home_view import PTHomeView
+from modules.admin_dashboard_view import AdminDashboardView
 
 # Cấu hình trang Streamlit
 st.set_page_config(
@@ -97,11 +97,11 @@ def render_sidebar(user: dict):
 
 
 def main():
-    """Điều hướng trang chính dựa trên trạng thái đăng nhập và vai trò (Role-based Routing)."""
+    """Điều hướng trang chính dựa trên trạng thái đăng nhập và vai trò (Role-based Routing) thông qua các Boundary Views."""
 
     # 1. Nếu chưa đăng nhập: Hiển thị màn hình Login / Register
     if not is_authenticated():
-        render_login_page()
+        LoginView().render()
         return
 
     # 2. Đã đăng nhập: Lấy thông tin người dùng từ Session State
@@ -114,14 +114,14 @@ def main():
     # Hiển thị Sidebar
     render_sidebar(user)
 
-    # 3. Điều hướng theo Role (Mục 3.2 Đặc tả dự án)
+    # 3. Điều hướng theo Role qua các Boundary Views trong modules/
     role = user.get("role")
     if role == "STUDENT":
-        render_student_page(user)
+        StudentHomeView(user).render()
     elif role == "PT":
-        render_pt_page(user)
+        PTHomeView(user).render()
     elif role == "ADMIN":
-        render_admin_page(user)
+        AdminDashboardView(user).render()
     else:
         st.error(f"Vai trò không xác định trong hệ thống: {role}")
         if st.button("Quay lại màn Đăng nhập"):

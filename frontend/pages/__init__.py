@@ -1,3 +1,4 @@
+"""Backward Compatibility Wrappers."""
 from pages.login import render_login_page
 from pages.student import render_student_page
 from pages.pt import render_pt_page
