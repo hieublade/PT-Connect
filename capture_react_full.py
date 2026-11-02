@@ -17,7 +17,7 @@ opts.add_argument("--window-size=1440,1050")
 driver = webdriver.Chrome(options=opts)
 
 def save_screen(name):
-    time.sleep(1.5)
+    time.sleep(1.8)
     path = os.path.join(SCREENSHOT_DIR, f"{name}.png")
     driver.save_screenshot(path)
     print(f"✅ Saved: {name}.png")
@@ -62,8 +62,15 @@ try:
     login("student.a@ptconnect.vn", "Password123@")
     save_screen("03_react_student_explore")
 
+    # Click first PT "Xem Chi Tiết" to show interactive PT details
+    try:
+        detail_btn = driver.find_element(By.XPATH, "//button[contains(., 'Xem Chi Tiết')]")
+        detail_btn.click()
+        save_screen("04_react_student_pt_details")
+    except Exception as e:
+        print("Error clicking Xem Chi Tiet:", e)
+
     student_tab_names = [
-        ("Chi Tiết PT", "04_react_student_pt_details"),
         ("Đặt Lịch", "05_react_student_booking"),
         ("Lịch Của Tôi", "06_react_student_schedule"),
         ("Khóa Của Tôi", "07_react_student_contracts"),

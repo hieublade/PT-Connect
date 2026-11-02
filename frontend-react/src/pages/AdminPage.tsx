@@ -25,7 +25,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLogout }) => {
 
   const fetchAdminData = async () => {
     try {
-      const ptsData: any = await api.get('/admin/pending-pts');
+      const ptsData: any = await api.get('/admin/pt/pending');
       setPendingPts(ptsData || []);
       const uData: any = await api.get('/admin/users');
       setAllUsers(uData || []);
@@ -36,7 +36,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLogout }) => {
 
   const handleApprovePt = async (ptId: number) => {
     try {
-      await api.post(`/admin/pt-profiles/${ptId}/approve`);
+      await api.put(`/admin/pt/${ptId}/approve`);
       showToast('Đã phê duyệt hồ sơ Huấn luyện viên!');
       fetchAdminData();
     } catch (err: any) {
@@ -46,7 +46,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLogout }) => {
 
   const handleRejectPt = async (ptId: number) => {
     try {
-      await api.post(`/admin/pt-profiles/${ptId}/reject`, { reason: 'Chứng chỉ chưa đạt chuẩn' });
+      await api.put(`/admin/pt/${ptId}/reject`, { reason: 'Chứng chỉ chưa đạt chuẩn' });
       showToast('Đã từ chối hồ sơ PT.');
       fetchAdminData();
     } catch (err: any) {
