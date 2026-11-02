@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../lib/axios';
 import { PtProfile, Course, AvailabilitySlot, Booking, Wallet, Enrollment, User } from '../types/api';
 import { PtCard } from '../components/PtCard';
+import { getAvatarUrl } from '../lib/avatar';
 import { CourseCard } from '../components/CourseCard';
 import { SlotCard } from '../components/SlotCard';
 import { BookingTable } from '../components/BookingTable';
@@ -198,7 +199,7 @@ export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout }) => {
               <div className="text-xs text-slate-500">{user.email}</div>
             </div>
             <img
-              src={user.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.fullName}`}
+              src={getAvatarUrl(user.fullName, user.avatarUrl)}
               alt={user.fullName}
               className="w-9 h-9 rounded-full border border-slate-200 object-cover"
             />
@@ -217,7 +218,7 @@ export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout }) => {
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <img
-              src={user.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.fullName}`}
+              src={getAvatarUrl(user.fullName, user.avatarUrl)}
               alt={user.fullName}
               className="w-16 h-16 rounded-full border-2 border-white/80 bg-white/10"
             />
@@ -342,7 +343,7 @@ export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout }) => {
           <div className="space-y-6">
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-6 items-start">
               <img
-                src={selectedPt.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${selectedPt.fullName}`}
+                src={getAvatarUrl(selectedPt.fullName, selectedPt.avatarUrl)}
                 alt={selectedPt.fullName}
                 className="w-24 h-24 rounded-2xl border border-slate-200 object-cover"
               />

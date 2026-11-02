@@ -1,3 +1,4 @@
+import { getAvatarUrl } from "../lib/avatar";
 import React, { useState, useEffect } from 'react';
 import api from '../lib/axios';
 import { User, PtProfile } from '../types/api';
@@ -178,7 +179,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLogout }) => {
                     <div>
                       <div className="flex items-center gap-3">
                         <img
-                          src={pt.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${pt.fullName}`}
+                          src={getAvatarUrl(pt.fullName, pt.avatarUrl)}
                           alt={pt.fullName}
                           className="w-12 h-12 rounded-full border border-slate-200 object-cover"
                         />

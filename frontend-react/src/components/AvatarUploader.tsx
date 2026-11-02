@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Camera, Check } from 'lucide-react';
+import { getAvatarUrl } from '../lib/avatar';
 
 interface AvatarUploaderProps {
   currentUrl?: string;
@@ -24,7 +25,7 @@ export const AvatarUploader: React.FC<AvatarUploaderProps> = ({ currentUrl, onUp
 
       <div className="flex items-center gap-4 mb-4">
         <img
-          src={url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Avatar'}
+          src={getAvatarUrl('User', url)}
           alt="Preview"
           className="w-20 h-20 rounded-full border-2 border-slate-200 object-cover shadow-sm bg-slate-50"
         />

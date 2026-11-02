@@ -1,3 +1,4 @@
+import { getAvatarUrl } from "../lib/avatar";
 import React, { useState, useEffect } from 'react';
 import api from '../lib/axios';
 import { User, Course, AvailabilitySlot, Booking } from '../types/api';
@@ -167,7 +168,7 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout }) => {
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <img
-              src={user.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.fullName}`}
+              src={getAvatarUrl(user.fullName, user.avatarUrl)}
               alt={user.fullName}
               className="w-16 h-16 rounded-full border-2 border-white/80 bg-white/10"
             />
