@@ -8,3 +8,4 @@ dist/
 build/
 uploads/contracts/*
 !uploads/contracts/.gitkeep
+*.db
