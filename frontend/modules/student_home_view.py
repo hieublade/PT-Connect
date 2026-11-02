@@ -30,11 +30,12 @@ class DiscoveryPTView:
                 placeholder="Nhập tên PT (ví dụ: Le Hoang C, Pham Minh D...)",
                 key="student_pt_search_input"
             )
+        def reset_pt_search():
+            st.session_state["student_pt_search_input"] = ""
+
         with col_reset:
             st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
-            if st.button("Làm mới", use_container_width=True):
-                st.session_state["student_pt_search_input"] = ""
-                st.rerun()
+            st.button("Làm mới", on_click=reset_pt_search, use_container_width=True)
 
         # Gọi API danh sách PT
         pt_list: List[Dict[str, Any]] = []
