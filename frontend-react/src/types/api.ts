@@ -38,6 +38,7 @@ export interface Course {
   totalSessions: number;
   validityDays: number;
   status: 'ACTIVE' | 'INACTIVE';
+  trainingLocation?: string;
 }
 
 export interface AvailabilitySlot {
@@ -63,15 +64,6 @@ export interface Booking {
   totalAmount?: number;
 }
 
-export interface Wallet {
-  id: number;
-  userId: number;
-  balance: number;
-  lockedBalance: number;
-  currency: string;
-  status: 'ACTIVE' | 'FROZEN';
-}
-
 export interface PaymentTransaction {
   id: number;
   amount: number;
@@ -80,18 +72,35 @@ export interface PaymentTransaction {
   status: string;
   transactionRef?: string;
   description?: string;
-  createdAt: string;
+  createdAt?: string;
+}
+
+export interface Wallet {
+  id: number;
+  userId: number;
+  balance: number;
+  lockedBalance: number;
+  currency: string;
+  status: 'ACTIVE' | 'FROZEN';
+  transactions?: PaymentTransaction[];
 }
 
 export interface Enrollment {
   id: number;
+  studentId?: number;
+  studentName?: string;
+  studentEmail?: string;
   courseId: number;
   courseTitle?: string;
+  ptId?: number;
   ptName?: string;
+  trainingLocation?: string;
+  finalPrice?: number;
   totalSessions: number;
   remainingSessions: number;
-  status: 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
-  contractUrl?: string;
   startDate?: string;
   endDate?: string;
+  contractUrl?: string;
+  status: 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+  createdAt?: string;
 }

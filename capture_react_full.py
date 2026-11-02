@@ -57,9 +57,9 @@ try:
     reg_btn.click()
     save_screen("02_react_register")
 
-    # 2. Student Portal
+    # 2. Student Portal (Using active student account with enrollments & bookings)
     print("\n2. Testing Student Portal...")
-    login("student.a@ptconnect.vn", "Password123@")
+    login("student_24@ptconnect.vn", "Password123@")
     save_screen("03_react_student_explore")
 
     # Click first PT "Xem Chi Tiết" to show interactive PT details
