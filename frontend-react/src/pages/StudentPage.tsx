@@ -372,7 +372,7 @@ export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout }) => {
               <h4 className="text-lg font-bold text-slate-900 mb-4">Các Khóa Học Huấn Luyện Cố Định</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 {ptCourses.map((c) => (
-                  <CourseCard key={c.id} course={c} isStudentView onEnroll={handleEnrollCourse} />
+                  <CourseCard key={c.id} course={c} isPtView={false} onEnroll={handleEnrollCourse} />
                 ))}
               </div>
               {ptCourses.length === 0 && (
