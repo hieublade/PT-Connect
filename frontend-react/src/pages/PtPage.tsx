@@ -2,6 +2,7 @@ import { getAvatarUrl } from "../lib/avatar";
 import React, { useState, useEffect } from 'react';
 import api from '../lib/axios';
 import { User, Course, AvailabilitySlot, Booking } from '../types/api';
+import { PtProfileForm } from '../components/PtProfileForm';
 import { CourseCard } from '../components/CourseCard';
 import { SlotCard } from '../components/SlotCard';
 import { BookingTable } from '../components/BookingTable';
@@ -373,13 +374,16 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout }) => {
 
         {/* TAB 5: HỒ SƠ */}
         {activeTab === 5 && (
-          <AvatarUploader
-            currentUrl={user.avatarUrl}
-            onUpload={async (url) => {
-              await api.put('/users/me/avatar', { avatarUrl: url });
-              showToast('Đã lưu ảnh đại diện!');
-            }}
-          />
+          <div className="space-y-6">
+            <PtProfileForm onSaved={showToast} />
+            <AvatarUploader
+              currentUrl={user.avatarUrl}
+              onUpload={async (url) => {
+                await api.put('/users/avatar', { avatarUrl: url });
+                showToast('Đã lưu ảnh đại diện!');
+              }}
+            />
+          </div>
         )}
       </main>
 

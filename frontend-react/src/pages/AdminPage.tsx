@@ -2,6 +2,7 @@ import { getAvatarUrl } from "../lib/avatar";
 import React, { useState, useEffect } from 'react';
 import api from '../lib/axios';
 import { User, PtProfile } from '../types/api';
+import { isHttpUrl, resolveCertificateUrl } from '../lib/certificate';
 import { Shield, Users, BarChart2, CheckCircle, XCircle, Lock, Unlock, LogOut } from 'lucide-react';
 
 interface AdminPageProps {
@@ -192,6 +193,26 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLogout }) => {
                       <div className="text-xs text-slate-500 mt-2">
                         <span><b>Khu vực:</b> {pt.availableLocations}</span> • <span><b>Kinh nghiệm:</b> {pt.experienceYears} năm</span>
                       </div>
+                      {pt.locationPricingNote && (
+                        <div className="text-xs text-slate-500 mt-1"><b>Ghi chú giá:</b> {pt.locationPricingNote}</div>
+                      )}
+                      {(() => {
+                        const cert = resolveCertificateUrl(pt);
+                        return (
+                          <div className="text-xs text-slate-600 mt-2">
+                            <b>Chứng chỉ / Bằng cấp:</b>{' '}
+                            {cert ? (
+                              isHttpUrl(cert) ? (
+                                <a href={cert} target="_blank" rel="noreferrer" className="text-blue-600 underline break-all">{cert}</a>
+                              ) : (
+                                <code className="bg-slate-100 px-1 rounded break-all">{cert}</code>
+                              )
+                            ) : (
+                              <span className="italic text-slate-400">Chưa cập nhật</span>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     <div className="mt-4 pt-3 border-t border-slate-100 flex gap-2 justify-end">

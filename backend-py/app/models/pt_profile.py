@@ -1,10 +1,10 @@
 from datetime import datetime
 from decimal import Decimal
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
-from sqlalchemy import JSON, FetchedValue, ForeignKey, Integer, Numeric, Text
+from sqlalchemy import FetchedValue, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy import Enum as SQLEnum
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship, synonym
 
 from app.db.base import Base
 from app.models.enums import VerificationStatus
@@ -24,7 +24,10 @@ class PTProfile(Base):
     experience_years: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     available_locations: Mapped[str] = mapped_column(Text, nullable=False)
     location_pricing_note: Mapped[str | None] = mapped_column(Text, nullable=True)
-    certificate_urls: Mapped[Any | None] = mapped_column(JSON, nullable=True)
+    certificate_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # Bí danh tương thích ngược: code cũ đọc/ghi profile.certificate_urls vẫn chạy,
+    # và PTProfile(certificate_urls=...) vẫn hợp lệ. Cả hai trỏ vào cùng cột certificate_url.
+    certificate_urls = synonym("certificate_url")
 
     average_rating: Mapped[Decimal] = mapped_column(
         Numeric(3, 2),

@@ -45,7 +45,7 @@ export const PtCard: React.FC<PtCardProps> = ({ pt, onSelect }) => {
         <div className="flex flex-wrap items-center gap-2 py-2.5 border-y border-slate-100 my-2">
           <div className="flex items-center gap-1 bg-amber-50 text-amber-900 border border-amber-200/70 px-2.5 py-1 rounded-lg text-xs font-bold">
             <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
-            <span>{pt.averageRating ? pt.averageRating.toFixed(1) : '5.0'}/5</span>
+            <span>{pt.totalReviews ? `${(pt.averageRating ?? 0).toFixed(1)}/5` : 'Mới'}</span>
             <span className="text-amber-700 font-normal">({pt.totalReviews || 0})</span>
           </div>
 

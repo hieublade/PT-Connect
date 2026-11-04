@@ -80,8 +80,8 @@ class PTProfileService:
         profile.experience_years = request.experience_years if request.experience_years is not None else 0
         profile.available_locations = request.available_locations
         profile.location_pricing_note = request.location_pricing_note
-        if request.certificate_urls is not None:
-            profile.certificate_urls = request.certificate_urls
+        if request.clean_certificate_url is not None:
+            profile.certificate_url = request.clean_certificate_url
 
         self.db.commit()
         self.db.refresh(profile)

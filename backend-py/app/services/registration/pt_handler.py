@@ -34,7 +34,7 @@ class PtRegistrationHandler:
             experience_years=request.experience_years if request.experience_years is not None else 0,
             available_locations=locations,
             location_pricing_note=request.location_pricing_note,
-            certificate_urls=request.certificate_urls,
+            certificate_url=request.clean_certificate_url,
             verification_status=VerificationStatus.PENDING,
         )
         db.add(profile)

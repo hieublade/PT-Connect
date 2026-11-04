@@ -18,19 +18,17 @@ class ReviewResponse(CamelModel):
         if review is None:
             return None
 
-        b_id = review.booking.id if review.booking else None
-        s_id = review.student.id if review.student else None
-        s_name = review.student.full_name if review.student else None
-        s_avatar = review.student.avatar_url if review.student else None
-        p_id = review.pt.id if review.pt else None
+        booking = review.booking
+        student = booking.student if booking is not None else None
+        pt_profile = booking.pt if booking is not None else None
 
         return cls(
             id=review.id,
-            booking_id=b_id,
-            student_id=s_id,
-            student_name=s_name,
-            student_avatar_url=s_avatar,
-            pt_id=p_id,
+            booking_id=booking.id if booking is not None else review.booking_id,
+            student_id=student.id if student is not None else (booking.student_id if booking else None),
+            student_name=student.full_name if student is not None else None,
+            student_avatar_url=student.avatar_url if student is not None else None,
+            pt_id=pt_profile.id if pt_profile is not None else (booking.pt_id if booking else None),
             rating=review.rating,
             comment=review.comment,
             created_at=review.created_at,

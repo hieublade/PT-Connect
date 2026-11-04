@@ -1,11 +1,11 @@
 from decimal import Decimal
-from typing import Any
 
 from app.models.availability_slot import AvailabilitySlot
 from app.models.course import Course
 from app.models.enums import CourseStatus, SlotStatus, UserStatus, VerificationStatus
 from app.models.pt_profile import PTProfile
 from app.schemas.base import CamelModel, LocalDateTime, Money
+from app.schemas.certificate import clean_certificate_url
 
 
 class PTProfileResponse(CamelModel):
@@ -19,7 +19,8 @@ class PTProfileResponse(CamelModel):
     experience_years: int = 0
     available_locations: str | None = None
     location_pricing_note: str | None = None
-    certificate_urls: Any | None = None
+    certificate_url: str | None = None
+    certificate_urls: str | None = None
     average_rating: float = 0.0
     total_reviews: int = 0
     verification_status: VerificationStatus
@@ -61,7 +62,8 @@ class PTProfileResponse(CamelModel):
             experience_years=profile.experience_years if profile.experience_years is not None else 0,
             available_locations=profile.available_locations,
             location_pricing_note=profile.location_pricing_note,
-            certificate_urls=profile.certificate_urls,
+            certificate_url=clean_certificate_url(profile.certificate_url),
+            certificate_urls=clean_certificate_url(profile.certificate_url),
             average_rating=rating_val,
             total_reviews=reviews_val,
             verification_status=profile.verification_status,
@@ -207,7 +209,8 @@ class PendingPTResponse(CamelModel):
     experience_years: int = 0
     available_locations: str | None = None
     location_pricing_note: str | None = None
-    certificate_urls: Any | None = None
+    certificate_url: str | None = None
+    certificate_urls: str | None = None
     verification_status: VerificationStatus
     user_status: UserStatus | None = None
     created_at: LocalDateTime | None = None
@@ -243,7 +246,8 @@ class PendingPTResponse(CamelModel):
             experience_years=profile.experience_years if profile.experience_years is not None else 0,
             available_locations=profile.available_locations,
             location_pricing_note=profile.location_pricing_note,
-            certificate_urls=profile.certificate_urls,
+            certificate_url=clean_certificate_url(profile.certificate_url),
+            certificate_urls=clean_certificate_url(profile.certificate_url),
             verification_status=profile.verification_status,
             user_status=u_status,
             created_at=profile.created_at,

@@ -22,6 +22,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const [regPhone, setRegPhone] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [regRole, setRegRole] = useState<'STUDENT' | 'PT'>('STUDENT');
+  const [regBio, setRegBio] = useState('');
+  const [regExperience, setRegExperience] = useState<number>(0);
+  const [regLocations, setRegLocations] = useState('');
+  const [regPricingNote, setRegPricingNote] = useState('');
+  const [regCertificateUrl, setRegCertificateUrl] = useState('');
   const [regSuccess, setRegSuccess] = useState<string | null>(null);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -57,13 +62,29 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     setRegSuccess(null);
 
     try {
-      await api.post('/auth/register', {
+      const cert = regCertificateUrl.trim();
+      if (regRole === 'PT' && cert && !/^https?:\/\//i.test(cert)) {
+        setError('Đường dẫn chứng chỉ phải bắt đầu bằng http:// hoặc https://');
+        setLoading(false);
+        return;
+      }
+      const payload: Record<string, unknown> = {
         fullName: regFullName.trim(),
         email: regEmail.trim(),
         phone: regPhone.trim(),
         password: regPassword,
         role: regRole,
-      });
+      };
+      if (regRole === 'PT') {
+        Object.assign(payload, {
+          bio: regBio.trim() || undefined,
+          experienceYears: Number(regExperience) || 0,
+          availableLocations: regLocations.trim() || undefined,
+          locationPricingNote: regPricingNote.trim() || undefined,
+          certificateUrl: cert || undefined,
+        });
+      }
+      await api.post('/auth/register', payload);
       setRegSuccess('Đăng ký tài khoản thành công! Bạn có thể chuyển sang tab Đăng nhập để tiếp tục.');
       setActiveTab('LOGIN');
       setEmail(regEmail.trim());
@@ -247,6 +268,50 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                   </button>
                 </div>
               </div>
+
+              {regRole === 'PT' && (
+                <div className="space-y-3 p-3 rounded-lg border border-amber-200 bg-amber-50/40">
+                  <p className="text-xs font-semibold text-amber-800">
+                    Hồ sơ chuyên môn HLV (sẽ được Admin xét duyệt)
+                  </p>
+                  <textarea
+                    rows={2}
+                    value={regBio}
+                    onChange={(e) => setRegBio(e.target.value)}
+                    placeholder="Giới thiệu ngắn bản thân"
+                    className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#FF4B4B] focus:ring-1 focus:ring-[#FF4B4B] outline-none transition"
+                  />
+                  <input
+                    type="number"
+                    min={0}
+                    max={50}
+                    value={regExperience}
+                    onChange={(e) => setRegExperience(Number(e.target.value))}
+                    placeholder="Số năm kinh nghiệm"
+                    className="w-full h-10 px-3.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#FF4B4B] focus:ring-1 focus:ring-[#FF4B4B] outline-none transition"
+                  />
+                  <input
+                    value={regLocations}
+                    onChange={(e) => setRegLocations(e.target.value)}
+                    placeholder="Khu vực nhận dạy (VD: Cầu Giấy; Đống Đa)"
+                    className="w-full h-10 px-3.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#FF4B4B] focus:ring-1 focus:ring-[#FF4B4B] outline-none transition"
+                  />
+                  <input
+                    value={regPricingNote}
+                    onChange={(e) => setRegPricingNote(e.target.value)}
+                    placeholder="Ghi chú giá theo địa điểm"
+                    className="w-full h-10 px-3.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#FF4B4B] focus:ring-1 focus:ring-[#FF4B4B] outline-none transition"
+                  />
+                  <input
+                    type="url"
+                    maxLength={500}
+                    value={regCertificateUrl}
+                    onChange={(e) => setRegCertificateUrl(e.target.value)}
+                    placeholder="Link chứng chỉ hành nghề (https://...)"
+                    className="w-full h-10 px-3.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#FF4B4B] focus:ring-1 focus:ring-[#FF4B4B] outline-none transition"
+                  />
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1.5">

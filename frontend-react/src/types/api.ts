@@ -21,12 +21,15 @@ export interface PtProfile {
   experienceYears: number;
   availableLocations: string;
   locationPricingNote?: string;
-  certificateUrls?: string[];
+  certificateUrl?: string | null;                 // trường chuẩn 1NF
+  certificateUrls?: string | string[] | null;     // alias cũ: có thể là chuỗi, '["..."]' hoặc mảng
   averageRating: number;
   totalReviews: number;
   lowestPrice?: number;
   avatarUrl?: string;
   verificationStatus: 'PENDING' | 'VERIFIED' | 'REJECTED';
+  userStatus?: UserStatus;
+  createdAt?: string;
 }
 
 export interface Course {
@@ -62,6 +65,37 @@ export interface Booking {
   ptName?: string;
   courseTitle?: string;
   totalAmount?: number;
+  sessionFee?: number;
+  trainingLocation?: string;
+  cancellationReason?: string;
+  cancelledByRole?: string;
+}
+
+export interface Review {
+  id: number;
+  bookingId: number;
+  studentId?: number | null;
+  studentName?: string | null;
+  studentAvatarUrl?: string | null;
+  ptId?: number | null;
+  ptName?: string | null;
+  rating: number;
+  comment?: string | null;
+  createdAt?: string | null;
+}
+
+export interface CreateReviewPayload {
+  bookingId: number;
+  rating: number;
+  comment?: string;
+}
+
+export interface UpdatePtProfilePayload {
+  bio?: string;
+  experienceYears?: number;
+  availableLocations: string;
+  locationPricingNote?: string;
+  certificateUrl?: string;
 }
 
 export interface PaymentTransaction {

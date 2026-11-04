@@ -79,3 +79,41 @@ def test_payment_method_lenient():
     assert PaymentTestModel(method="WALLET").method == "WALLET"
     assert PaymentTestModel(method="credit_card").method == "CREDIT_CARD"
     assert PaymentTestModel(method="UNKNOWN_XYZ").method == "BANK_TRANSFER"
+
+def test_clean_certificate_url():
+    from app.schemas.certificate import clean_certificate_url
+    assert clean_certificate_url(None) is None
+    assert clean_certificate_url("") is None
+    assert clean_certificate_url("   ") is None
+    assert clean_certificate_url("[]") is None
+    assert clean_certificate_url('["https://cdn.vn/cert.pdf"]') == "https://cdn.vn/cert.pdf"
+    assert clean_certificate_url(["https://cdn.vn/cert1.pdf", "https://cdn.vn/cert2.pdf"]) == "https://cdn.vn/cert1.pdf"
+    assert clean_certificate_url("https://cdn.vn/cert.pdf") == "https://cdn.vn/cert.pdf"
+
+
+def test_register_and_update_pt_certificate_normalization():
+    from app.models.enums import Role
+    from app.schemas.requests.auth import RegisterRequest
+    from app.schemas.requests.pt import UpdatePTProfileRequest
+
+    # Test key certificateUrls with JSON array string
+    reg = RegisterRequest(
+        fullName="PT Test",
+        email="test.pt@example.com",
+        password="Password123@",
+        phone="0912345678",
+        role=Role.PT,
+        certificateUrls='["https://cdn.vn/cert.pdf"]',
+    )
+    assert reg.clean_certificate_url == "https://cdn.vn/cert.pdf"
+    assert reg.certificate_url == "https://cdn.vn/cert.pdf"
+    assert reg.certificate_urls == "https://cdn.vn/cert.pdf"
+
+    # Test UpdatePTProfileRequest with new key certificateUrl
+    upd = UpdatePTProfileRequest(
+        availableLocations="Hà Nội",
+        certificateUrl="https://cdn.vn/cert_new.pdf",
+    )
+    assert upd.clean_certificate_url == "https://cdn.vn/cert_new.pdf"
+    assert upd.certificate_url == "https://cdn.vn/cert_new.pdf"
+    assert upd.certificate_urls == "https://cdn.vn/cert_new.pdf"

@@ -10,6 +10,8 @@ interface BookingTableProps {
   onCancel?: (booking: Booking) => void;
   onGetOtp?: (booking: Booking) => void;
   onConfirmOtp?: (booking: Booking) => void;
+  onReview?: (booking: Booking) => void;
+  reviewedBookingIds?: Set<number>;
 }
 
 export const BookingTable: React.FC<BookingTableProps> = ({
@@ -20,6 +22,8 @@ export const BookingTable: React.FC<BookingTableProps> = ({
   onCancel,
   onGetOtp,
   onConfirmOtp,
+  onReview,
+  reviewedBookingIds,
 }) => {
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
 
@@ -159,6 +163,18 @@ export const BookingTable: React.FC<BookingTableProps> = ({
                                 >
                                   Hủy ca tập
                                 </button>
+                              )}
+                              {b.status === 'COMPLETED' && onReview && (
+                                reviewedBookingIds?.has(b.id) ? (
+                                  <span className="text-xs text-emerald-700 font-semibold">✓ Đã đánh giá</span>
+                                ) : (
+                                  <button
+                                    onClick={() => onReview(b)}
+                                    className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-md text-xs font-semibold cursor-pointer"
+                                  >
+                                    ★ Đánh giá
+                                  </button>
+                                )
                               )}
                             </>
                           )}

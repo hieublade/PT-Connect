@@ -1,9 +1,11 @@
 import re
+from typing import Any
 
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 
 from app.models.enums import Role, UserStatus
 from app.schemas.base import CamelModel
+from app.schemas.certificate import MAX_CERT_URL_LEN, clean_certificate_url
 
 EMAIL_REGEX = re.compile(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$")
 
@@ -19,7 +21,21 @@ class RegisterRequest(CamelModel):
     experience_years: int | None = None
     available_locations: str | None = None
     location_pricing_note: str | None = None
-    certificate_urls: str | None = None
+    certificate_url: str | None = None
+    certificate_urls: Any | None = None
+
+    @model_validator(mode="after")
+    def _normalize_certificate(self) -> "RegisterRequest":
+        cleaned = clean_certificate_url(self.certificate_url) or clean_certificate_url(self.certificate_urls)
+        if cleaned is not None and len(cleaned) > MAX_CERT_URL_LEN:
+            raise ValueError("URL chứng chỉ không được vượt quá 500 ký tự")
+        self.certificate_url = cleaned
+        self.certificate_urls = cleaned
+        return self
+
+    @property
+    def clean_certificate_url(self) -> str | None:
+        return self.certificate_url
 
     @field_validator("full_name")
     @classmethod

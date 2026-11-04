@@ -40,16 +40,15 @@ class ReviewService:
             )
 
         review = Review(
-            booking_id=booking.id,
-            student_id=student.id,
-            pt_id=booking.pt_id,
+            booking=booking,  # gán quan hệ để DTO resolve được student/pt ngay
             rating=request.rating,
             comment=request.comment.strip() if request.comment else None,
         )
 
         saved = self.review_repo.save(review)
         self.db.commit()
-        self.db.refresh(saved)
+        # Nạp lại review kèm quan hệ để trả về created_at thật và thông tin student/pt
+        saved = self.review_repo.get_by_id(saved.id)
         return ReviewResponse.from_entity(saved)
 
     def get_reviews_by_pt_id(self, pt_id: int) -> list[ReviewResponse]:

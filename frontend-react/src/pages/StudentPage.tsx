@@ -3,6 +3,8 @@ import api from '../lib/axios';
 import { PtProfile, Course, AvailabilitySlot, Booking, Wallet, Enrollment, User } from '../types/api';
 import { PtCard } from '../components/PtCard';
 import { getAvatarUrl } from '../lib/avatar';
+import { ReviewList } from '../components/ReviewList';
+import { ReviewModal } from '../components/ReviewModal';
 import { CourseCard } from '../components/CourseCard';
 import { SlotCard } from '../components/SlotCard';
 import { BookingTable } from '../components/BookingTable';
@@ -33,6 +35,9 @@ export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout }) => {
   const [activeTab, setActiveTab] = useState<number>(0);
   const [pts, setPts] = useState<PtProfile[]>([]);
   const [selectedPt, setSelectedPt] = useState<PtProfile | null>(null);
+  const [reviewBooking, setReviewBooking] = useState<Booking | null>(null);
+  const [reviewedBookingIds, setReviewedBookingIds] = useState<Set<number>>(new Set());
+  const [reviewReloadKey, setReviewReloadKey] = useState(0);
   const [ptCourses, setPtCourses] = useState<Course[]>([]);
   const [ptSlots, setPtSlots] = useState<AvailabilitySlot[]>([]);
   const [myBookings, setMyBookings] = useState<Booking[]>([]);
@@ -58,7 +63,17 @@ export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout }) => {
     fetchWallet();
     fetchMyBookings();
     fetchMyEnrollments();
+    loadMyReviews();
   }, []);
+
+  const loadMyReviews = async () => {
+    try {
+      const data: any = await api.get('/reviews/my');
+      setReviewedBookingIds(new Set((Array.isArray(data) ? data : []).map((r: any) => r.bookingId)));
+    } catch {
+      setReviewedBookingIds(new Set());
+    }
+  };
 
   const fetchPts = async (nameQuery = '') => {
     try {
@@ -358,7 +373,7 @@ export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout }) => {
                 <div className="flex items-center gap-4 mt-3 text-xs text-slate-600">
                   <span><b>Kinh nghiệm:</b> {selectedPt.experienceYears} năm</span>
                   <span><b>Khu vực:</b> {selectedPt.availableLocations}</span>
-                  <span><b>Đánh giá:</b> {selectedPt.averageRating.toFixed(1)}/5 ⭐ ({selectedPt.totalReviews} lượt)</span>
+                  <span><b>Đánh giá:</b> {(selectedPt.averageRating ?? 0).toFixed(1)}/5 ⭐ ({selectedPt.totalReviews ?? 0} lượt)</span>
                 </div>
               </div>
               <button
@@ -381,6 +396,11 @@ export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout }) => {
                   HLV này chưa tạo khóa học công khai nào.
                 </div>
               )}
+            </div>
+
+            <div>
+              <h4 className="text-lg font-bold text-slate-900 mb-4">Đánh Giá Từ Học Viên</h4>
+              <ReviewList ptProfileId={selectedPt.id} reloadKey={reviewReloadKey} />
             </div>
           </div>
         )}
@@ -417,6 +437,8 @@ export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout }) => {
             <h3 className="text-xl font-bold text-slate-900">Lịch Tập Luyện Của Tôi</h3>
             <BookingTable
               bookings={myBookings}
+              reviewedBookingIds={reviewedBookingIds}
+              onReview={(b) => setReviewBooking(b)}
               onGetOtp={handleGetOtp}
               onCancel={async (b) => {
                 if (confirm('Bạn có chắc chắn muốn hủy ca tập này không?')) {
@@ -753,6 +775,21 @@ export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout }) => {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Review Modal Dialog */}
+      {reviewBooking && (
+        <ReviewModal
+          booking={reviewBooking}
+          onClose={() => setReviewBooking(null)}
+          onSubmitted={() => {
+            setReviewBooking(null);
+            setReviewedBookingIds((prev) => new Set(prev).add(reviewBooking.id));
+            setReviewReloadKey((k) => k + 1);
+            fetchPts();
+            showToast('Gửi đánh giá thành công! Cảm ơn bạn đã phản hồi.');
+          }}
+        />
       )}
     </div>
   );
