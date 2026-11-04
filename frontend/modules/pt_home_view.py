@@ -491,11 +491,14 @@ class ManagePTProfileView:
                 height=80
             )
 
-            f_certificates = st.text_area(
-                "Đường dẫn chứng chỉ / bằng cấp (JSON hoặc URLs):",
-                value=self.parent.profile_data.get("certificateUrls") or '["https://cdn.ptconnect.vn/certs/cert_hlv_cap1.pdf"]',
-                placeholder='["https://example.com/cert1.pdf", "https://example.com/cert2.pdf"]',
-                height=80
+            current_cert = self.parent.profile_data.get("certificateUrl") or self.parent.profile_data.get("certificateUrls") or ""
+            if current_cert.startswith('["') and current_cert.endswith('"]'):
+                current_cert = current_cert[2:-2]
+
+            f_certificates = st.text_input(
+                "Đường dẫn chứng chỉ / bằng cấp chuyên môn (URL):",
+                value=current_cert,
+                placeholder="https://storage.ptconnect.vn/certs/cert_nasam.jpg"
             )
 
             btn_save = st.form_submit_button("Lưu Cập Nhật Hồ Sơ", type="primary", use_container_width=True)
@@ -509,6 +512,7 @@ class ManagePTProfileView:
                         "experienceYears": f_exp,
                         "availableLocations": f_locations.strip(),
                         "locationPricingNote": f_pricing_note.strip(),
+                        "certificateUrl": f_certificates.strip(),
                         "certificateUrls": f_certificates.strip()
                     }
                     try:

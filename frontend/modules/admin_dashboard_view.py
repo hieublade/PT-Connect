@@ -45,7 +45,9 @@ class PTPendingApprovalView:
                 p_loc = pt_item.get("availableLocations", "Chưa cập nhật")
                 p_pricing = pt_item.get("locationPricingNote", "Không có phụ thu")
                 p_bio = pt_item.get("bio", "Chưa có giới thiệu")
-                p_certs = pt_item.get("certificateUrls", "[]")
+                p_certs = pt_item.get("certificateUrl") or pt_item.get("certificateUrls") or "Chưa cập nhật"
+                if isinstance(p_certs, str) and p_certs.startswith('["') and p_certs.endswith('"]'):
+                    p_certs = p_certs[2:-2]
 
                 with st.container(border=True):
                     col_top_info, col_status = st.columns([4, 2])
@@ -68,7 +70,10 @@ class PTPendingApprovalView:
                     st.markdown(f"**Kinh nghiệm:** `{p_exp} năm`")
                     st.markdown(f"**Khu vực nhận dạy:** {p_loc}")
                     st.markdown(f"**Chính sách phụ thu:** {p_pricing}")
-                    st.markdown(f"**Chứng chỉ / Bằng cấp:** `{p_certs}`")
+                    if isinstance(p_certs, str) and p_certs.startswith("http"):
+                        st.markdown(f"**Chứng chỉ / Bằng cấp:** [{p_certs}]({p_certs})")
+                    else:
+                        st.markdown(f"**Chứng chỉ / Bằng cấp:** `{p_certs}`")
 
                     st.markdown("---")
                     btn_col1, btn_col2, _ = st.columns([2, 2, 4])

@@ -24,6 +24,7 @@ public class PendingPTResponse {
     private Integer experienceYears;
     private String availableLocations;
     private String locationPricingNote;
+    private String certificateUrl;
     private String certificateUrls;
     private VerificationStatus verificationStatus;
     private UserStatus userStatus;
@@ -61,7 +62,8 @@ public class PendingPTResponse {
                 .experienceYears(profile.getExperienceYears())
                 .availableLocations(profile.getAvailableLocations())
                 .locationPricingNote(profile.getLocationPricingNote())
-                .certificateUrls(profile.getCertificateUrls())
+                .certificateUrl(profile.getCertificateUrl())
+                .certificateUrls(profile.getCertificateUrl())
                 .verificationStatus(profile.getVerificationStatus())
                 .userStatus(uStatus)
                 .createdAt(profile.getCreatedAt())

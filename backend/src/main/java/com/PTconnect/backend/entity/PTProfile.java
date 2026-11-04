@@ -39,9 +39,16 @@ public class PTProfile {
     @Column(name = "location_pricing_note", columnDefinition = "TEXT")
     private String locationPricingNote;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "certificate_urls")
-    private String certificateUrls;
+    @Column(name = "certificate_url", length = 500)
+    private String certificateUrl;
+
+    public String getCertificateUrls() {
+        return this.certificateUrl;
+    }
+
+    public void setCertificateUrls(String certificateUrls) {
+        this.certificateUrl = certificateUrls;
+    }
 
     @Column(name = "average_rating", insertable = false, updatable = false)
     private BigDecimal averageRating;

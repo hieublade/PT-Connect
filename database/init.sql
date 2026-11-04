@@ -30,7 +30,7 @@ CREATE TABLE `pt_profiles` (
   `experience_years` integer NOT NULL DEFAULT 0,
   `available_locations` text NOT NULL COMMENT 'Mô tả các địa điểm PT có thể nhận dạy',
   `location_pricing_note` text COMMENT 'Mô tả chính sách điều chỉnh giá',
-  `certificate_urls` json COMMENT 'Mảng JSON danh sách URL chứng chỉ',
+  `certificate_url` varchar(500) COMMENT 'URL chứng chỉ hành nghề chính của PT (Chuẩn 1NF)',
   `average_rating` decimal(3,2) NOT NULL DEFAULT 0,
   `total_reviews` integer NOT NULL DEFAULT 0,
   `verification_status` ENUM ('PENDING', 'VERIFIED', 'REJECTED') NOT NULL DEFAULT 'PENDING',
@@ -122,8 +122,6 @@ CREATE TABLE `bookings` (
 CREATE TABLE `reviews` (
   `id` bigint PRIMARY KEY AUTO_INCREMENT,
   `booking_id` bigint UNIQUE NOT NULL,
-  `student_id` bigint NOT NULL,
-  `pt_id` bigint NOT NULL,
   `rating` smallint NOT NULL,
   `comment` text,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -221,9 +219,7 @@ ALTER TABLE `bookings`           ADD FOREIGN KEY (`enrollment_id`)   REFERENCES 
 ALTER TABLE `bookings`           ADD FOREIGN KEY (`student_id`)      REFERENCES `users` (`id`);
 ALTER TABLE `bookings`           ADD FOREIGN KEY (`pt_id`)           REFERENCES `pt_profiles` (`id`);
 ALTER TABLE `bookings`           ADD FOREIGN KEY (`slot_id`)         REFERENCES `availability_slots` (`id`);
-ALTER TABLE `reviews`            ADD FOREIGN KEY (`booking_id`)      REFERENCES `bookings` (`id`);
-ALTER TABLE `reviews`            ADD FOREIGN KEY (`student_id`)      REFERENCES `users` (`id`);
-ALTER TABLE `reviews`            ADD FOREIGN KEY (`pt_id`)           REFERENCES `pt_profiles` (`id`);
+ALTER TABLE `reviews`            ADD FOREIGN KEY (`booking_id`)      REFERENCES `bookings` (`id`) ON DELETE CASCADE;
 ALTER TABLE `cancellations`      ADD FOREIGN KEY (`booking_id`)      REFERENCES `bookings` (`id`);
 ALTER TABLE `cancellations`      ADD FOREIGN KEY (`cancelled_by_id`) REFERENCES `users` (`id`);
 ALTER TABLE `workout_plans`      ADD FOREIGN KEY (`enrollment_id`)   REFERENCES `enrollments` (`id`);
@@ -244,11 +240,11 @@ INSERT INTO `users` (`id`, `full_name`, `email`, `password_hash`, `phone`, `role
   (4, 'Pham Minh D',  'pt.minhd@ptconnect.vn',  '$2a$10$IciBJIW1NX.1Za3YIyYqjO7H/SpL//eFExQrDxRk/33YLKZjOvyey', '0900000004', 'PT',      'ACTIVE'),
   (5, 'Admin System', 'admin@ptconnect.vn',     '$2a$10$IciBJIW1NX.1Za3YIyYqjO7H/SpL//eFExQrDxRk/33YLKZjOvyey', '0900000005', 'ADMIN',   'ACTIVE');
 
-INSERT INTO `pt_profiles` (`id`, `user_id`, `experience_years`, `available_locations`, `location_pricing_note`, `average_rating`, `total_reviews`, `verification_status`) VALUES
+INSERT INTO `pt_profiles` (`id`, `user_id`, `experience_years`, `available_locations`, `location_pricing_note`, `certificate_url`, `average_rating`, `total_reviews`, `verification_status`) VALUES
   (1, 3, 5, 'Phòng Cali Cầu Giấy; FitZone Thanh Xuân; Nhận dạy tại nhà học viên',
-   'Tập tại phòng Cali giá chuẩn; Dạy tại nhà học viên phụ thu 20% tiền đi lại', 4.90, 10, 'VERIFIED'),
+   'Tập tại phòng Cali giá chuẩn; Dạy tại nhà học viên phụ thu 20% tiền đi lại', 'https://cdn.ptconnect.vn/certs/cert_hlv_cap1.pdf', 4.90, 10, 'VERIFIED'),
   (2, 4, 3, 'Studio cá nhân tại Thanh Xuân; Nhận dạy quanh khu vực Đống Đa',
-   'Tập tại Studio cá nhân giá chuẩn; Khác địa điểm thỏa thuận thêm phí di chuyển', 4.80, 5, 'VERIFIED');
+   'Tập tại Studio cá nhân giá chuẩn; Khác địa điểm thỏa thuận thêm phí di chuyển', 'https://cdn.ptconnect.vn/certs/cert_hlv_cap2.pdf', 4.80, 5, 'VERIFIED');
 
 INSERT INTO `wallets` (`id`, `user_id`, `balance`, `locked_balance`, `currency`, `status`) VALUES
   (1, 1, 5000000.00, 0, 'VND', 'ACTIVE'),
@@ -288,28 +284,49 @@ CREATE TRIGGER `trg_reviews_after_insert`
 AFTER INSERT ON `reviews`
 FOR EACH ROW
 BEGIN
-  UPDATE `pt_profiles`
-  SET `average_rating` = COALESCE((SELECT ROUND(AVG(`rating`), 2) FROM `reviews` WHERE `pt_id` = NEW.`pt_id`), 0),
-      `total_reviews`  = (SELECT COUNT(*) FROM `reviews` WHERE `pt_id` = NEW.`pt_id`)
-  WHERE `id` = NEW.`pt_id`;
+  DECLARE v_pt_id BIGINT;
+  SELECT `pt_id` INTO v_pt_id FROM `bookings` WHERE `id` = NEW.`booking_id`;
+
+  IF v_pt_id IS NOT NULL THEN
+    UPDATE `pt_profiles`
+    SET `average_rating` = COALESCE((
+          SELECT ROUND(AVG(r.`rating`), 2) 
+          FROM `reviews` r 
+          JOIN `bookings` b ON r.`booking_id` = b.`id` 
+          WHERE b.`pt_id` = v_pt_id
+        ), 0),
+        `total_reviews` = (
+          SELECT COUNT(*) 
+          FROM `reviews` r 
+          JOIN `bookings` b ON r.`booking_id` = b.`id` 
+          WHERE b.`pt_id` = v_pt_id
+        )
+    WHERE `id` = v_pt_id;
+  END IF;
 END$$
 
 CREATE TRIGGER `trg_reviews_after_update`
 AFTER UPDATE ON `reviews`
 FOR EACH ROW
 BEGIN
-  -- Cập nhật cho PT mới
-  UPDATE `pt_profiles`
-  SET `average_rating` = COALESCE((SELECT ROUND(AVG(`rating`), 2) FROM `reviews` WHERE `pt_id` = NEW.`pt_id`), 0),
-      `total_reviews`  = (SELECT COUNT(*) FROM `reviews` WHERE `pt_id` = NEW.`pt_id`)
-  WHERE `id` = NEW.`pt_id`;
+  DECLARE v_pt_id BIGINT;
+  SELECT `pt_id` INTO v_pt_id FROM `bookings` WHERE `id` = NEW.`booking_id`;
 
-  -- Cập nhật cho PT cũ nếu có đổi pt_id
-  IF OLD.`pt_id` <> NEW.`pt_id` THEN
+  IF v_pt_id IS NOT NULL THEN
     UPDATE `pt_profiles`
-    SET `average_rating` = COALESCE((SELECT ROUND(AVG(`rating`), 2) FROM `reviews` WHERE `pt_id` = OLD.`pt_id`), 0),
-        `total_reviews`  = (SELECT COUNT(*) FROM `reviews` WHERE `pt_id` = OLD.`pt_id`)
-    WHERE `id` = OLD.`pt_id`;
+    SET `average_rating` = COALESCE((
+          SELECT ROUND(AVG(r.`rating`), 2) 
+          FROM `reviews` r 
+          JOIN `bookings` b ON r.`booking_id` = b.`id` 
+          WHERE b.`pt_id` = v_pt_id
+        ), 0),
+        `total_reviews` = (
+          SELECT COUNT(*) 
+          FROM `reviews` r 
+          JOIN `bookings` b ON r.`booking_id` = b.`id` 
+          WHERE b.`pt_id` = v_pt_id
+        )
+    WHERE `id` = v_pt_id;
   END IF;
 END$$
 
@@ -317,10 +334,40 @@ CREATE TRIGGER `trg_reviews_after_delete`
 AFTER DELETE ON `reviews`
 FOR EACH ROW
 BEGIN
-  UPDATE `pt_profiles`
-  SET `average_rating` = COALESCE((SELECT ROUND(AVG(`rating`), 2) FROM `reviews` WHERE `pt_id` = OLD.`pt_id`), 0),
-      `total_reviews`  = (SELECT COUNT(*) FROM `reviews` WHERE `pt_id` = OLD.`pt_id`)
-  WHERE `id` = OLD.`pt_id`;
+  DECLARE v_pt_id BIGINT;
+  SELECT `pt_id` INTO v_pt_id FROM `bookings` WHERE `id` = OLD.`booking_id`;
+
+  IF v_pt_id IS NOT NULL THEN
+    UPDATE `pt_profiles`
+    SET `average_rating` = COALESCE((
+          SELECT ROUND(AVG(r.`rating`), 2) 
+          FROM `reviews` r 
+          JOIN `bookings` b ON r.`booking_id` = b.`id` 
+          WHERE b.`pt_id` = v_pt_id
+        ), 0),
+        `total_reviews` = (
+          SELECT COUNT(*) 
+          FROM `reviews` r 
+          JOIN `bookings` b ON r.`booking_id` = b.`id` 
+          WHERE b.`pt_id` = v_pt_id
+        )
+    WHERE `id` = v_pt_id;
+  END IF;
 END$$
 
 DELIMITER ;
+
+-- ---------------------------------------------------------------------
+-- 6. VIEWS
+-- ---------------------------------------------------------------------
+
+CREATE OR REPLACE VIEW `v_pt_rating_statistics` AS
+SELECT 
+    p.`id` AS `pt_profile_id`,
+    p.`user_id`,
+    COUNT(r.`id`) AS `calculated_total_reviews`,
+    ROUND(COALESCE(AVG(r.`rating`), 0), 2) AS `calculated_average_rating`
+FROM `pt_profiles` p
+LEFT JOIN `bookings` b ON p.`id` = b.`pt_id`
+LEFT JOIN `reviews` r ON b.`id` = r.`booking_id`
+GROUP BY p.`id`, p.`user_id`;

@@ -37,14 +37,15 @@ public class ReviewResponse {
                 .comment(review.getComment())
                 .createdAt(review.getCreatedAt());
 
-        if (review.getStudent() != null) {
-            builder.studentId(review.getStudent().getId())
-                    .studentName(review.getStudent().getFullName())
-                    .studentAvatarUrl(review.getStudent().getAvatarUrl());
-        }
-
-        if (review.getPt() != null) {
-            builder.ptId(review.getPt().getId());
+        if (review.getBooking() != null) {
+            if (review.getBooking().getStudent() != null) {
+                builder.studentId(review.getBooking().getStudent().getId())
+                        .studentName(review.getBooking().getStudent().getFullName())
+                        .studentAvatarUrl(review.getBooking().getStudent().getAvatarUrl());
+            }
+            if (review.getBooking().getPt() != null) {
+                builder.ptId(review.getBooking().getPt().getId());
+            }
         }
 
         return builder.build();

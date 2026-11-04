@@ -46,7 +46,7 @@ public class PtRegistrationHandler implements UserRegistrationHandler {
                 .experienceYears(request.getExperienceYears() != null ? request.getExperienceYears() : 0)
                 .availableLocations(locations)
                 .locationPricingNote(request.getLocationPricingNote())
-                .certificateUrls(request.getCertificateUrls())
+                .certificateUrl(request.getCleanCertificateUrl())
                 .verificationStatus(VerificationStatus.PENDING)
                 .build();
 

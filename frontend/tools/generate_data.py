@@ -156,7 +156,7 @@ def main():
             "experience_years": exp,
             "available_locations": locs,
             "location_pricing_note": note,
-            "certificate_urls": '["https://storage.ptconnect.vn/certs/cert_nasam.jpg", "https://storage.ptconnect.vn/certs/cert_firstaid.jpg"]',
+            "certificate_url": "https://storage.ptconnect.vn/certs/cert_nasam.jpg",
             "average_rating": 0.0,  # Sẽ được cập nhật tự động bởi trigger khi có reviews
             "total_reviews": 0,
             "verification_status": verif,
@@ -524,8 +524,8 @@ def main():
 
     # 2. Bảng pt_profiles
     sql_lines.append("-- 2. PT PROFILES")
-    sql_lines.append("INSERT INTO `pt_profiles` (`id`, `user_id`, `experience_years`, `available_locations`, `location_pricing_note`, `certificate_urls`, `average_rating`, `total_reviews`, `verification_status`) VALUES")
-    pt_vals = [f"  ({p['id']}, {p['user_id']}, {p['experience_years']}, {escape_sql(p['available_locations'])}, {escape_sql(p['location_pricing_note'])}, {escape_sql(p['certificate_urls'])}, {p['average_rating']}, {p['total_reviews']}, {escape_sql(p['verification_status'])})" for p in pt_profiles]
+    sql_lines.append("INSERT INTO `pt_profiles` (`id`, `user_id`, `experience_years`, `available_locations`, `location_pricing_note`, `certificate_url`, `average_rating`, `total_reviews`, `verification_status`) VALUES")
+    pt_vals = [f"  ({p['id']}, {p['user_id']}, {p['experience_years']}, {escape_sql(p['available_locations'])}, {escape_sql(p['location_pricing_note'])}, {escape_sql(p['certificate_url'])}, {p['average_rating']}, {p['total_reviews']}, {escape_sql(p['verification_status'])})" for p in pt_profiles]
     sql_lines.append(",\n".join(pt_vals) + ";\n")
 
     # 3. Bảng wallets
@@ -561,8 +561,8 @@ def main():
     # 8. Bảng reviews
     if reviews:
         sql_lines.append("-- 8. REVIEWS")
-        sql_lines.append("INSERT INTO `reviews` (`id`, `booking_id`, `student_id`, `pt_id`, `rating`, `comment`, `created_at`) VALUES")
-        r_vals = [f"  ({r['id']}, {r['booking_id']}, {r['student_id']}, {r['pt_id']}, {r['rating']}, {escape_sql(r['comment'])}, {escape_sql(r['created_at'])})" for r in reviews]
+        sql_lines.append("INSERT INTO `reviews` (`id`, `booking_id`, `rating`, `comment`, `created_at`) VALUES")
+        r_vals = [f"  ({r['id']}, {r['booking_id']}, {r['rating']}, {escape_sql(r['comment'])}, {escape_sql(r['created_at'])})" for r in reviews]
         sql_lines.append(",\n".join(r_vals) + ";\n")
 
     # 9. Bảng cancellations

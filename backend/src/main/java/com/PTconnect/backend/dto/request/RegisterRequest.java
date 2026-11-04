@@ -36,5 +36,27 @@ public class RegisterRequest {
     private Integer experienceYears;
     private String availableLocations;
     private String locationPricingNote;
+    private String certificateUrl;
     private String certificateUrls;
+
+    public String getCleanCertificateUrl() {
+        if (certificateUrl != null && !certificateUrl.isBlank()) {
+            return cleanUrl(certificateUrl);
+        }
+        if (certificateUrls != null && !certificateUrls.isBlank()) {
+            return cleanUrl(certificateUrls);
+        }
+        return null;
+    }
+
+    private String cleanUrl(String raw) {
+        String s = raw.trim();
+        if (s.startsWith("[\"") && s.endsWith("\"]")) {
+            return s.substring(2, s.length() - 2).trim();
+        }
+        if (s.startsWith("[") && s.endsWith("]")) {
+            return s.substring(1, s.length() - 1).replace("\"", "").replace("'", "").trim();
+        }
+        return s;
+    }
 }

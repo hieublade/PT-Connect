@@ -25,6 +25,7 @@ public class PTProfileResponse {
     private Integer experienceYears;
     private String availableLocations;
     private String locationPricingNote;
+    private String certificateUrl;
     private String certificateUrls;
     private BigDecimal averageRating;
     private Integer totalReviews;
@@ -65,7 +66,8 @@ public class PTProfileResponse {
                 .experienceYears(profile.getExperienceYears())
                 .availableLocations(profile.getAvailableLocations())
                 .locationPricingNote(profile.getLocationPricingNote())
-                .certificateUrls(profile.getCertificateUrls())
+                .certificateUrl(profile.getCertificateUrl())
+                .certificateUrls(profile.getCertificateUrl())
                 .averageRating(profile.getAverageRating() != null ? profile.getAverageRating() : BigDecimal.ZERO)
                 .totalReviews(profile.getTotalReviews() != null ? profile.getTotalReviews() : 0)
                 .verificationStatus(profile.getVerificationStatus())

@@ -174,8 +174,8 @@ public class PTProfileServiceImpl implements IPTProfileService {
             profile.setLocationPricingNote(request.getLocationPricingNote().trim());
         }
 
-        if (request.getCertificateUrls() != null) {
-            profile.setCertificateUrls(request.getCertificateUrls());
+        if (request.getCleanCertificateUrl() != null) {
+            profile.setCertificateUrl(request.getCleanCertificateUrl());
         }
 
         PTProfile saved = ptProfileRepository.save(profile);
