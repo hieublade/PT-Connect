@@ -784,17 +784,17 @@ INSERT INTO `cancellations` (`id`, `booking_id`, `cancelled_by_id`, `cancelled_b
   (9, 50, 5, 'PT', 'Bị đau cơ nhẹ cần nghỉ ngơi phục hồi', '2026-09-03 02:30:00', 30.0, 0.00, 0.00, 0.00, 'PROCESSED'),
   (10, 56, 20, 'STUDENT', 'Bị đau cơ nhẹ cần nghỉ ngơi phục hồi', '2026-08-18 08:00:00', 30.0, 300000.00, 0.00, 0.00, 'PROCESSED'),
   (11, 59, 21, 'STUDENT', 'Lịch cá nhân bị trùng giờ họp', '2026-08-24 08:00:00', 30.0, 300000.00, 0.00, 0.00, 'PROCESSED'),
-  (12, 60, 1, 'PT', 'Bị đau cơ nhẹ cần nghỉ ngơi phục hồi', '2026-09-13 10:00:00', 30.0, 0.00, 0.00, 0.00, 'PROCESSED'),
+  (12, 60, 2, 'PT', 'Bị đau cơ nhẹ cần nghỉ ngơi phục hồi', '2026-09-13 10:00:00', 30.0, 0.00, 0.00, 0.00, 'PROCESSED'),
   (13, 61, 22, 'STUDENT', 'Bận việc đột xuất tại công ty', '2026-09-03 02:30:00', 30.0, 300000.00, 0.00, 0.00, 'PROCESSED'),
   (14, 81, 26, 'STUDENT', 'Thời tiết mưa bão không di chuyển được', '2026-10-07 02:30:00', 30.0, 300000.00, 0.00, 0.00, 'PROCESSED'),
   (15, 88, 27, 'STUDENT', 'Bận việc đột xuất tại công ty', '2026-09-23 08:00:00', 30.0, 300000.00, 0.00, 0.00, 'PROCESSED'),
   (16, 89, 28, 'STUDENT', 'Thời tiết mưa bão không di chuyển được', '2026-09-27 04:00:00', 30.0, 300000.00, 0.00, 0.00, 'PROCESSED'),
-  (17, 96, 1, 'PT', 'Lịch cá nhân bị trùng giờ họp', '2026-08-20 10:00:00', 30.0, 0.00, 0.00, 0.00, 'PROCESSED'),
+  (17, 96, 3, 'PT', 'Lịch cá nhân bị trùng giờ họp', '2026-08-20 10:00:00', 30.0, 0.00, 0.00, 0.00, 'PROCESSED'),
   (18, 97, 29, 'STUDENT', 'Lịch cá nhân bị trùng giờ họp', '2026-08-10 04:00:00', 30.0, 300000.00, 0.00, 0.00, 'PROCESSED'),
   (19, 102, 30, 'STUDENT', 'Bị đau cơ nhẹ cần nghỉ ngơi phục hồi', '2026-08-16 11:30:00', 30.0, 300000.00, 0.00, 0.00, 'PROCESSED'),
   (20, 112, 31, 'STUDENT', 'Thời tiết mưa bão không di chuyển được', '2026-10-05 11:30:00', 30.0, 400000.00, 0.00, 0.00, 'PROCESSED'),
   (21, 124, 33, 'STUDENT', 'Lịch cá nhân bị trùng giờ họp', '2026-10-03 01:00:00', 30.0, 300000.00, 0.00, 0.00, 'PROCESSED'),
-  (22, 128, 1, 'PT', 'Bận việc đột xuất tại công ty', '2026-08-08 10:00:00', 30.0, 0.00, 0.00, 0.00, 'PROCESSED'),
+  (22, 128, 3, 'PT', 'Bận việc đột xuất tại công ty', '2026-08-08 10:00:00', 30.0, 0.00, 0.00, 0.00, 'PROCESSED'),
   (23, 132, 34, 'STUDENT', 'Bị đau cơ nhẹ cần nghỉ ngơi phục hồi', '2026-10-09 08:00:00', 30.0, 300000.00, 0.00, 0.00, 'PROCESSED');
 
 -- 10. PAYMENTS
@@ -954,6 +954,24 @@ INSERT INTO `workouts` (`id`, `plan_id`, `exercise_name`, `target_muscle`, `sets
   (60, 15, 'Bench Press', 'Cơ ngực & Tay sau', 4, 8, 45.00, 90, 'https://storage.ptconnect.vn/videos/bench_press.mp4'),
   (61, 15, 'Plank', 'Cơ bụng & Core', 3, 1, 0.00, 60, 'https://storage.ptconnect.vn/videos/plank.mp4'),
   (62, 15, 'Walking Lunges', 'Cơ mông & Đùi', 3, 12, 10.00, 60, 'https://storage.ptconnect.vn/videos/walking_lunges.mp4');
+
+-- 13. ĐỒNG BỘ CHỈ SỐ ĐÁNH GIÁ CỦA PT THEO REVIEWS THỰC TẾ
+UPDATE `pt_profiles` p
+SET 
+  `average_rating` = COALESCE((
+    SELECT ROUND(AVG(r.`rating`), 2)
+    FROM `reviews` r
+    JOIN `bookings` b ON r.`booking_id` = b.`id`
+    JOIN `availability_slots` s ON b.`slot_id` = s.`id`
+    WHERE s.`pt_id` = p.`id`
+  ), 0),
+  `total_reviews` = (
+    SELECT COUNT(*)
+    FROM `reviews` r
+    JOIN `bookings` b ON r.`booking_id` = b.`id`
+    JOIN `availability_slots` s ON b.`slot_id` = s.`id`
+    WHERE s.`pt_id` = p.`id`
+  );
 
 SET FOREIGN_KEY_CHECKS = 1;
 -- HOÀN TẤT DỮ LIỆU SEED DEMO.

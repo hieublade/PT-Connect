@@ -43,6 +43,7 @@ CREATE TABLE `pt_locations` (
   `id` bigint PRIMARY KEY AUTO_INCREMENT,
   `pt_id` bigint NOT NULL,
   `location_name` varchar(255) NOT NULL,
+  UNIQUE KEY `uq_pt_location` (`pt_id`, `location_name`),
   CONSTRAINT `fk_pt_locations_profile` FOREIGN KEY (`pt_id`) 
       REFERENCES `pt_profiles` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Danh sách địa điểm nhận dạy của PT (Chuẩn 1NF)';
@@ -86,6 +87,7 @@ CREATE TABLE `enrollments` (
   `contract_url` varchar(500) NOT NULL COMMENT 'URL file hợp đồng điện tử PDF',
   `status` ENUM ('ACTIVE', 'EXPIRED', 'CANCELLED', 'COMPLETED') NOT NULL DEFAULT 'ACTIVE',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY `uq_enroll_student` (`id`, `student_id`),
   CONSTRAINT `chk_enroll_sessions` CHECK (`remaining_sessions` >= 0 AND `remaining_sessions` <= `total_sessions`),
   CONSTRAINT `chk_enroll_dates` CHECK (`end_date` >= `start_date`),
   CONSTRAINT `chk_enroll_price` CHECK (`final_price` >= 0)
@@ -148,6 +150,10 @@ CREATE TABLE `cancellations` (
   `status` ENUM ('PROCESSED', 'DISPUTED', 'RESOLVED') NOT NULL DEFAULT 'PROCESSED',
   CONSTRAINT `chk_cancel_amounts` CHECK (
     `refund_amount` >= 0 AND `compensation_amount` >= 0 AND `penalty_amount` >= 0
+  ),
+  CONSTRAINT `chk_cancel_actor` CHECK (
+    (`cancelled_by_role` = 'SYSTEM' AND `cancelled_by_id` IS NULL) OR
+    (`cancelled_by_role` IN ('STUDENT', 'PT', 'ADMIN') AND `cancelled_by_id` IS NOT NULL)
   )
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Bảng xử lý hủy lịch, phạt và chính sách đền bù';
 
@@ -178,13 +184,13 @@ CREATE TABLE `workouts` (
 CREATE TABLE `attendance` (
   `id` bigint PRIMARY KEY AUTO_INCREMENT,
   `booking_id` bigint UNIQUE NOT NULL,
-  `check_in_time` datetime NOT NULL,
+  `check_in_time` datetime NULL,
   `check_out_time` datetime,
   `verification_method` ENUM ('QR_CODE', 'OTP', 'GEO_LOCATION') NOT NULL,
   `student_confirmed` boolean NOT NULL DEFAULT false,
   `pt_confirmed` boolean NOT NULL DEFAULT false,
   `status` ENUM ('PRESENT', 'ABSENT', 'LATE') NOT NULL DEFAULT 'PRESENT',
-  CONSTRAINT `chk_attendance_time` CHECK (`check_out_time` IS NULL OR `check_out_time` >= `check_in_time`)
+  CONSTRAINT `chk_attendance_time` CHECK (`check_out_time` IS NULL OR `check_in_time` IS NULL OR `check_out_time` >= `check_in_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Điểm danh, chấm công xác thực hai phía';
 
 CREATE TABLE `payments` (
@@ -217,11 +223,13 @@ ALTER TABLE `courses`            ADD FOREIGN KEY (`pt_id`)           REFERENCES 
 ALTER TABLE `enrollments`        ADD FOREIGN KEY (`student_id`)      REFERENCES `users` (`id`);
 ALTER TABLE `enrollments`        ADD FOREIGN KEY (`course_id`)       REFERENCES `courses` (`id`);
 ALTER TABLE `availability_slots` ADD FOREIGN KEY (`pt_id`)           REFERENCES `pt_profiles` (`id`);
-ALTER TABLE `bookings`           ADD FOREIGN KEY (`enrollment_id`)   REFERENCES `enrollments` (`id`);
+-- Kiểm soát dư thừa / toàn vẹn phụ thuộc hàm (enrollment_id -> student_id) bằng FK ghép
+ALTER TABLE `bookings`           ADD CONSTRAINT `fk_booking_enroll_student` FOREIGN KEY (`enrollment_id`, `student_id`) REFERENCES `enrollments` (`id`, `student_id`);
 ALTER TABLE `bookings`           ADD FOREIGN KEY (`student_id`)      REFERENCES `users` (`id`);
 ALTER TABLE `bookings`           ADD FOREIGN KEY (`slot_id`)         REFERENCES `availability_slots` (`id`);
 ALTER TABLE `reviews`            ADD FOREIGN KEY (`booking_id`)      REFERENCES `bookings` (`id`) ON DELETE CASCADE;
 ALTER TABLE `cancellations`      ADD FOREIGN KEY (`booking_id`)      REFERENCES `bookings` (`id`);
+-- Khóa ngoại đơn: Tham chiếu tới tài khoản người hủy (cho phép NULL khi SYSTEM tự động hủy)
 ALTER TABLE `cancellations`      ADD FOREIGN KEY (`cancelled_by_id`) REFERENCES `users` (`id`);
 ALTER TABLE `workout_plans`      ADD FOREIGN KEY (`enrollment_id`)   REFERENCES `enrollments` (`id`);
 ALTER TABLE `workouts`           ADD FOREIGN KEY (`plan_id`)         REFERENCES `workout_plans` (`id`);
@@ -242,9 +250,9 @@ INSERT INTO `users` (`id`, `full_name`, `email`, `password_hash`, `phone`, `role
 
 INSERT INTO `pt_profiles` (`id`, `user_id`, `experience_years`, `location_pricing_note`, `certificate_url`, `average_rating`, `total_reviews`, `verification_status`) VALUES
   (1, 3, 5,
-   'Tập tại phòng Cali giá chuẩn; Dạy tại nhà học viên phụ thu 20% tiền đi lại', 'https://cdn.ptconnect.vn/certs/cert_hlv_cap1.pdf', 4.90, 10, 'VERIFIED'),
+   'Tập tại phòng Cali giá chuẩn; Dạy tại nhà học viên phụ thu 20% tiền đi lại', 'https://cdn.ptconnect.vn/certs/cert_hlv_cap1.pdf', 5.00, 1, 'VERIFIED'),
   (2, 4, 3,
-   'Tập tại Studio cá nhân giá chuẩn; Khác địa điểm thỏa thuận thêm phí di chuyển', 'https://cdn.ptconnect.vn/certs/cert_hlv_cap2.pdf', 4.80, 5, 'VERIFIED');
+   'Tập tại Studio cá nhân giá chuẩn; Khác địa điểm thỏa thuận thêm phí di chuyển', 'https://cdn.ptconnect.vn/certs/cert_hlv_cap2.pdf', 0.00, 0, 'VERIFIED');
 
 INSERT INTO `pt_locations` (`pt_id`, `location_name`) VALUES
   (1, 'Phòng Cali Cầu Giấy'),
@@ -278,8 +286,14 @@ INSERT INTO `availability_slots` (`id`, `pt_id`, `start_time`, `end_time`, `stat
   (3, 1, '2026-10-15 17:00:00', '2026-10-15 18:00:00', 'AVAILABLE');
 
 INSERT INTO `bookings` (`id`, `booking_type`, `enrollment_id`, `student_id`, `slot_id`, `session_fee`, `status`) VALUES
-  (1, 'PACKAGE', 1,    2, 1, 300000, 'CONFIRMED'),
+  (1, 'PACKAGE', 1,    2, 1, 300000, 'COMPLETED'),
   (2, 'TRIAL',   NULL, 1, 2, 0,      'CONFIRMED');
+
+INSERT INTO `attendance` (`id`, `booking_id`, `check_in_time`, `check_out_time`, `verification_method`, `student_confirmed`, `pt_confirmed`, `status`) VALUES
+  (1, 1, '2026-10-15 08:05:00', '2026-10-15 09:00:00', 'QR_CODE', true, true, 'PRESENT');
+
+INSERT INTO `reviews` (`id`, `booking_id`, `rating`, `comment`) VALUES
+  (1, 1, 5, 'HLV Hoàng Cường hướng dẫn rất nhiệt tình và kỹ thuật chuẩn form.');
 
 -- ---------------------------------------------------------------------
 -- 5. TRIGGERS
@@ -374,20 +388,6 @@ BEGIN
           WHERE s.`pt_id` = v_pt_id
         )
     WHERE `id` = v_pt_id;
-  END IF;
-END$$
-
-CREATE TRIGGER `trg_bookings_check_student_integrity`
-BEFORE INSERT ON `bookings`
-FOR EACH ROW
-BEGIN
-  IF NEW.`booking_type` = 'PACKAGE' AND NEW.`enrollment_id` IS NOT NULL THEN
-    DECLARE v_enroll_student_id BIGINT;
-    SELECT `student_id` INTO v_enroll_student_id FROM `enrollments` WHERE `id` = NEW.`enrollment_id`;
-    IF NEW.`student_id` <> v_enroll_student_id THEN
-      SIGNAL SQLSTATE '45000'
-      SET MESSAGE_TEXT = 'Lỗi CSDL: student_id trong booking không khớp với chủ sở hữu hợp đồng!';
-    END IF;
   END IF;
 END$$
 
