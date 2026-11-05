@@ -8,6 +8,10 @@ import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "pt_profiles")
@@ -33,8 +37,56 @@ public class PTProfile {
     @Builder.Default
     private Integer experienceYears = 0;
 
-    @Column(name = "available_locations", nullable = false, columnDefinition = "TEXT")
+    @OneToMany(mappedBy = "ptProfile", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<PTLocation> locations = new ArrayList<>();
+
+    @Transient
     private String availableLocations;
+
+    public String getAvailableLocations() {
+        if (this.locations != null && !this.locations.isEmpty()) {
+            return this.locations.stream()
+                    .map(PTLocation::getLocationName)
+                    .collect(Collectors.joining("; "));
+        }
+        return this.availableLocations != null ? this.availableLocations : "";
+    }
+
+    public void setAvailableLocations(String locationsStr) {
+        this.availableLocations = locationsStr;
+        if (this.locations == null) {
+            this.locations = new ArrayList<>();
+        } else {
+            this.locations.clear();
+        }
+
+        if (locationsStr != null && !locationsStr.isBlank()) {
+            Arrays.stream(locationsStr.split(";"))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .forEach(this::addLocation);
+        }
+    }
+
+    public void addLocation(String locationName) {
+        if (this.locations == null) {
+            this.locations = new ArrayList<>();
+        }
+        if (locationName != null && !locationName.trim().isEmpty()) {
+            PTLocation loc = PTLocation.builder()
+                    .ptProfile(this)
+                    .locationName(locationName.trim())
+                    .build();
+            this.locations.add(loc);
+        }
+    }
+
+    public void clearLocations() {
+        if (this.locations != null) {
+            this.locations.clear();
+        }
+    }
 
     @Column(name = "location_pricing_note", columnDefinition = "TEXT")
     private String locationPricingNote;

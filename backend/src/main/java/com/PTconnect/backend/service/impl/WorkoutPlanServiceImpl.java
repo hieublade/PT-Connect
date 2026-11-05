@@ -58,7 +58,6 @@ public class WorkoutPlanServiceImpl implements IWorkoutPlanService {
 
         WorkoutPlan plan = WorkoutPlan.builder()
                 .enrollment(enrollment)
-                .pt(ptProfile)
                 .title(request.getTitle())
                 .goal(request.getGoal())
                 .startDate(start)

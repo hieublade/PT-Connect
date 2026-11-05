@@ -15,7 +15,10 @@ AFTER INSERT ON `reviews`
 FOR EACH ROW
 BEGIN
   DECLARE v_pt_id BIGINT;
-  SELECT `pt_id` INTO v_pt_id FROM `bookings` WHERE `id` = NEW.`booking_id`;
+  SELECT s.`pt_id` INTO v_pt_id 
+  FROM `bookings` b 
+  JOIN `availability_slots` s ON b.`slot_id` = s.`id`
+  WHERE b.`id` = NEW.`booking_id`;
 
   IF v_pt_id IS NOT NULL THEN
     UPDATE `pt_profiles`
@@ -24,13 +27,15 @@ BEGIN
         SELECT ROUND(COALESCE(AVG(r.rating), 0), 2)
         FROM `reviews` r
         JOIN `bookings` b ON r.`booking_id` = b.`id`
-        WHERE b.`pt_id` = v_pt_id
+        JOIN `availability_slots` s ON b.`slot_id` = s.`id`
+        WHERE s.`pt_id` = v_pt_id
       ),
       `total_reviews` = (
-        SELECT COUNT(*)
-        FROM `reviews` r
-        JOIN `bookings` b ON r.`booking_id` = b.`id`
-        WHERE b.`pt_id` = v_pt_id
+        SELECT COUNT(*) 
+        FROM `reviews` r 
+        JOIN `bookings` b ON r.`booking_id` = b.`id` 
+        JOIN `availability_slots` s ON b.`slot_id` = s.`id`
+        WHERE s.`pt_id` = v_pt_id
       )
     WHERE `id` = v_pt_id;
   END IF;

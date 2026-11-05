@@ -133,7 +133,6 @@ public class BookingServiceImpl implements IBookingService {
         // 4. Tạo bản ghi Booking trạng thái PENDING
         Booking booking = Booking.builder()
                 .student(student)
-                .pt(slot.getPt())
                 .slot(slot)
                 .enrollment(enrollment)
                 .bookingType(bookingType)

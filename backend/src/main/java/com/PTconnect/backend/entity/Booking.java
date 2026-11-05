@@ -26,12 +26,22 @@ public class Booking {
     private User student;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "pt_id", nullable = false)
-    private PTProfile pt;
-
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "slot_id", nullable = false)
     private AvailabilitySlot slot;
+
+    @Transient
+    private PTProfile pt;
+
+    public PTProfile getPt() {
+        if (this.pt != null) {
+            return this.pt;
+        }
+        return this.slot != null ? this.slot.getPt() : null;
+    }
+
+    public void setPt(PTProfile pt) {
+        this.pt = pt;
+    }
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "enrollment_id")
