@@ -86,8 +86,13 @@ def main():
     sql_lines.append("TRUNCATE TABLE `enrollments`;")
     sql_lines.append("TRUNCATE TABLE `courses`;")
     sql_lines.append("TRUNCATE TABLE `wallets`;")
+    sql_lines.append("TRUNCATE TABLE `pt_locations`;")
     sql_lines.append("TRUNCATE TABLE `pt_profiles`;")
     sql_lines.append("TRUNCATE TABLE `users`;")
+    sql_lines.append("")
+    sql_lines.append("-- Bật lại kiểm tra khóa ngoại: dữ liệu được chèn theo thứ tự cha -> con,")
+    sql_lines.append("-- nên MySQL kiểm tra được cả khóa ngoại ghép fk_booking_enroll_student khi nạp seed.")
+    sql_lines.append("SET FOREIGN_KEY_CHECKS = 1;")
     sql_lines.append("")
 
     # 1. USERS & WALLETS & PT PROFILES
@@ -415,7 +420,8 @@ def main():
             # Nếu CANCELLED: ghi nhận vào bảng cancellations
             if status == "CANCELLED":
                 canceller_role = random.choice(["STUDENT", "PT"])
-                canceller_id = stud_id if canceller_role == "STUDENT" else pt_id
+                # cancelled_by_id tham chiếu users.id: với PT phải lấy user_id, không phải pt_profiles.id
+                canceller_id = stud_id if canceller_role == "STUDENT" else pt_profile_map[pt_id]["user_id"]
                 cancellations.append({
                     "id": cancel_id_seq,
                     "booking_id": b_id,
@@ -524,9 +530,22 @@ def main():
 
     # 2. Bảng pt_profiles
     sql_lines.append("-- 2. PT PROFILES")
-    sql_lines.append("INSERT INTO `pt_profiles` (`id`, `user_id`, `experience_years`, `available_locations`, `location_pricing_note`, `certificate_url`, `average_rating`, `total_reviews`, `verification_status`) VALUES")
-    pt_vals = [f"  ({p['id']}, {p['user_id']}, {p['experience_years']}, {escape_sql(p['available_locations'])}, {escape_sql(p['location_pricing_note'])}, {escape_sql(p['certificate_url'])}, {p['average_rating']}, {p['total_reviews']}, {escape_sql(p['verification_status'])})" for p in pt_profiles]
+    sql_lines.append("INSERT INTO `pt_profiles` (`id`, `user_id`, `experience_years`, `location_pricing_note`, `certificate_url`, `average_rating`, `total_reviews`, `verification_status`) VALUES")
+    pt_vals = [f"  ({p['id']}, {p['user_id']}, {p['experience_years']}, {escape_sql(p['location_pricing_note'])}, {escape_sql(p['certificate_url'])}, {p['average_rating']}, {p['total_reviews']}, {escape_sql(p['verification_status'])})" for p in pt_profiles]
     sql_lines.append(",\n".join(pt_vals) + ";\n")
+
+    # 2b. Bảng pt_locations (BCNF)
+    sql_lines.append("-- 2b. PT LOCATIONS (BCNF)")
+    sql_lines.append("INSERT INTO `pt_locations` (`pt_id`, `location_name`) VALUES")
+    loc_vals = []
+    for p in pt_profiles:
+        raw_locs = p.get("available_locations", "")
+        if raw_locs:
+            for l in raw_locs.split(";"):
+                l_clean = l.strip()
+                if l_clean:
+                    loc_vals.append(f"  ({p['id']}, {escape_sql(l_clean)})")
+    sql_lines.append(",\n".join(loc_vals) + ";\n")
 
     # 3. Bảng wallets
     sql_lines.append("-- 3. WALLETS")
@@ -541,9 +560,9 @@ def main():
     sql_lines.append(",\n".join(c_vals) + ";\n")
 
     # 5. Bảng enrollments
-    sql_lines.append("-- 5. ENROLLMENTS")
-    sql_lines.append("INSERT INTO `enrollments` (`id`, `student_id`, `course_id`, `pt_id`, `training_location`, `final_price`, `total_sessions`, `remaining_sessions`, `start_date`, `end_date`, `contract_url`, `status`) VALUES")
-    e_vals = [f"  ({e['id']}, {e['student_id']}, {e['course_id']}, {e['pt_id']}, {escape_sql(e['training_location'])}, {e['final_price']:.2f}, {e['total_sessions']}, {e['remaining_sessions']}, {escape_sql(e['start_date'])}, {escape_sql(e['end_date'])}, {escape_sql(e['contract_url'])}, {escape_sql(e['status'])})" for e in enrollments]
+    sql_lines.append("-- 5. ENROLLMENTS (BCNF: pt_id derived via courses.pt_id)")
+    sql_lines.append("INSERT INTO `enrollments` (`id`, `student_id`, `course_id`, `training_location`, `final_price`, `total_sessions`, `remaining_sessions`, `start_date`, `end_date`, `contract_url`, `status`) VALUES")
+    e_vals = [f"  ({e['id']}, {e['student_id']}, {e['course_id']}, {escape_sql(e['training_location'])}, {e['final_price']:.2f}, {e['total_sessions']}, {e['remaining_sessions']}, {escape_sql(e['start_date'])}, {escape_sql(e['end_date'])}, {escape_sql(e['contract_url'])}, {escape_sql(e['status'])})" for e in enrollments]
     sql_lines.append(",\n".join(e_vals) + ";\n")
 
     # 6. Bảng availability_slots
@@ -553,9 +572,9 @@ def main():
     sql_lines.append(",\n".join(s_vals) + ";\n")
 
     # 7. Bảng bookings
-    sql_lines.append("-- 7. BOOKINGS")
-    sql_lines.append("INSERT INTO `bookings` (`id`, `booking_type`, `enrollment_id`, `student_id`, `pt_id`, `slot_id`, `session_fee`, `status`, `student_note`, `created_at`) VALUES")
-    b_vals = [f"  ({b['id']}, {escape_sql(b['booking_type'])}, {escape_sql(b['enrollment_id'])}, {b['student_id']}, {b['pt_id']}, {b['slot_id']}, {b['session_fee']:.2f}, {escape_sql(b['status'])}, {escape_sql(b['student_note'])}, {escape_sql(b['created_at'])})" for b in bookings]
+    sql_lines.append("-- 7. BOOKINGS (BCNF: pt_id derived via availability_slots.pt_id)")
+    sql_lines.append("INSERT INTO `bookings` (`id`, `booking_type`, `enrollment_id`, `student_id`, `slot_id`, `session_fee`, `status`, `student_note`, `created_at`) VALUES")
+    b_vals = [f"  ({b['id']}, {escape_sql(b['booking_type'])}, {escape_sql(b['enrollment_id'])}, {b['student_id']}, {b['slot_id']}, {b['session_fee']:.2f}, {escape_sql(b['status'])}, {escape_sql(b['student_note'])}, {escape_sql(b['created_at'])})" for b in bookings]
     sql_lines.append(",\n".join(b_vals) + ";\n")
 
     # 8. Bảng reviews
@@ -581,9 +600,9 @@ def main():
 
     # 11. Bảng workout_plans
     if workout_plans:
-        sql_lines.append("-- 11. WORKOUT PLANS")
-        sql_lines.append("INSERT INTO `workout_plans` (`id`, `enrollment_id`, `pt_id`, `title`, `goal`, `start_date`, `end_date`) VALUES")
-        wp_vals = [f"  ({wp['id']}, {wp['enrollment_id']}, {wp['pt_id']}, {escape_sql(wp['title'])}, {escape_sql(wp['goal'])}, {escape_sql(wp['start_date'])}, {escape_sql(wp['end_date'])})" for wp in workout_plans]
+        sql_lines.append("-- 11. WORKOUT PLANS (BCNF: pt_id derived via enrollments -> courses.pt_id)")
+        sql_lines.append("INSERT INTO `workout_plans` (`id`, `enrollment_id`, `title`, `goal`, `start_date`, `end_date`) VALUES")
+        wp_vals = [f"  ({wp['id']}, {wp['enrollment_id']}, {escape_sql(wp['title'])}, {escape_sql(wp['goal'])}, {escape_sql(wp['start_date'])}, {escape_sql(wp['end_date'])})" for wp in workout_plans]
         sql_lines.append(",\n".join(wp_vals) + ";\n")
 
     # 12. Bảng workouts
@@ -593,7 +612,27 @@ def main():
         wo_vals = [f"  ({wo['id']}, {wo['plan_id']}, {escape_sql(wo['exercise_name'])}, {escape_sql(wo['target_muscle'])}, {wo['sets']}, {wo['reps']}, {wo['weight_kg']:.2f}, {wo['rest_seconds']}, {escape_sql(wo['video_demo_url'])})" for wo in workouts]
         sql_lines.append(",\n".join(wo_vals) + ";\n")
 
-    sql_lines.append("SET FOREIGN_KEY_CHECKS = 1;")
+    # 13. Đồng bộ chỉ số đánh giá của PT theo reviews thực tế
+    # (seed chèn reviews trực tiếp nên trigger chỉ chạy trên từng dòng; câu UPDATE này chốt lại số liệu
+    #  để khớp với view v_pt_rating_statistics)
+    sql_lines.append("-- 13. ĐỒNG BỘ CHỈ SỐ ĐÁNH GIÁ CỦA PT THEO REVIEWS THỰC TẾ")
+    sql_lines.append("UPDATE `pt_profiles` p")
+    sql_lines.append("SET")
+    sql_lines.append("  `average_rating` = COALESCE((")
+    sql_lines.append("    SELECT ROUND(AVG(r.`rating`), 2)")
+    sql_lines.append("    FROM `reviews` r")
+    sql_lines.append("    JOIN `bookings` b ON r.`booking_id` = b.`id`")
+    sql_lines.append("    JOIN `availability_slots` s ON b.`slot_id` = s.`id`")
+    sql_lines.append("    WHERE s.`pt_id` = p.`id`")
+    sql_lines.append("  ), 0),")
+    sql_lines.append("  `total_reviews` = (")
+    sql_lines.append("    SELECT COUNT(*)")
+    sql_lines.append("    FROM `reviews` r")
+    sql_lines.append("    JOIN `bookings` b ON r.`booking_id` = b.`id`")
+    sql_lines.append("    JOIN `availability_slots` s ON b.`slot_id` = s.`id`")
+    sql_lines.append("    WHERE s.`pt_id` = p.`id`")
+    sql_lines.append("  );")
+    sql_lines.append("")
     sql_lines.append("-- HOÀN TẤT DỮ LIỆU SEED DEMO.")
 
     os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)

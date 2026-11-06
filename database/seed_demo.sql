@@ -1,6 +1,6 @@
 -- =====================================================================
 -- DỮ LIỆU MẪU CHẠY DEMO HỆ THỐNG PT CONNECT (Milestone 8 - Data Generator)
--- Sinh tự động ngày: 2026-11-04 19:29:24 (Seed: 42)
+-- Sinh tự động ngày: 2026-11-06 08:14:12 (Seed: 42)
 -- Mật khẩu đăng nhập mặc định cho TẤT CẢ tài khoản: Password123@
 -- =====================================================================
 USE ptconnect;
@@ -22,6 +22,10 @@ TRUNCATE TABLE `wallets`;
 TRUNCATE TABLE `pt_locations`;
 TRUNCATE TABLE `pt_profiles`;
 TRUNCATE TABLE `users`;
+
+-- Bật lại kiểm tra khóa ngoại: dữ liệu được chèn theo thứ tự cha -> con,
+-- nên MySQL kiểm tra được cả khóa ngoại ghép fk_booking_enroll_student khi nạp seed.
+SET FOREIGN_KEY_CHECKS = 1;
 
 -- 1. USERS
 INSERT INTO `users` (`id`, `full_name`, `email`, `password_hash`, `phone`, `role`, `status`, `avatar_url`) VALUES
@@ -76,7 +80,7 @@ INSERT INTO `pt_profiles` (`id`, `user_id`, `experience_years`, `location_pricin
   (7, 8, 1, 'Chờ kiểm tra bằng cấp', 'https://storage.ptconnect.vn/certs/cert_nasam.jpg', 0.0, 0, 'PENDING'),
   (8, 9, 3, 'Tài khoản bị tạm ngưng', 'https://storage.ptconnect.vn/certs/cert_nasam.jpg', 0.0, 0, 'REJECTED');
 
--- 2.1. PT LOCATIONS (Chuẩn 1NF)
+-- 2b. PT LOCATIONS (BCNF)
 INSERT INTO `pt_locations` (`pt_id`, `location_name`) VALUES
   (1, 'Phòng Cali Cầu Giấy'),
   (1, 'FitZone Thanh Xuân'),
@@ -151,7 +155,7 @@ INSERT INTO `courses` (`id`, `pt_id`, `title`, `description`, `total_sessions`, 
   (12, 5, 'Gói Pilates Chỉnh Dáng & Cột Sống - HLV Kiệt', 'Cải thiện tư thế lưng gù, cổ rùa và thon gọn eo bụng', 20, 60, 8000000.00, 'ACTIVE'),
   (13, 5, 'Gói Giảm Mỡ Chuyên Sâu 12 Tuần - HLV Kiệt', 'Lộ trình đốt mỡ toàn diện kết hợp dinh dưỡng macro', 36, 90, 10800000.00, 'ACTIVE');
 
--- 5. ENROLLMENTS
+-- 5. ENROLLMENTS (BCNF: pt_id derived via courses.pt_id)
 INSERT INTO `enrollments` (`id`, `student_id`, `course_id`, `training_location`, `final_price`, `total_sessions`, `remaining_sessions`, `start_date`, `end_date`, `contract_url`, `status`) VALUES
   (1, 10, 6, 'Elite Fitness Tây Hồ', 3600000.00, 12, 9, '2026-09-08', '2026-10-08', 'https://storage.ptconnect.vn/contracts/ptc_hd_000001.pdf', 'ACTIVE'),
   (2, 11, 12, 'Cali Fitness Cầu Giấy', 8000000.00, 20, 15, '2026-08-30', '2026-10-29', 'https://storage.ptconnect.vn/contracts/ptc_hd_000002.pdf', 'ACTIVE'),
@@ -555,7 +559,7 @@ INSERT INTO `availability_slots` (`id`, `pt_id`, `start_time`, `end_time`, `stat
   (361, 5, '2026-11-01 10:00:00', '2026-11-01 11:00:00', 'BOOKED'),
   (362, 5, '2026-11-03 14:00:00', '2026-11-03 15:00:00', 'AVAILABLE');
 
--- 7. BOOKINGS
+-- 7. BOOKINGS (BCNF: pt_id derived via availability_slots.pt_id)
 INSERT INTO `bookings` (`id`, `booking_type`, `enrollment_id`, `student_id`, `slot_id`, `session_fee`, `status`, `student_note`, `created_at`) VALUES
   (1, 'PACKAGE', 1, 10, 118, 300000.00, 'COMPLETED', NULL, '2026-09-27 10:00:00'),
   (2, 'PACKAGE', 1, 10, 106, 300000.00, 'COMPLETED', NULL, '2026-09-15 08:30:00'),
@@ -775,13 +779,13 @@ INSERT INTO `reviews` (`id`, `booking_id`, `rating`, `comment`, `created_at`) VA
 INSERT INTO `cancellations` (`id`, `booking_id`, `cancelled_by_id`, `cancelled_by_role`, `reason`, `cancelled_at`, `hours_before_session`, `refund_amount`, `compensation_amount`, `penalty_amount`, `status`) VALUES
   (1, 17, 13, 'STUDENT', 'Bận việc đột xuất tại công ty', '2026-08-12 02:30:00', 30.0, 300000.00, 0.00, 0.00, 'PROCESSED'),
   (2, 21, 14, 'STUDENT', 'Thời tiết mưa bão không di chuyển được', '2026-09-07 11:30:00', 30.0, 300000.00, 0.00, 0.00, 'PROCESSED'),
-  (3, 23, 4, 'PT', 'Bị đau cơ nhẹ cần nghỉ ngơi phục hồi', '2026-08-20 13:00:00', 30.0, 0.00, 0.00, 0.00, 'PROCESSED'),
-  (4, 32, 2, 'PT', 'Lịch cá nhân bị trùng giờ họp', '2026-09-19 02:30:00', 30.0, 0.00, 0.00, 0.00, 'PROCESSED'),
-  (5, 41, 5, 'PT', 'Bận việc đột xuất tại công ty', '2026-08-14 13:00:00', 30.0, 0.00, 0.00, 0.00, 'PROCESSED'),
-  (6, 43, 5, 'PT', 'Bị đau cơ nhẹ cần nghỉ ngơi phục hồi', '2026-08-30 13:00:00', 30.0, 0.00, 0.00, 0.00, 'PROCESSED'),
-  (7, 46, 2, 'PT', 'Lịch cá nhân bị trùng giờ họp', '2026-10-09 10:00:00', 30.0, 0.00, 0.00, 0.00, 'PROCESSED'),
+  (3, 23, 5, 'PT', 'Bị đau cơ nhẹ cần nghỉ ngơi phục hồi', '2026-08-20 13:00:00', 30.0, 0.00, 0.00, 0.00, 'PROCESSED'),
+  (4, 32, 3, 'PT', 'Lịch cá nhân bị trùng giờ họp', '2026-09-19 02:30:00', 30.0, 0.00, 0.00, 0.00, 'PROCESSED'),
+  (5, 41, 6, 'PT', 'Bận việc đột xuất tại công ty', '2026-08-14 13:00:00', 30.0, 0.00, 0.00, 0.00, 'PROCESSED'),
+  (6, 43, 6, 'PT', 'Bị đau cơ nhẹ cần nghỉ ngơi phục hồi', '2026-08-30 13:00:00', 30.0, 0.00, 0.00, 0.00, 'PROCESSED'),
+  (7, 46, 3, 'PT', 'Lịch cá nhân bị trùng giờ họp', '2026-10-09 10:00:00', 30.0, 0.00, 0.00, 0.00, 'PROCESSED'),
   (8, 49, 20, 'STUDENT', 'Lịch cá nhân bị trùng giờ họp', '2026-10-07 10:00:00', 30.0, 400000.00, 0.00, 0.00, 'PROCESSED'),
-  (9, 50, 5, 'PT', 'Bị đau cơ nhẹ cần nghỉ ngơi phục hồi', '2026-09-03 02:30:00', 30.0, 0.00, 0.00, 0.00, 'PROCESSED'),
+  (9, 50, 6, 'PT', 'Bị đau cơ nhẹ cần nghỉ ngơi phục hồi', '2026-09-03 02:30:00', 30.0, 0.00, 0.00, 0.00, 'PROCESSED'),
   (10, 56, 20, 'STUDENT', 'Bị đau cơ nhẹ cần nghỉ ngơi phục hồi', '2026-08-18 08:00:00', 30.0, 300000.00, 0.00, 0.00, 'PROCESSED'),
   (11, 59, 21, 'STUDENT', 'Lịch cá nhân bị trùng giờ họp', '2026-08-24 08:00:00', 30.0, 300000.00, 0.00, 0.00, 'PROCESSED'),
   (12, 60, 2, 'PT', 'Bị đau cơ nhẹ cần nghỉ ngơi phục hồi', '2026-09-13 10:00:00', 30.0, 0.00, 0.00, 0.00, 'PROCESSED'),
@@ -789,12 +793,12 @@ INSERT INTO `cancellations` (`id`, `booking_id`, `cancelled_by_id`, `cancelled_b
   (14, 81, 26, 'STUDENT', 'Thời tiết mưa bão không di chuyển được', '2026-10-07 02:30:00', 30.0, 300000.00, 0.00, 0.00, 'PROCESSED'),
   (15, 88, 27, 'STUDENT', 'Bận việc đột xuất tại công ty', '2026-09-23 08:00:00', 30.0, 300000.00, 0.00, 0.00, 'PROCESSED'),
   (16, 89, 28, 'STUDENT', 'Thời tiết mưa bão không di chuyển được', '2026-09-27 04:00:00', 30.0, 300000.00, 0.00, 0.00, 'PROCESSED'),
-  (17, 96, 3, 'PT', 'Lịch cá nhân bị trùng giờ họp', '2026-08-20 10:00:00', 30.0, 0.00, 0.00, 0.00, 'PROCESSED'),
+  (17, 96, 2, 'PT', 'Lịch cá nhân bị trùng giờ họp', '2026-08-20 10:00:00', 30.0, 0.00, 0.00, 0.00, 'PROCESSED'),
   (18, 97, 29, 'STUDENT', 'Lịch cá nhân bị trùng giờ họp', '2026-08-10 04:00:00', 30.0, 300000.00, 0.00, 0.00, 'PROCESSED'),
   (19, 102, 30, 'STUDENT', 'Bị đau cơ nhẹ cần nghỉ ngơi phục hồi', '2026-08-16 11:30:00', 30.0, 300000.00, 0.00, 0.00, 'PROCESSED'),
   (20, 112, 31, 'STUDENT', 'Thời tiết mưa bão không di chuyển được', '2026-10-05 11:30:00', 30.0, 400000.00, 0.00, 0.00, 'PROCESSED'),
   (21, 124, 33, 'STUDENT', 'Lịch cá nhân bị trùng giờ họp', '2026-10-03 01:00:00', 30.0, 300000.00, 0.00, 0.00, 'PROCESSED'),
-  (22, 128, 3, 'PT', 'Bận việc đột xuất tại công ty', '2026-08-08 10:00:00', 30.0, 0.00, 0.00, 0.00, 'PROCESSED'),
+  (22, 128, 2, 'PT', 'Bận việc đột xuất tại công ty', '2026-08-08 10:00:00', 30.0, 0.00, 0.00, 0.00, 'PROCESSED'),
   (23, 132, 34, 'STUDENT', 'Bị đau cơ nhẹ cần nghỉ ngơi phục hồi', '2026-10-09 08:00:00', 30.0, 300000.00, 0.00, 0.00, 'PROCESSED');
 
 -- 10. PAYMENTS
@@ -872,7 +876,7 @@ INSERT INTO `payments` (`id`, `wallet_id`, `enrollment_id`, `amount`, `payment_t
   (71, 34, NULL, 5600000.00, 'TOPUP', 'BANK_TRANSFER', 'SUCCESS', 'TXN_TOPUP_2026_00071', '2026-08-23 10:00:00'),
   (72, 34, 36, 3600000.00, 'PURCHASE_PACKAGE', 'WALLET', 'SUCCESS', 'TXN_BUY_2026_00072', '2026-08-24 10:15:00');
 
--- 11. WORKOUT PLANS
+-- 11. WORKOUT PLANS (BCNF: pt_id derived via enrollments -> courses.pt_id)
 INSERT INTO `workout_plans` (`id`, `enrollment_id`, `title`, `goal`, `start_date`, `end_date`) VALUES
   (1, 1, 'Giáo án rèn luyện thể lực HD #1', 'Tăng cường sức bền và giảm mỡ thừa', '2026-09-08', '2026-10-08'),
   (2, 2, 'Giáo án rèn luyện thể lực HD #2', 'Tăng cường sức bền và giảm mỡ thừa', '2026-08-30', '2026-10-29'),
@@ -957,7 +961,7 @@ INSERT INTO `workouts` (`id`, `plan_id`, `exercise_name`, `target_muscle`, `sets
 
 -- 13. ĐỒNG BỘ CHỈ SỐ ĐÁNH GIÁ CỦA PT THEO REVIEWS THỰC TẾ
 UPDATE `pt_profiles` p
-SET 
+SET
   `average_rating` = COALESCE((
     SELECT ROUND(AVG(r.`rating`), 2)
     FROM `reviews` r
@@ -973,5 +977,4 @@ SET
     WHERE s.`pt_id` = p.`id`
   );
 
-SET FOREIGN_KEY_CHECKS = 1;
 -- HOÀN TẤT DỮ LIỆU SEED DEMO.
