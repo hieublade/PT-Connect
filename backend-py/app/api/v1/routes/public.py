@@ -6,9 +6,56 @@ from app.core.config import settings
 
 router = APIRouter(prefix="/public", tags=["Public"])
 
+
+def split_sql_statements(sql: str) -> list[str]:
+    statements = []
+    current = []
+    in_single = False
+    in_double = False
+    i = 0
+    n = len(sql)
+    while i < n:
+        c = sql[i]
+        if not in_single and not in_double:
+            if c == '-' and i + 1 < n and sql[i + 1] == '-':
+                end_nl = sql.find('\n', i)
+                if end_nl == -1:
+                    break
+                current.append(sql[i:end_nl + 1])
+                i = end_nl + 1
+                continue
+            if c == '/' and i + 1 < n and sql[i + 1] == '*':
+                end_c = sql.find('*/', i + 2)
+                if end_c == -1:
+                    break
+                current.append(sql[i:end_c + 2])
+                i = end_c + 2
+                continue
+            if c == ';':
+                stmt = "".join(current).strip()
+                if stmt:
+                    statements.append(stmt)
+                current = []
+                i += 1
+                continue
+        if c == "'" and (i == 0 or sql[i - 1] != '\\'):
+            if not in_double:
+                in_single = not in_single
+        elif c == '"' and (i == 0 or sql[i - 1] != '\\'):
+            if not in_single:
+                in_double = not in_double
+        current.append(c)
+        i += 1
+    last = "".join(current).strip()
+    if last:
+        statements.append(last)
+    return statements
+
+
 @router.get("/health")
 def health_check():
     return {"status": "UP", "message": "PT-Connect Backend is healthy"}
+
 
 @router.get("/init-db-now")
 def init_db_now():
@@ -25,7 +72,7 @@ def init_db_now():
             client_flag=pymysql.constants.CLIENT.MULTI_STATEMENTS
         )
         cur = conn.cursor()
-        root = Path(__file__).resolve().parents[4] # try root
+        root = Path(__file__).resolve().parents[4]  # try root
         candidates = [
             root / "database",
             Path("/app/database"),
@@ -37,7 +84,7 @@ def init_db_now():
             if (c / "init.sql").exists():
                 db_dir = c
                 break
-        
+
         if not db_dir:
             return {"status": "error", "message": "SQL files not found", "checked": [str(c) for c in candidates]}
 
@@ -55,22 +102,36 @@ def init_db_now():
                                 for s in stmt.split(";"):
                                     s = s.strip()
                                     if s:
-                                        try: cur.execute(s)
-                                        except Exception as e: pass
+                                        try:
+                                            cur.execute(s)
+                                        except Exception:
+                                            pass
                             else:
-                                try: cur.execute(stmt)
-                                except Exception as e: logs.append(f"trig: {e}")
+                                try:
+                                    cur.execute(stmt)
+                                except Exception as e:
+                                    logs.append(f"trig: {e}")
             else:
-                for s in content.split(";"):
-                    stmt = s.strip()
-                    if stmt:
-                        try: cur.execute(stmt)
-                        except Exception as e: logs.append(f"stmt: {e}")
+                stmts = split_sql_statements(content)
+                for s in stmts:
+                    if s.upper().startswith("DELIMITER") or "DELIMITER" in s:
+                        continue
+                    try:
+                        cur.execute(s)
+                    except Exception as e:
+                        pass
             conn.commit()
-        
-        cur.execute("SELECT COUNT(*) FROM users;")
-        user_cnt = cur.fetchone()[0]
+
+        cur.execute("SHOW TABLES;")
+        tables = [r[0] for r in cur.fetchall()]
+
+        counts = {}
+        for t in ["users", "bookings", "pt_profiles", "courses", "enrollments"]:
+            if t in tables:
+                cur.execute(f"SELECT COUNT(*) FROM `{t}`;")
+                counts[t] = cur.fetchone()[0]
+
         conn.close()
-        return {"status": "success", "users_count": user_cnt, "logs_count": len(logs)}
+        return {"status": "success", "tables_count": len(tables), "tables": tables, "counts": counts}
     except Exception as e:
         return {"status": "error", "exception": str(e), "logs": logs}

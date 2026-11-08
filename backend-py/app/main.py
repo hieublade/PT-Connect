@@ -12,6 +12,53 @@ from app.core.handlers import register_exception_handlers
 
 logger = logging.getLogger(__name__)
 
+
+def split_sql_statements(sql: str) -> list[str]:
+    """Proper SQL splitter that respects single/double quotes and comments."""
+    statements = []
+    current = []
+    in_single = False
+    in_double = False
+    i = 0
+    n = len(sql)
+    while i < n:
+        c = sql[i]
+        if not in_single and not in_double:
+            if c == '-' and i + 1 < n and sql[i + 1] == '-':
+                end_nl = sql.find('\n', i)
+                if end_nl == -1:
+                    break
+                current.append(sql[i:end_nl + 1])
+                i = end_nl + 1
+                continue
+            if c == '/' and i + 1 < n and sql[i + 1] == '*':
+                end_c = sql.find('*/', i + 2)
+                if end_c == -1:
+                    break
+                current.append(sql[i:end_c + 2])
+                i = end_c + 2
+                continue
+            if c == ';':
+                stmt = "".join(current).strip()
+                if stmt:
+                    statements.append(stmt)
+                current = []
+                i += 1
+                continue
+        if c == "'" and (i == 0 or sql[i - 1] != '\\'):
+            if not in_double:
+                in_single = not in_single
+        elif c == '"' and (i == 0 or sql[i - 1] != '\\'):
+            if not in_single:
+                in_double = not in_double
+        current.append(c)
+        i += 1
+    last = "".join(current).strip()
+    if last:
+        statements.append(last)
+    return statements
+
+
 def auto_seed_aiven():
     try:
         conn = pymysql.connect(
@@ -26,7 +73,7 @@ def auto_seed_aiven():
         )
         cur = conn.cursor()
         print("Checking tables on Aiven MySQL...")
-        root = Path(__file__).resolve().parent.parent # /app in docker
+        root = Path(__file__).resolve().parent.parent  # /app in docker
         for fname in ["init.sql", "trigger.sql", "seed_demo.sql"]:
             # Check multiple possible locations in docker container
             fpath = root / "database" / fname
@@ -36,7 +83,7 @@ def auto_seed_aiven():
                 fpath = Path("/app/database") / fname
             if not fpath.exists():
                 fpath = Path("/app/backend-py/database") / fname
-                
+
             if fpath.exists():
                 print(f"Executing found SQL: {fpath}...")
                 content = fpath.read_text(encoding="utf-8")
@@ -51,28 +98,42 @@ def auto_seed_aiven():
                                     for s in stmt.split(";"):
                                         s = s.strip()
                                         if s:
-                                            try: cur.execute(s)
-                                            except Exception as e: pass
+                                            try:
+                                                cur.execute(s)
+                                            except Exception:
+                                                pass
                                 else:
-                                    try: cur.execute(stmt)
-                                    except Exception as e: print("Trig err:", e)
+                                    try:
+                                        cur.execute(stmt)
+                                    except Exception as e:
+                                        print("Trig err:", e)
                 else:
-                    for s in content.split(";"):
-                        stmt = s.strip()
-                        if stmt:
-                            try: cur.execute(stmt)
-                            except Exception as e: pass
+                    stmts = split_sql_statements(content)
+                    for s in stmts:
+                        if s.upper().startswith("DELIMITER"):
+                            continue
+                        if "DELIMITER" in s:
+                            continue
+                        try:
+                            cur.execute(s)
+                        except Exception:
+                            pass
                 conn.commit()
             else:
                 print(f"Could not find {fname} at any expected location!")
+
+        cur.execute("SELECT COUNT(*) FROM bookings;")
+        print(f"Aiven MySQL auto-seed complete! Total bookings: {cur.fetchone()[0]}")
         conn.close()
     except Exception as e:
         print("Auto-seed error:", e)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     auto_seed_aiven()
     yield
+
 
 app = FastAPI(
     title="PT Connect Backend API",

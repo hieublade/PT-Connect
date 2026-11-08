@@ -107,7 +107,7 @@ CREATE TABLE `availability_slots` (
 CREATE TABLE `bookings` (
   `id` bigint PRIMARY KEY AUTO_INCREMENT,
   `booking_type` ENUM ('TRIAL', 'PACKAGE') NOT NULL DEFAULT 'PACKAGE',
-  `enrollment_id` bigint COMMENT 'NULL nếu là TRIAL; Bắt buộc có nếu là PACKAGE',
+  `enrollment_id` bigint COMMENT 'NULL nếu là TRIAL - Bắt buộc có nếu là PACKAGE',
   `student_id` bigint NOT NULL,
   `slot_id` bigint NOT NULL,
   `session_fee` decimal(12,2) NOT NULL,
@@ -250,9 +250,9 @@ INSERT INTO `users` (`id`, `full_name`, `email`, `password_hash`, `phone`, `role
 
 INSERT INTO `pt_profiles` (`id`, `user_id`, `experience_years`, `location_pricing_note`, `certificate_url`, `average_rating`, `total_reviews`, `verification_status`) VALUES
   (1, 3, 5,
-   'Tập tại phòng Cali giá chuẩn; Dạy tại nhà học viên phụ thu 20% tiền đi lại', 'https://cdn.ptconnect.vn/certs/cert_hlv_cap1.pdf', 5.00, 1, 'VERIFIED'),
+   'Tập tại phòng Cali giá chuẩn - Dạy tại nhà học viên phụ thu 20% tiền đi lại', 'https://cdn.ptconnect.vn/certs/cert_hlv_cap1.pdf', 5.00, 1, 'VERIFIED'),
   (2, 4, 3,
-   'Tập tại Studio cá nhân giá chuẩn; Khác địa điểm thỏa thuận thêm phí di chuyển', 'https://cdn.ptconnect.vn/certs/cert_hlv_cap2.pdf', 0.00, 0, 'VERIFIED');
+   'Tập tại Studio cá nhân giá chuẩn - Khác địa điểm thỏa thuận thêm phí di chuyển', 'https://cdn.ptconnect.vn/certs/cert_hlv_cap2.pdf', 0.00, 0, 'VERIFIED');
 
 INSERT INTO `pt_locations` (`pt_id`, `location_name`) VALUES
   (1, 'Phòng Cali Cầu Giấy'),
