@@ -15,10 +15,8 @@ COPY pyproject.toml README.md ./
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir .
 
-COPY database ./database
-COPY backend-py ./backend-py
-WORKDIR /app/backend-py
+COPY . .
 
 EXPOSE 8080
 
-CMD python init_aiven_db.py && uvicorn app.main:app --host 0.0.0.0 --port 8080 --workers 1
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080} --workers 1"]
