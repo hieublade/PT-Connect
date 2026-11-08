@@ -46,14 +46,20 @@ def init_db_now():
             content = fpath.read_text(encoding="utf-8")
             content = re.sub(r'USE\s+[`]?ptconnect[`]?;', f'USE `{settings.DB_NAME}`;', content, flags=re.IGNORECASE)
             if "trigger" in fname:
-                blocks = re.split(r'DELIMITER\s+//', content)
+                blocks = re.split(r'DELIMITER\s*(?:\$\$|//)', content)
                 for b in blocks:
-                    sub_blocks = re.split(r'//\s+DELIMITER\s+;', b)
-                    for sb in sub_blocks:
+                    for sb in re.split(r'(?:\$\$|//)', b):
                         stmt = sb.strip()
-                        if stmt and not stmt.startswith("DELIMITER"):
-                            try: cur.execute(stmt)
-                            except Exception as e: logs.append(f"trig: {e}")
+                        if stmt and not stmt.upper().startswith("DELIMITER"):
+                            if "BEGIN" not in stmt.upper():
+                                for s in stmt.split(";"):
+                                    s = s.strip()
+                                    if s:
+                                        try: cur.execute(s)
+                                        except Exception as e: pass
+                            else:
+                                try: cur.execute(stmt)
+                                except Exception as e: logs.append(f"trig: {e}")
             else:
                 for s in content.split(";"):
                     stmt = s.strip()
