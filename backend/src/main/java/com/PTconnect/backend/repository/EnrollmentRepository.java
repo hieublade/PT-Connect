@@ -14,21 +14,24 @@ import java.util.Optional;
 public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
     List<Enrollment> findByStudentId(Long studentId);
     List<Enrollment> findByCourseId(Long courseId);
-    List<Enrollment> findByPtId(Long ptId);
+
+    @Query("SELECT e FROM Enrollment e WHERE e.course.pt.id = :ptId")
+    List<Enrollment> findByPtId(@Param("ptId") Long ptId);
+
     List<Enrollment> findByStudentIdAndCourseIdAndStatus(Long studentId, Long courseId, EnrollmentStatus status);
 
     @Query("SELECT e FROM Enrollment e " +
            "LEFT JOIN FETCH e.student " +
-           "LEFT JOIN FETCH e.course " +
-           "LEFT JOIN FETCH e.pt p " +
+           "LEFT JOIN FETCH e.course c " +
+           "LEFT JOIN FETCH c.pt p " +
            "LEFT JOIN FETCH p.pt " +
-           "WHERE e.pt.id = :ptId")
+           "WHERE c.pt.id = :ptId")
     List<Enrollment> findByPtIdWithDetails(@Param("ptId") Long ptId);
 
     @Query("SELECT e FROM Enrollment e " +
            "LEFT JOIN FETCH e.student " +
-           "LEFT JOIN FETCH e.course " +
-           "LEFT JOIN FETCH e.pt p " +
+           "LEFT JOIN FETCH e.course c " +
+           "LEFT JOIN FETCH c.pt p " +
            "LEFT JOIN FETCH p.pt " +
            "WHERE e.student.id = :studentId")
     List<Enrollment> findByStudentIdWithDetails(@Param("studentId") Long studentId);

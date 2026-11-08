@@ -24,7 +24,7 @@ public class Attendance {
     @JoinColumn(name = "booking_id", nullable = false, unique = true)
     private Booking booking;
 
-    @Column(name = "check_in_time", nullable = false)
+    @Column(name = "check_in_time")
     private LocalDateTime checkInTime;
 
     @Column(name = "check_out_time")

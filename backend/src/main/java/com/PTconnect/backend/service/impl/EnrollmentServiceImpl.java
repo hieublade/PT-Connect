@@ -84,7 +84,6 @@ public class EnrollmentServiceImpl implements IEnrollmentService {
         Enrollment enrollment = Enrollment.builder()
                 .student(student)
                 .course(course)
-                .pt(course.getPt())
                 .trainingLocation(request.getTrainingLocation().trim())
                 .finalPrice(coursePrice)
                 .totalSessions(course.getTotalSessions())

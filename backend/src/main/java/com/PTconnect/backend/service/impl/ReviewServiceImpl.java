@@ -57,8 +57,6 @@ public class ReviewServiceImpl implements IReviewService {
 
         Review review = Review.builder()
                 .booking(booking)
-                .student(student)
-                .pt(booking.getPt())
                 .rating(request.getRating())
                 .comment(request.getComment() != null ? request.getComment().trim() : null)
                 .build();
@@ -80,7 +78,7 @@ public class ReviewServiceImpl implements IReviewService {
         if (!ptProfileRepository.existsById(ptId)) {
             throw new ResourceNotFoundException("Không tìm thấy hồ sơ Huấn luyện viên với ID: " + ptId);
         }
-        return reviewRepository.findByPtIdOrderByCreatedAtDesc(ptId).stream()
+        return reviewRepository.findByBookingPtIdOrderByCreatedAtDesc(ptId).stream()
                 .map(ReviewResponse::fromEntity)
                 .toList();
     }
@@ -91,7 +89,7 @@ public class ReviewServiceImpl implements IReviewService {
         User student = userRepository.findByEmail(studentEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy học viên với email: " + studentEmail));
 
-        return reviewRepository.findByStudentIdOrderByCreatedAtDesc(student.getId()).stream()
+        return reviewRepository.findByBookingStudentIdOrderByCreatedAtDesc(student.getId()).stream()
                 .map(ReviewResponse::fromEntity)
                 .toList();
     }

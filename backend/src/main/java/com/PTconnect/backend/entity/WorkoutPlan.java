@@ -25,9 +25,19 @@ public class WorkoutPlan {
     @JoinColumn(name = "enrollment_id", nullable = false)
     private Enrollment enrollment;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "pt_id", nullable = false)
+    @Transient
     private PTProfile pt;
+
+    public PTProfile getPt() {
+        if (this.pt != null) {
+            return this.pt;
+        }
+        return this.enrollment != null ? this.enrollment.getPt() : null;
+    }
+
+    public void setPt(PTProfile pt) {
+        this.pt = pt;
+    }
 
     @Column(nullable = false, length = 150)
     private String title;

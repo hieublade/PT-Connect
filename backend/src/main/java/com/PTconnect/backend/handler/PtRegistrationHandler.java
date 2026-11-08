@@ -44,11 +44,11 @@ public class PtRegistrationHandler implements UserRegistrationHandler {
                 .pt(savedPt)
                 .bio(request.getBio())
                 .experienceYears(request.getExperienceYears() != null ? request.getExperienceYears() : 0)
-                .availableLocations(locations)
                 .locationPricingNote(request.getLocationPricingNote())
-                .certificateUrls(request.getCertificateUrls())
+                .certificateUrl(request.getCleanCertificateUrl())
                 .verificationStatus(VerificationStatus.PENDING)
                 .build();
+        profile.setAvailableLocations(locations);
 
         profileRepository.save(profile);
         savedPt.setProfile(profile);
