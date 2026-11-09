@@ -6,10 +6,12 @@ on:
       - main
       - develop
       - "feature/**"
+      - BTL_python_CSDL
   pull_request:
     branches:
       - main
       - develop
+      - BTL_python_CSDL
 
 env:
   REGISTRY: ghcr.io
