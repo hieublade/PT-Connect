@@ -526,6 +526,238 @@ class ManagePTProfileView:
 
 
 # =============================================================================
+# LỚP BIÊN QUẢN LÝ VÍ & THU NHẬP (BCE PATTERN)
+# =============================================================================
+
+class PTWalletView:
+    """Lớp biên quản lý Ví điện tử, Nạp tiền mô phỏng & Rút tiền thu nhập cho PT."""
+
+    def __init__(self, parent: "PTHomeView"):
+        self.parent = parent
+
+    def render(self):
+        st.subheader("Ví Điện Tử & Quản Lý Thu Nhập Huấn Luyện Viên")
+        st.caption("Quản lý dòng tiền thu lao dạy học, nạp tiền bù phạt vi phạm và rút tiền về tài khoản ngân hàng.")
+
+        wallet_data: Dict[str, Any] = {}
+        try:
+            wallet_data = PTApi.get_wallet()
+        except Exception as e:
+            st.error(f"Không thể tải thông tin ví: {str(e)}")
+            wallet_data = {}
+
+        balance = float(wallet_data.get("balance", 0) or 0)
+        locked_balance = float(wallet_data.get("lockedBalance", 0) or 0)
+        available_balance = max(0.0, balance - locked_balance)
+        wallet_status = wallet_data.get("status", "ACTIVE")
+        transactions = wallet_data.get("transactions", [])
+
+        if balance < 0:
+            st.warning(
+                f"⚠️ **Tài khoản đang ghi nợ phạt {format_currency_vnd(abs(balance))}** do hủy ca tập sát giờ (< 24h). "
+                f"Bạn có thể nạp tiền ngay bên dưới để xóa nợ, hoặc hệ thống sẽ tự động khấu trừ vào thu nhập ca tập tiếp theo."
+            )
+
+        col_left, col_right = st.columns([1, 1], gap="medium")
+
+        # CỘT TRÁI: THÔNG TIN SỐ DƯ & NẠP TIỀN
+        with col_left:
+            with st.container(border=True):
+                st.markdown("#### 💰 Số Dư & Nạp Tiền")
+                st.markdown(f"**Chủ tài khoản:** {self.parent.full_name}")
+                st.markdown(f"**Trạng thái ví:** `{wallet_status}`")
+
+                if balance < 0:
+                    badge_bg = "#ffebee"
+                    badge_border = "#c62828"
+                    label_color = "#b71c1c"
+                    status_text = "Đang nợ phạt vi phạm"
+                else:
+                    badge_bg = "#e8f5e9"
+                    badge_border = "#2e7d32"
+                    label_color = "#1b5e20"
+                    status_text = "Khả dụng"
+
+                st.markdown(
+                    f"""
+                    <div style="background: {badge_bg}; padding: 1.2rem; border-radius: 10px; margin: 0.8rem 0; border-left: 5px solid {badge_border};">
+                        <span style="font-size: 0.9rem; color: {label_color}; font-weight: 600;">SỐ DƯ HIỆN TẠI ({status_text}):</span>
+                        <div style="font-size: 1.8rem; font-weight: 800; color: {badge_border}; margin-top: 4px;">
+                            {format_currency_vnd(balance)}
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+                st.markdown("##### Nạp tiền vào ví (Mô phỏng):")
+                st.caption("Chọn nhanh số tiền cần nạp:")
+                q_cols = st.columns(4)
+                if "pt_topup_amount_input" not in st.session_state:
+                    st.session_state["pt_topup_amount_input"] = 1000000.0
+
+                def handle_pt_quick_amount(amt_val: float):
+                    st.session_state["pt_topup_amount_input"] = float(amt_val)
+
+                for idx, amt in enumerate([500000.0, 1000000.0, 2000000.0, 5000000.0]):
+                    with q_cols[idx]:
+                        label = f"{int(amt/1000)}K" if amt < 1000000 else f"{int(amt/1000000)}Tr"
+                        st.button(
+                            label,
+                            key=f"pt_qamt_{int(amt)}",
+                            on_click=handle_pt_quick_amount,
+                            args=(amt,),
+                            use_container_width=True
+                        )
+
+                entered_topup = st.number_input(
+                    "Hoặc nhập số tiền tùy chọn (VND):",
+                    min_value=10000.0,
+                    max_value=100000000.0,
+                    step=100000.0,
+                    key="pt_topup_amount_input"
+                )
+
+                topup_method = st.selectbox(
+                    "Phương thức nạp mô phỏng:",
+                    options=["BANK_TRANSFER", "CREDIT_CARD", "CASH"],
+                    format_func=lambda x: {
+                        "BANK_TRANSFER": "Chuyển khoản VietQR / MoMo",
+                        "CREDIT_CARD": "Thẻ tín dụng / Ghi nợ quốc tế (Visa, Mastercard)",
+                        "CASH": "Nộp tiền mặt tại trung tâm"
+                    }.get(x, x),
+                    key="pt_topup_payment_method"
+                )
+
+                if st.button("➕ Nạp Tiền Vào Ví Ngay", type="primary", use_container_width=True, key="btn_pt_topup"):
+                    with st.spinner("Đang xử lý nạp tiền..."):
+                        try:
+                            res = PTApi.topup_wallet(amount=entered_topup, payment_method=topup_method)
+                            st.success(f"Nạp thành công {format_currency_vnd(entered_topup)}! Mã GD: {res.get('transactionRef')}")
+                            st.rerun()
+                        except ApiException as e:
+                            st.error(f"Lỗi nạp tiền [{e.status_code}]: {e.message}")
+                        except Exception as ex:
+                            st.error(f"Lỗi ngoại lệ: {str(ex)}")
+
+        # CỘT PHẢI: RÚT TIỀN THU NHẬP VỀ NGÂN HÀNG
+        with col_right:
+            with st.container(border=True):
+                st.markdown("#### 🏦 Rút Tiền Về Ngân Hàng")
+
+                if balance <= 0:
+                    st.info("💡 Bạn cần có số dư khả dụng dương (> 0 ₫) và không nợ phạt để thực hiện rút tiền.")
+                else:
+                    st.markdown(f"**Số dư khả dụng để rút:** `{format_currency_vnd(available_balance)}`")
+
+                    withdraw_amt = st.number_input(
+                        "Số tiền muốn rút (tối thiểu 50,000 VND):",
+                        min_value=50000.0,
+                        max_value=max(50000.0, available_balance),
+                        value=min(max(50000.0, available_balance), available_balance),
+                        step=50000.0,
+                        key="pt_withdraw_amount_input"
+                    )
+
+                    bank_list = [
+                        "Vietcombank (VCB - Ngân hàng Ngoại thương)",
+                        "Techcombank (TCB - Ngân hàng Kỹ thương)",
+                        "MBBank (MB - Ngân hàng Quân đội)",
+                        "VietinBank (CTG - Ngân hàng Công thương)",
+                        "BIDV (Ngân hàng Đầu tư và Phát triển)",
+                        "ACB (Ngân hàng Á Châu)",
+                        "TPBank (Ngân hàng Tiên Phong)",
+                        "VPBank (Ngân hàng Việt Nam Thịnh vượng)"
+                    ]
+                    selected_bank = st.selectbox(
+                        "Chọn ngân hàng thụ hưởng:",
+                        options=bank_list,
+                        key="pt_withdraw_bank"
+                    )
+                    clean_bank_name = selected_bank.split(" (")[0]
+
+                    acc_number = st.text_input(
+                        "Số tài khoản nhận tiền:",
+                        value="0123456789",
+                        key="pt_withdraw_acc_num",
+                        help="Nhập số tài khoản ngân hàng chính chủ của bạn"
+                    )
+
+                    acc_name = st.text_input(
+                        "Tên chủ tài khoản (In hoa không dấu):",
+                        value=self.parent.full_name.upper(),
+                        key="pt_withdraw_acc_name"
+                    )
+
+                    st.caption("ℹ️ *Hệ thống mô phỏng lệnh chuyển khoản liên ngân hàng 24/7 tức thì.*")
+
+                    if st.button("💸 Xác Nhận Rút Tiền Ngay", type="primary", use_container_width=True, key="btn_pt_withdraw"):
+                        if not acc_number.strip():
+                            st.error("Vui lòng nhập số tài khoản nhận tiền.")
+                        elif not acc_name.strip():
+                            st.error("Vui lòng nhập tên chủ tài khoản.")
+                        elif withdraw_amt > available_balance:
+                            st.error(f"Số tiền rút ({format_currency_vnd(withdraw_amt)}) vượt quá số dư khả dụng.")
+                        else:
+                            with st.spinner("Đang thực hiện chuyển khoản..."):
+                                try:
+                                    res = PTApi.withdraw_wallet(
+                                        amount=withdraw_amt,
+                                        bank_name=clean_bank_name,
+                                        account_number=acc_number.strip(),
+                                        account_name=acc_name.strip()
+                                    )
+                                    st.success(
+                                        f"Rút thành công {format_currency_vnd(withdraw_amt)} về STK {acc_number.strip()} ({clean_bank_name})! Mã GD: {res.get('transactionRef')}"
+                                    )
+                                    st.rerun()
+                                except ApiException as e:
+                                    st.error(f"Lỗi rút tiền [{e.status_code}]: {e.message}")
+                                except Exception as ex:
+                                    st.error(f"Lỗi ngoại lệ: {str(ex)}")
+
+        # BẢNG LỊCH SỬ GIAO DỊCH TÀI CHÍNH
+        st.markdown("---")
+        st.subheader("📜 Lịch Sử Giao Dịch Ví Điện Tử")
+
+        if not transactions:
+            st.info("Chưa có giao dịch phát sinh nào trong ví.")
+        else:
+            table_data = []
+            for t in transactions:
+                t_type = t.get("paymentType", "")
+                t_ref = t.get("transactionRef", "")
+                amt = float(t.get("amount", 0) or 0)
+
+                if "WITHDRAW" in str(t_ref):
+                    type_label = "RÚT TIỀN"
+                    amt_str = f"-{format_currency_vnd(amt)}"
+                elif "PENALTY" in str(t_ref) or (t_type == "REFUND" and "WITHDRAW" not in str(t_ref)):
+                    type_label = "PHẠT HỦY CA (<24H)"
+                    amt_str = f"-{format_currency_vnd(amt)}"
+                elif t_type == "TOPUP":
+                    type_label = "NẠP TIỀN"
+                    amt_str = f"+{format_currency_vnd(amt)}"
+                elif t_type == "COMPENSATION":
+                    type_label = "ĐỀN BÙ CA TẬP"
+                    amt_str = f"+{format_currency_vnd(amt)}"
+                else:
+                    type_label = t_type
+                    amt_str = f"{format_currency_vnd(amt)}"
+
+                table_data.append({
+                    "Mã Giao Dịch": t_ref,
+                    "Loại Giao Dịch": type_label,
+                    "Số Tiền": amt_str,
+                    "Phương Thức": t.get("paymentMethod", ""),
+                    "Trạng Thái": t.get("status", ""),
+                    "Thời Gian": t.get("createdAt", "")[:19].replace("T", " ") if t.get("createdAt") else ""
+                })
+
+            st.dataframe(table_data, use_container_width=True)
+
+
+# =============================================================================
 # LỚP BIÊN CHÍNH: PTHomeView
 # =============================================================================
 
@@ -549,6 +781,7 @@ class PTHomeView:
         self.slot_view = ManageSlotView(self)
         self.course_view = ManageCourseView(self)
         self.workout_plan_view = ManageWorkoutPlanView(self)
+        self.wallet_view = PTWalletView(self)
         self.profile_view = ManagePTProfileView(self)
 
     def _load_profile_data(self):
@@ -627,11 +860,21 @@ class PTHomeView:
                     t_ref = txn.get("transactionRef", "")
                     t_time = txn.get("createdAt", "")
 
-                    if t_type == "REFUND" or "PENALTY" in str(t_ref):
+                    if "WITHDRAW" in str(t_ref):
+                        type_badge = "Rút tiền về tài khoản ngân hàng"
+                        amt_display = f"-{format_currency_vnd(t_amt)}"
+                        card_bg = "#fff3e0"
+                        border_color = "#e65100"
+                    elif "PENALTY" in str(t_ref) or (t_type == "REFUND" and "WITHDRAW" not in str(t_ref)):
                         type_badge = "Phạt hủy ca tập sát giờ (< 24h)"
                         amt_display = f"-{format_currency_vnd(t_amt)}"
                         card_bg = "#ffebee"
                         border_color = "#c62828"
+                    elif t_type == "TOPUP":
+                        type_badge = "Nạp tiền vào ví điện tử"
+                        amt_display = f"+{format_currency_vnd(t_amt)}"
+                        card_bg = "#e3f2fd"
+                        border_color = "#1565c0"
                     elif t_type == "COMPENSATION" or "COMP" in str(t_ref):
                         type_badge = "Được đền bù (Học viên hủy sát giờ < 24h)"
                         amt_display = f"+{format_currency_vnd(t_amt)}"
@@ -732,12 +975,13 @@ class PTHomeView:
             st.success("Hồ sơ của bạn đã được xác minh thành công (`VERIFIED`). Sẵn sàng nhận học viên!")
 
         # Phân chia các Tab chức năng
-        tab_overview, tab_bookings, tab_slots, tab_courses, tab_workout_plans, tab_profile = st.tabs([
+        tab_overview, tab_bookings, tab_slots, tab_courses, tab_workout_plans, tab_wallet, tab_profile = st.tabs([
             "Tổng Quan",
             "Duyệt lịch",
             "Khung Giờ",
             "Quản Lý Khóa",
             "Giáo Án",
+            "Ví & Thu nhập",
             "Hồ Sơ"
         ])
 
@@ -755,6 +999,9 @@ class PTHomeView:
 
         with tab_workout_plans:
             self.workout_plan_view.render()
+
+        with tab_wallet:
+            self.wallet_view.render()
 
         with tab_profile:
             self.profile_view.render()

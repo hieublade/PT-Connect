@@ -13,7 +13,7 @@ from app.models.user import User
 from app.repositories.payment_repo import PaymentRepository
 from app.repositories.user_repo import UserRepository
 from app.repositories.wallet_repo import WalletRepository
-from app.schemas.requests.wallet import TopupRequest
+from app.schemas.requests.wallet import TopupRequest, WithdrawRequest
 from app.schemas.responses.wallet import PaymentResponse, WalletResponse
 
 logger = logging.getLogger(__name__)
@@ -73,6 +73,53 @@ class WalletService:
         self.db.commit()
         self.db.refresh(saved)
         logger.info("Nạp tiền ví thành công cho user: %s, số tiền: %s, txnRef: %s", user_email, request.amount, txn_ref)
+        return PaymentResponse.from_entity(saved)
+
+    def withdraw(self, user_email: str, request: WithdrawRequest) -> PaymentResponse:
+        if request.amount is None or request.amount <= Decimal(0):
+            raise BadRequestException("Số tiền rút phải lớn hơn 0")
+
+        user = self._get_user_by_email(user_email)
+        wallet = self.wallet_repo.get_by_user_id(user.id)
+        if not wallet:
+            raise ResourceNotFoundException("Không tìm thấy ví của người dùng")
+
+        if wallet.status != WalletStatus.ACTIVE:
+            raise BadRequestException("Ví đang bị đóng băng hoặc tạm khóa, không thể rút tiền")
+
+        available_balance = wallet.balance - wallet.locked_balance
+        if available_balance < request.amount:
+            raise BadRequestException(
+                f"Số dư khả dụng ({float(available_balance):,.0f} VND) không đủ để rút {float(request.amount):,.0f} VND"
+            )
+
+        wallet.debit(request.amount)
+        self.wallet_repo.save(wallet)
+
+        date_prefix = datetime.now().strftime("%Y%m%d")
+        short_id = secrets.token_hex(4).upper()
+        txn_ref = f"TXN_WITHDRAW_{date_prefix}_{short_id}"
+
+        payment = Payment(
+            wallet_id=wallet.id,
+            enrollment_id=None,
+            amount=request.amount,
+            payment_type=PaymentType.REFUND,
+            payment_method=PaymentMethod.BANK_TRANSFER,
+            status=PaymentStatus.SUCCESS,
+            transaction_ref=txn_ref,
+        )
+        saved = self.payment_repo.save(payment)
+        self.db.commit()
+        self.db.refresh(saved)
+        logger.info(
+            "Rút tiền ví thành công cho user: %s, số tiền: %s, ngân hàng: %s, STK: %s, txnRef: %s",
+            user_email,
+            request.amount,
+            request.bank_name,
+            request.account_number,
+            txn_ref,
+        )
         return PaymentResponse.from_entity(saved)
 
     def process_course_purchase(

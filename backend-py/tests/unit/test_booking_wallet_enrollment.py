@@ -8,7 +8,8 @@ from app.schemas.requests.booking import CreateBookingRequest
 from app.schemas.requests.enrollment import PurchaseCourseRequest
 from app.schemas.requests.pt import CreateCourseRequest, CreateSlotRequest
 from app.schemas.requests.review import CreateReviewRequest
-from app.schemas.requests.wallet import TopupRequest
+from app.schemas.requests.wallet import TopupRequest, WithdrawRequest
+from app.core.exceptions import BadRequestException
 from app.services.admin_pt_service import AdminPTService
 from app.services.attendance_service import AttendanceService
 from app.services.auth_service import AuthService
@@ -158,3 +159,68 @@ def test_wallet_enrollment_booking_attendance_review_flow(db_session):
     )
     assert review.id is not None
     assert review.rating == 5
+
+
+def test_pt_wallet_topup_and_withdraw_flow(db_session):
+    import pytest
+    auth_service = AuthService(db_session)
+    wallet_service = WalletService(db_session)
+
+    # 1. Register PT
+    auth_service.register(
+        RegisterRequest(
+            full_name="HLV Ví Điện Tử",
+            email="pt_wallet@example.com",
+            password="Password123!",
+            phone="0933333333",
+            role=Role.PT,
+        )
+    )
+
+    # Check initial wallet balance is 0
+    w_initial = wallet_service.get_wallet("pt_wallet@example.com")
+    assert w_initial.balance == Decimal("0.00")
+
+    # 2. PT tops up 2,000,000 VND
+    topup_res = wallet_service.topup(
+        "pt_wallet@example.com",
+        TopupRequest(
+            amount=Decimal("2000000.00"),
+            payment_method="BANK_TRANSFER",
+        ),
+    )
+    assert topup_res.amount == Decimal("2000000.00")
+    w_after_topup = wallet_service.get_wallet("pt_wallet@example.com")
+    assert w_after_topup.balance == Decimal("2000000.00")
+
+    # 3. PT withdraws 1,200,000 VND
+    withdraw_res = wallet_service.withdraw(
+        "pt_wallet@example.com",
+        WithdrawRequest(
+            amount=Decimal("1200000.00"),
+            bank_name="Vietcombank",
+            account_number="0123456789",
+            account_name="HLV VI DIEN TU",
+        ),
+    )
+    assert withdraw_res.amount == Decimal("1200000.00")
+    assert "WITHDRAW" in withdraw_res.transaction_ref
+
+    # 4. Check remaining balance: 2M - 1.2M = 800K
+    w_after_withdraw = wallet_service.get_wallet("pt_wallet@example.com")
+    assert w_after_withdraw.balance == Decimal("800000.00")
+    assert len(w_after_withdraw.transactions) == 2
+
+    # 5. Overdraft / Insufficient balance check: withdraw 1,000,000 when only 800,000 available
+    with pytest.raises(BadRequestException) as exc_info:
+        wallet_service.withdraw(
+            "pt_wallet@example.com",
+            WithdrawRequest(
+                amount=Decimal("1000000.00"),
+                bank_name="MBBank",
+                account_number="9876543210",
+                account_name="HLV VI DIEN TU",
+            ),
+        )
+    assert "không đủ" in str(exc_info.value)
+

@@ -96,4 +96,25 @@ class PTApi:
         """Xem thông tin ví và lịch sử biến động số dư của PT."""
         return api_client.get("/api/v1/wallet")
 
+    @staticmethod
+    def topup_wallet(amount: float, payment_method: str = "BANK_TRANSFER") -> Dict[str, Any]:
+        """Nạp tiền vào ví điện tử của PT (để xóa nợ phạt hoặc mô phỏng dòng tiền)."""
+        payload = {
+            "amount": amount,
+            "paymentMethod": payment_method
+        }
+        return api_client.post("/api/v1/wallet/topup", json=payload)
+
+    @staticmethod
+    def withdraw_wallet(amount: float, bank_name: str, account_number: str, account_name: str) -> Dict[str, Any]:
+        """Rút tiền thu nhập từ ví về tài khoản ngân hàng của PT."""
+        payload = {
+            "amount": amount,
+            "bankName": bank_name,
+            "accountNumber": account_number,
+            "accountName": account_name
+        }
+        return api_client.post("/api/v1/wallet/withdraw", json=payload)
+
+
 
