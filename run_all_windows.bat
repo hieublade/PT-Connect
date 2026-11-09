@@ -9,8 +9,8 @@ echo.
 
 :: 1. Kiểm tra lựa chọn chế độ chạy
 echo Bạn muốn chạy bằng cách nào?
-echo   [1] Dùng Docker Compose (Khuyên dùng - Tự bật cả MySQL, Backend, Frontend)
-echo   [2] Chạy trực tiếp bằng Python (Siêu nhẹ, không tốn RAM máy)
+echo   [1] Dùng Docker Compose (Khuyên dùng - Tự động build image và bật MySQL, Backend, Frontend)
+echo   [2] Chạy trực tiếp bằng Python (Siêu nhẹ, không cần Docker, không tốn RAM máy)
 echo.
 set /p choice="Nhập lựa chọn của bạn (1 hoặc 2, mặc định 1): "
 
@@ -19,8 +19,28 @@ goto RUN_DOCKER
 
 :RUN_DOCKER
 echo.
-echo [*] Đang khởi động 3 dịch vụ bằng Docker Compose...
+echo [*] Đang kiểm tra trạng thái Docker Desktop...
+docker info >nul 2>&1
+if %ERRORLEVEL% NEQ 0 (
+    echo.
+    echo [CẢNH BÁO] Docker Desktop chưa được bật hoặc chưa cài đặt!
+    echo - Vui lòng mở ứng dụng 'Docker Desktop' trên máy và đợi biểu tượng chuyển sang màu xanh.
+    echo - Hoặc bạn có thể bấm phím bất kỳ để chuyển sang chạy Chế độ 2 (Python trực tiếp).
+    echo.
+    pause
+    goto RUN_PYTHON
+)
+
+echo [*] Đang tự động BUILD IMAGE và khởi động 3 container (MySQL, Backend, Frontend)...
+echo [*] (Lần đầu tiên chạy sẽ mất khoảng 2-3 phút để tải và build image, xin vui lòng đợi...)
+echo.
 docker compose -f docker-compose.python.yml up --build
+
+if %ERRORLEVEL% NEQ 0 (
+    echo.
+    echo [LỖI] Có lỗi xảy ra trong quá trình khởi động Docker.
+    pause
+)
 goto END
 
 :RUN_PYTHON
