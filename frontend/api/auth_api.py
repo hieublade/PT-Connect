@@ -72,19 +72,28 @@ class AuthApi:
 # ===================================================================
 
 def save_auth_session(auth_data: Dict[str, Any]) -> None:
-    """Lưu token và thông tin user vào st.session_state."""
+    """Lưu token và thông tin user vào st.session_state và st.query_params để giữ phiên khi F5."""
     token = auth_data.get("token")
     user = auth_data.get("user")
     st.session_state["token"] = token
     st.session_state["user"] = user
     st.session_state["logged_in"] = True
+    try:
+        if token:
+            st.query_params["session_token"] = token
+    except Exception:
+        pass
 
 
 def clear_auth_session() -> None:
-    """Đăng xuất, xóa token và thông tin phiên làm việc khỏi st.session_state."""
+    """Đăng xuất, xóa token và thông tin phiên làm việc khỏi st.session_state và st.query_params."""
     st.session_state.pop("token", None)
     st.session_state.pop("user", None)
     st.session_state["logged_in"] = False
+    try:
+        st.query_params.clear()
+    except Exception:
+        pass
 
 
 def get_current_user() -> Optional[Dict[str, Any]]:
