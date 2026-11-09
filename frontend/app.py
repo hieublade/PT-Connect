@@ -131,6 +131,14 @@ def main():
         st.rerun()
         return
 
+    # Đảm bảo session_token luôn được đồng bộ trên URL query_params để chống mất phiên khi F5
+    if st.session_state.get("token"):
+        try:
+            if st.query_params.get("session_token") != st.session_state["token"]:
+                st.query_params["session_token"] = st.session_state["token"]
+        except Exception:
+            pass
+
     # Hiển thị Sidebar
     render_sidebar(user)
 

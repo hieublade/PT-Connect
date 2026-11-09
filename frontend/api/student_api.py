@@ -46,6 +46,17 @@ class StudentApi:
         return api_client.post("/api/v1/wallet/topup", json=payload)
 
     @staticmethod
+    def withdraw_wallet(amount: float, bank_name: str, account_number: str, account_name: str) -> Dict[str, Any]:
+        """Rút tiền từ ví điện tử về tài khoản ngân hàng của Học viên."""
+        payload = {
+            "amount": amount,
+            "bankName": bank_name,
+            "accountNumber": account_number,
+            "accountName": account_name
+        }
+        return api_client.post("/api/v1/wallet/withdraw", json=payload)
+
+    @staticmethod
     def purchase_course(course_id: int, training_location: str, payment_method: str = "WALLET") -> Dict[str, Any]:
         """Mua khóa học, kích hoạt Transaction trừ ví, tạo enrollment, payment và hợp đồng."""
         payload = {

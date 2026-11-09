@@ -670,39 +670,39 @@ class MyCourseView:
 
 
 class WalletView:
-    """Sơ đồ 2: Quản lý ví điện tử nội bộ, nạp tiền và lịch sử giao dịch."""
+    """Sơ đồ 2: Quản lý ví điện tử nội bộ, nạp tiền, rút tiền và lịch sử giao dịch."""
 
     def __init__(self, parent: "StudentHomeView"):
         self.parent = parent
 
     def render(self):
-        st.subheader("Quản Lý Ví Điện Tử Nội Bộ & Nạp Tiền")
+        st.subheader("Quản Lý Ví Điện Tử Nội Bộ (Nạp & Rút Tiền)")
 
-        col_w_info, col_w_topup = st.columns([1, 1])
+        balance = float(self.parent.wallet_balance or 0)
+        locked_balance = float(self.parent.wallet_data.get("lockedBalance", 0) or 0)
+        available_balance = max(0.0, balance - locked_balance)
+        wallet_status = self.parent.wallet_data.get("status", "ACTIVE")
 
-        with col_w_info:
+        col_w_left, col_w_right = st.columns([1, 1], gap="medium")
+
+        with col_w_left:
             with st.container(border=True):
-                st.markdown("#### Thông Tin Số Dư Ví")
+                st.markdown("#### 💰 Số Dư & Nạp Tiền Vào Ví")
                 st.markdown(f"**Chủ tài khoản:** {self.parent.full_name}")
-                st.markdown(f"**Trạng thái ví:** `{self.parent.wallet_data.get('status', 'ACTIVE')}`")
+                st.markdown(f"**Trạng thái ví:** `{wallet_status}`")
                 st.markdown(
                     f"""
-                    <div style="background: #e3f2fd; padding: 1.2rem; border-radius: 10px; margin: 1rem 0; border-left: 5px solid #1976d2;">
+                    <div style="background: #e3f2fd; padding: 1.2rem; border-radius: 10px; margin: 0.8rem 0; border-left: 5px solid #1976d2;">
                         <span style="font-size: 0.95rem; color: #0d47a1; font-weight: 500;">Số Dư Khả Dụng:</span>
                         <div style="font-size: 1.8rem; font-weight: 800; color: #1565c0; margin-top: 4px;">
-                            {format_currency_vnd(self.parent.wallet_balance)}
+                            {format_currency_vnd(balance)}
                         </div>
                     </div>
                     """,
                     unsafe_allow_html=True
                 )
-                st.caption("*Lưu ý: Tiền trong ví chỉ dùng trong môi trường giả lập nền tảng PT Connect.*")
 
-        with col_w_topup:
-            with st.container(border=True):
-                st.markdown("#### Nạp Tiền Vào Ví")
-
-                st.markdown("**Chọn nhanh mệnh giá:**")
+                st.markdown("**Chọn nhanh mệnh giá nạp:**")
                 q_cols = st.columns(4)
                 if "student_topup_amount_input" not in st.session_state:
                     st.session_state["student_topup_amount_input"] = 2000000.0
@@ -722,7 +722,7 @@ class WalletView:
                         )
 
                 entered_amount = st.number_input(
-                    "Hoặc nhập số tiền tùy chọn (VND):",
+                    "Hoặc nhập số tiền nạp tùy chọn (VND):",
                     min_value=10000.0,
                     max_value=100000000.0,
                     step=100000.0,
@@ -740,7 +740,7 @@ class WalletView:
                     key="student_topup_payment_method"
                 )
 
-                if st.button("Nạp Tiền Ngay", type="primary", use_container_width=True):
+                if st.button("➕ Nạp Tiền Ngay", type="primary", use_container_width=True):
                     with st.spinner("Đang xử lý nạp tiền vào ví..."):
                         try:
                             topup_res = StudentApi.topup_wallet(amount=entered_amount, payment_method=method_code)
@@ -751,6 +751,84 @@ class WalletView:
                         except Exception as ex:
                             st.error(f"Lỗi: {str(ex)}")
 
+        with col_w_right:
+            with st.container(border=True):
+                st.markdown("#### 🏦 Rút Tiền Về Tài Khoản Ngân Hàng")
+                st.caption("Rút lại số dư chưa sử dụng hoặc tiền hoàn/đền bù trong ví về tài khoản ngân hàng cá nhân.")
+
+                if available_balance < 50000:
+                    st.info(
+                        f"Số dư khả dụng hiện tại là **{format_currency_vnd(available_balance)}**. "
+                        f"Cần tối thiểu **50.000 ₫** để thực hiện lệnh rút tiền về ngân hàng."
+                    )
+                else:
+                    st.markdown(f"**Số dư tối đa có thể rút:** `{format_currency_vnd(available_balance)}`")
+
+                    withdraw_amt = st.number_input(
+                        "Số tiền muốn rút (tối thiểu 50,000 VND):",
+                        min_value=50000.0,
+                        max_value=max(50000.0, available_balance),
+                        value=min(500000.0, available_balance) if available_balance >= 500000.0 else available_balance,
+                        step=50000.0,
+                        key="student_withdraw_amount_input"
+                    )
+
+                    bank_list = [
+                        "Vietcombank (VCB - Ngân hàng Ngoại thương)",
+                        "Techcombank (TCB - Ngân hàng Kỹ thương)",
+                        "MBBank (MB - Ngân hàng Quân đội)",
+                        "VietinBank (CTG - Ngân hàng Công thương)",
+                        "BIDV (Ngân hàng Đầu tư và Phát triển)",
+                        "ACB (Ngân hàng Á Châu)",
+                        "TPBank (Ngân hàng Tiên Phong)",
+                        "VPBank (Ngân hàng Việt Nam Thịnh vượng)"
+                    ]
+                    selected_bank = st.selectbox(
+                        "Chọn ngân hàng thụ hưởng:",
+                        options=bank_list,
+                        key="student_withdraw_bank"
+                    )
+                    clean_bank_name = selected_bank.split(" (")[0]
+
+                    acc_number = st.text_input(
+                        "Số tài khoản nhận tiền:",
+                        value="0123456789",
+                        key="student_withdraw_acc_num"
+                    )
+
+                    acc_name = st.text_input(
+                        "Tên chủ tài khoản (In hoa không dấu):",
+                        value=self.parent.full_name.upper(),
+                        key="student_withdraw_acc_name"
+                    )
+
+                    st.caption("ℹ️ *Hệ thống mô phỏng lệnh chuyển khoản liên ngân hàng 24/7 tức thì.*")
+
+                    if st.button("💸 Xác Nhận Rút Tiền", type="primary", use_container_width=True, key="btn_student_withdraw"):
+                        if not acc_number.strip():
+                            st.error("Vui lòng nhập số tài khoản nhận tiền.")
+                        elif not acc_name.strip():
+                            st.error("Vui lòng nhập tên chủ tài khoản.")
+                        elif withdraw_amt > available_balance:
+                            st.error(f"Số tiền rút ({format_currency_vnd(withdraw_amt)}) vượt quá số dư khả dụng.")
+                        else:
+                            with st.spinner("Đang thực hiện chuyển khoản..."):
+                                try:
+                                    res = StudentApi.withdraw_wallet(
+                                        amount=withdraw_amt,
+                                        bank_name=clean_bank_name,
+                                        account_number=acc_number.strip(),
+                                        account_name=acc_name.strip()
+                                    )
+                                    st.success(
+                                        f"Rút thành công {format_currency_vnd(withdraw_amt)} về STK {acc_number.strip()} ({clean_bank_name})! Mã GD: {res.get('transactionRef')}"
+                                    )
+                                    st.rerun()
+                                except ApiException as e:
+                                    st.error(f"Lỗi rút tiền [{e.status_code}]: {e.message}")
+                                except Exception as ex:
+                                    st.error(f"Lỗi: {str(ex)}")
+
         st.markdown("---")
         st.subheader("Lịch Sử Giao Dịch Tài Chính")
         txns = self.parent.wallet_data.get("transactions", [])
@@ -760,11 +838,30 @@ class WalletView:
             table_data = []
             for t in txns:
                 txn_type = t.get("paymentType", "")
-                type_badge = "NẠP TIỀN" if txn_type == "TOPUP" else ("MUA KHÓA" if txn_type == "PURCHASE_PACKAGE" else txn_type)
+                t_ref = str(t.get("transactionRef", ""))
                 amt = t.get("amount", 0)
-                amt_str = f"+{format_currency_vnd(amt)}" if txn_type in ["TOPUP", "REFUND", "COMPENSATION"] else f"-{format_currency_vnd(amt)}"
+
+                if "WITHDRAW" in t_ref:
+                    type_badge = "RÚT TIỀN"
+                    amt_str = f"-{format_currency_vnd(amt)}"
+                elif txn_type == "TOPUP":
+                    type_badge = "NẠP TIỀN"
+                    amt_str = f"+{format_currency_vnd(amt)}"
+                elif txn_type == "PURCHASE_PACKAGE":
+                    type_badge = "MUA KHÓA"
+                    amt_str = f"-{format_currency_vnd(amt)}"
+                elif txn_type == "REFUND":
+                    type_badge = "HOÀN TIỀN"
+                    amt_str = f"+{format_currency_vnd(amt)}"
+                elif txn_type == "COMPENSATION":
+                    type_badge = "ĐỀN BÙ"
+                    amt_str = f"+{format_currency_vnd(amt)}"
+                else:
+                    type_badge = txn_type
+                    amt_str = f"{format_currency_vnd(amt)}"
+
                 table_data.append({
-                    "Mã Giao Dịch": t.get("transactionRef"),
+                    "Mã Giao Dịch": t_ref,
                     "Loại GD": type_badge,
                     "Số Tiền": amt_str,
                     "Phương Thức": t.get("paymentMethod"),
