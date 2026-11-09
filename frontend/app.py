@@ -1,5 +1,5 @@
 import streamlit as st
-from api.auth_api import clear_auth_session, get_current_user, is_authenticated
+from api.auth_api import AuthApi, clear_auth_session, get_current_user, is_authenticated
 from modules.login_view import LoginView
 from modules.student_home_view import StudentHomeView
 from modules.pt_home_view import PTHomeView
@@ -98,6 +98,26 @@ def render_sidebar(user: dict):
 
 def main():
     """Điều hướng trang chính dựa trên trạng thái đăng nhập và vai trò (Role-based Routing) thông qua các Boundary Views."""
+
+    # 0. Tự động khôi phục phiên đăng nhập từ URL query_params khi F5 / tải lại trang
+    if not is_authenticated():
+        saved_token = None
+        try:
+            saved_token = st.query_params.get("session_token")
+        except Exception:
+            saved_token = None
+
+        if saved_token:
+            st.session_state["token"] = saved_token
+            try:
+                user_info = AuthApi.get_me()
+                if user_info and isinstance(user_info, dict) and user_info.get("id"):
+                    st.session_state["user"] = user_info
+                    st.session_state["logged_in"] = True
+                else:
+                    clear_auth_session()
+            except Exception:
+                clear_auth_session()
 
     # 1. Nếu chưa đăng nhập: Hiển thị màn hình Login / Register
     if not is_authenticated():
