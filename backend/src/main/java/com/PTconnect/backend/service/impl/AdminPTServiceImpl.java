@@ -24,8 +24,16 @@ public class AdminPTServiceImpl implements IAdminPTService {
     @Override
     @Transactional(readOnly = true)
     public List<PendingPTResponse> getPendingPTs() {
-        List<PTProfile> pendingList = ptProfileRepository.findByVerificationStatus(VerificationStatus.PENDING);
-        return pendingList.stream()
+        return getAllPTs(VerificationStatus.PENDING);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PendingPTResponse> getAllPTs(VerificationStatus status) {
+        List<PTProfile> list = (status != null)
+                ? ptProfileRepository.findByVerificationStatus(status)
+                : ptProfileRepository.findAll();
+        return list.stream()
                 .map(PendingPTResponse::fromEntity)
                 .toList();
     }

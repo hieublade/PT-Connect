@@ -14,7 +14,13 @@ public interface IUserService {
 
     UserDTO getUserById(Long id);
 
+    UserDTO getUserByEmail(String email);
+
+    UserDTO updateProfile(String email, com.PTconnect.backend.dto.request.UpdateProfileRequest request);
+
     UserDTO updateAvatar(String email, String avatarUrl);
+
+    UserDTO uploadAvatar(String email, org.springframework.web.multipart.MultipartFile file);
 
     UserDTO updateUserStatus(Long id, UserStatus status);
 }

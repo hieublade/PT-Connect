@@ -198,7 +198,7 @@ CREATE TABLE `payments` (
   `wallet_id` bigint NOT NULL,
   `enrollment_id` bigint COMMENT 'NULL nếu nạp tiền TOPUP',
   `amount` decimal(14,2) NOT NULL,
-  `payment_type` ENUM ('TOPUP', 'PURCHASE_PACKAGE', 'COMPENSATION', 'REFUND') NOT NULL,
+  `payment_type` ENUM ('TOPUP', 'PURCHASE_PACKAGE', 'COMPENSATION', 'REFUND', 'WITHDRAW', 'EARNING') NOT NULL,
   `payment_method` ENUM ('WALLET', 'BANK_TRANSFER', 'CREDIT_CARD', 'CASH') NOT NULL,
   `status` ENUM ('PENDING', 'SUCCESS', 'FAILED', 'REFUNDED') NOT NULL DEFAULT 'PENDING',
   `transaction_ref` varchar(100) UNIQUE,
@@ -408,3 +408,55 @@ LEFT JOIN `availability_slots` s ON p.`id` = s.`pt_id`
 LEFT JOIN `bookings` b ON s.`id` = b.`slot_id`
 LEFT JOIN `reviews` r ON b.`id` = r.`booking_id`
 GROUP BY p.`id`, p.`user_id`;
+
+-- ---------------------------------------------------------------------
+-- 7. CHAT & TIN NHẮN TRỰC TIẾP 1-1 (PT & STUDENT)
+-- ---------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `chat_messages` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `sender_id` bigint NOT NULL,
+  `recipient_id` bigint NOT NULL,
+  `booking_id` bigint NULL,
+  `content` text NOT NULL,
+  `is_read` boolean NOT NULL DEFAULT FALSE,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`sender_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`recipient_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`booking_id`) REFERENCES `bookings` (`id`) ON DELETE SET NULL,
+  INDEX `idx_chat_participants` (`sender_id`, `recipient_id`),
+  INDEX `idx_chat_created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------
+-- 8. TRUNG TÂM XỬ LÝ TRANH CHẤP & KHIẾU NẠI (DISPUTES)
+-- ---------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `dispute_cases` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `booking_id` bigint NOT NULL,
+  `complainant_id` bigint NOT NULL,
+  `complainant_role` varchar(20) NOT NULL,
+  `defendant_id` bigint NULL,
+  `dispute_type` varchar(50) NOT NULL,
+  `dispute_type_label` varchar(150) NOT NULL,
+  `severity` varchar(20) NOT NULL DEFAULT 'MEDIUM',
+  `summary` varchar(500) NULL,
+  `statement` text NOT NULL,
+  `counter_statement` text NULL,
+  `evidence_note` text NULL,
+  `session_fee` decimal(14,2) NULL,
+  `status` varchar(50) NOT NULL DEFAULT 'PENDING_ARBITRATION',
+  `verdict_type` varchar(50) NULL,
+  `resolution_decision` text NULL,
+  `resolved_at` datetime NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`booking_id`) REFERENCES `bookings` (`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`complainant_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`defendant_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  INDEX `idx_dispute_booking` (`booking_id`),
+  INDEX `idx_dispute_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+

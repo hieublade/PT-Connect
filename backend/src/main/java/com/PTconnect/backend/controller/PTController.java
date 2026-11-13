@@ -85,6 +85,15 @@ public class PTController {
         return ResponseEntity.ok(ApiResponse.success("Cập nhật khóa học thành công", response));
     }
 
+    @PutMapping("/courses/{id}/toggle-status")
+    public ResponseEntity<ApiResponse<CourseResponse>> toggleCourseStatus(
+            Authentication auth,
+            @PathVariable Long id) {
+        String email = SecurityUtils.getCurrentUserEmail(auth);
+        CourseResponse response = courseService.toggleCourseStatus(email, id);
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái khóa học thành công", response));
+    }
+
     @DeleteMapping("/courses/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteCourse(
             Authentication auth,

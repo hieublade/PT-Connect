@@ -24,10 +24,16 @@ api.interceptors.response.use(
     return response.data;
   },
   (error) => {
-    if (error.response?.status === 401) {
+    const requestUrl = error.config?.url || '';
+    const isAuthEndpoint = requestUrl.includes('/auth/login') || requestUrl.includes('/auth/register');
+
+    if (error.response?.status === 401 && !isAuthEndpoint) {
+      const hadToken = !!localStorage.getItem('ptconnect_token');
       localStorage.removeItem('ptconnect_token');
       localStorage.removeItem('ptconnect_user');
-      window.location.reload();
+      if (hadToken) {
+        window.location.reload();
+      }
     }
     const message = error.response?.data?.message || error.message || 'Lỗi kết nối';
     return Promise.reject(new Error(message));

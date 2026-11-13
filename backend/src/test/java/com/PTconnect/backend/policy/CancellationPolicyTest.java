@@ -16,8 +16,8 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Kiểm thử đơn vị (JUnit 5) cho từng dòng trong Bảng chính sách hủy lịch mục 3.11.
- * Minh chứng tính ĐA HÌNH (Polymorphism) và mẫu thiết kế Strategy (Milestone 7 - Hưng).
+ * Kiểm thử đơn vị (JUnit 5) cho từng dòng trong Bảng chính sách hủy lịch và đền bù.
+ * Minh chứng tính ĐA HÌNH (Polymorphism) và mẫu thiết kế Strategy.
  */
 class CancellationPolicyTest {
 
@@ -67,7 +67,7 @@ class CancellationPolicyTest {
     }
 
     @Test
-    @DisplayName("Dòng 2: Học viên hủy CONFIRMED cách giờ tập >= 24 giờ -> Hoàn 1 buổi, không đền bù, không phạt")
+    @DisplayName("Dòng 2: Học viên hủy CONFIRMED (đã duyệt) cách giờ tập >= 24 giờ -> Hoàn 1 buổi, đền bù 50% cho PT")
     void testStudentCancelConfirmedAdvanceNotice() {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime slotTime = now.plusHours(25); // Cách 25 giờ (>= 24h)
@@ -77,13 +77,15 @@ class CancellationPolicyTest {
 
         assertTrue(result.isRestoreSession(), "Phải hoàn trả 1 buổi tập");
         assertEquals(0, SESSION_FEE.compareTo(result.getRefundAmount()));
-        assertEquals(0, BigDecimal.ZERO.compareTo(result.getCompensationAmount()));
-        assertEquals(0, BigDecimal.ZERO.compareTo(result.getPenaltyAmount()));
+
+        BigDecimal expectedCompAndPenalty = SESSION_FEE.multiply(BigDecimal.valueOf(0.50)); // 150.000 đ
+        assertEquals(0, expectedCompAndPenalty.compareTo(result.getCompensationAmount()), "Đền bù 50% cho PT");
+        assertEquals(0, expectedCompAndPenalty.compareTo(result.getPenaltyAmount()), "Phạt trừ 50% ví học viên");
         assertTrue(result.getHoursBeforeSession().doubleValue() >= 24.0);
     }
 
     @Test
-    @DisplayName("Dòng 3: Học viên hủy CONFIRMED cách giờ tập < 24 giờ -> Mất buổi, đền bù 50% cho PT, không phạt")
+    @DisplayName("Dòng 3: Học viên hủy CONFIRMED (đã duyệt) cách giờ tập < 24 giờ -> Mất buổi, đền bù 100% cho PT")
     void testStudentCancelConfirmedLate() {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime slotTime = now.plusHours(5); // Cách 5 giờ (< 24h)
@@ -94,8 +96,8 @@ class CancellationPolicyTest {
         assertFalse(result.isRestoreSession(), "Học viên bị mất buổi, không được hoàn lại");
         assertEquals(0, BigDecimal.ZERO.compareTo(result.getRefundAmount()));
 
-        BigDecimal expectedComp = SESSION_FEE.multiply(BigDecimal.valueOf(0.50)); // 150.000 đ
-        assertEquals(0, expectedComp.compareTo(result.getCompensationAmount()), "Đền bù 50% session_fee vào ví PT");
+        BigDecimal expectedComp = SESSION_FEE; // 300.000 đ (100%)
+        assertEquals(0, expectedComp.compareTo(result.getCompensationAmount()), "Đền bù 100% session_fee vào ví PT");
         assertEquals(0, BigDecimal.ZERO.compareTo(result.getPenaltyAmount()), "Không phạt thêm học viên");
     }
 
@@ -145,7 +147,7 @@ class CancellationPolicyTest {
     }
 
     @Test
-    @DisplayName("Dòng 7: Huấn luyện viên hủy CONFIRMED cách giờ tập < 24 giờ -> Hoàn 1 buổi, đền bù 20% cho học viên, phạt 20% trừ ví PT")
+    @DisplayName("Dòng 7: Huấn luyện viên hủy CONFIRMED cách giờ tập < 24 giờ -> Hoàn 1 buổi, đền bù 100% tiền 1 buổi học cho học viên, phạt 100% trừ ví PT")
     void testPtCancelConfirmedLate() {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime slotTime = now.plusHours(4); // Cách 4 giờ (< 24h)
@@ -156,9 +158,9 @@ class CancellationPolicyTest {
         assertTrue(result.isRestoreSession(), "Vẫn hoàn lại 1 buổi cho học viên");
         assertEquals(0, SESSION_FEE.compareTo(result.getRefundAmount()));
 
-        BigDecimal expectedCompAndPenalty = SESSION_FEE.multiply(BigDecimal.valueOf(0.20)); // 60.000 đ
-        assertEquals(0, expectedCompAndPenalty.compareTo(result.getCompensationAmount()), "Đền bù 20% vào ví học viên");
-        assertEquals(0, expectedCompAndPenalty.compareTo(result.getPenaltyAmount()), "Phạt 20% trừ từ ví Huấn luyện viên");
+        BigDecimal expectedCompAndPenalty = SESSION_FEE; // 300.000 đ (100% tiền 1 buổi học)
+        assertEquals(0, expectedCompAndPenalty.compareTo(result.getCompensationAmount()), "Đền bù 100% vào ví học viên");
+        assertEquals(0, expectedCompAndPenalty.compareTo(result.getPenaltyAmount()), "Phạt 100% trừ từ ví Huấn luyện viên");
     }
 
     @Test
@@ -186,18 +188,18 @@ class CancellationPolicyTest {
         LocalDateTime slotTime = now.plusHours(5); // < 24h
         Booking booking = createBooking(BookingType.PACKAGE, BookingStatus.CONFIRMED, slotTime);
 
-        // 1. Phía Student hủy sát giờ: không hoàn buổi, đền bù 50%
+        // 1. Phía Student hủy sát giờ: không hoàn buổi, đền bù 100%
         CancellationPolicy studentPol = factory.getPolicy("STUDENT");
         CancellationCalculationResult rStudent = studentPol.calculate(booking, now, "Học viên hủy", null);
         assertFalse(rStudent.isRestoreSession());
-        assertEquals(0, SESSION_FEE.multiply(BigDecimal.valueOf(0.50)).compareTo(rStudent.getCompensationAmount()));
+        assertEquals(0, SESSION_FEE.compareTo(rStudent.getCompensationAmount()));
 
-        // 2. Phía PT hủy sát giờ: hoàn buổi, đền bù 20%, phạt 20%
+        // 2. Phía PT hủy sát giờ: hoàn buổi, đền bù 100%, phạt 100%
         CancellationPolicy ptPol = factory.getPolicy("PT");
         CancellationCalculationResult rPt = ptPol.calculate(booking, now, "PT hủy", null);
         assertTrue(rPt.isRestoreSession());
-        assertEquals(0, SESSION_FEE.multiply(BigDecimal.valueOf(0.20)).compareTo(rPt.getCompensationAmount()));
-        assertEquals(0, SESSION_FEE.multiply(BigDecimal.valueOf(0.20)).compareTo(rPt.getPenaltyAmount()));
+        assertEquals(0, SESSION_FEE.compareTo(rPt.getCompensationAmount()));
+        assertEquals(0, SESSION_FEE.compareTo(rPt.getPenaltyAmount()));
 
         // 3. Phía Admin hủy: hoàn buổi, không phạt
         CancellationPolicy admPol = factory.getPolicy("ADMIN");

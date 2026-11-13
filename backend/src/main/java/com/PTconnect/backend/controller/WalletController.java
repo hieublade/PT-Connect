@@ -1,6 +1,7 @@
 package com.PTconnect.backend.controller;
 
 import com.PTconnect.backend.dto.request.TopupRequest;
+import com.PTconnect.backend.dto.request.WithdrawRequest;
 import com.PTconnect.backend.dto.response.PaymentResponse;
 import com.PTconnect.backend.dto.response.WalletResponse;
 import com.PTconnect.backend.service.IWalletService;
@@ -33,5 +34,14 @@ public class WalletController {
         String email = SecurityUtils.getCurrentUserEmail(authentication);
         PaymentResponse paymentResponse = walletService.topup(email, request);
         return ResponseEntity.ok(ApiResponse.success("Nạp tiền vào ví thành công", paymentResponse));
+    }
+
+    @PostMapping("/withdraw")
+    public ResponseEntity<ApiResponse<PaymentResponse>> withdraw(
+            Authentication authentication,
+            @Valid @RequestBody WithdrawRequest request) {
+        String email = SecurityUtils.getCurrentUserEmail(authentication);
+        PaymentResponse paymentResponse = walletService.withdraw(email, request);
+        return ResponseEntity.ok(ApiResponse.success("Rút tiền về tài khoản ngân hàng thành công", paymentResponse));
     }
 }

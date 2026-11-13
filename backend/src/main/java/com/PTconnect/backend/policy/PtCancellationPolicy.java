@@ -12,14 +12,17 @@ import java.time.LocalDateTime;
 
 /**
  * Hiện thực chính sách hủy lịch dành cho Huấn luyện viên (PtCancellationPolicy).
- * Triển khai chính xác bảng quy tắc mục 3.11 trong tài liệu đặc tả dự án.
+ * Triển khai chính sách:
+ * - Khi ca PENDING: PT từ chối, hoàn 1 buổi cho học viên, không phạt.
+ * - Khi ca CONFIRMED và PT hủy trước >= 24h: hoàn 1 buổi cho học viên, không phạt.
+ * - Khi ca CONFIRMED và PT hủy sát giờ (< 24h): hoàn 1 buổi cho học viên, đền bù 100% tiền 1 buổi học vào ví học viên và phạt 100% trừ ví PT.
  */
 @Component
 public class PtCancellationPolicy extends BaseCancellationPolicy {
 
     public static final double ADVANCE_NOTICE_HOURS = 24.0;
-    public static final BigDecimal COMPENSATION_RATE = BigDecimal.valueOf(0.20); // 20%
-    public static final BigDecimal PENALTY_RATE = BigDecimal.valueOf(0.20);      // 20%
+    public static final BigDecimal COMPENSATION_RATE = BigDecimal.valueOf(1.00); // 100% (Tiền 1 buổi học)
+    public static final BigDecimal PENALTY_RATE = BigDecimal.valueOf(1.00);      // 100% (Tiền 1 buổi học)
 
     @Override
     public Role getSupportedRole() {
@@ -75,8 +78,9 @@ public class PtCancellationPolicy extends BaseCancellationPolicy {
                 .compensationAmount(compensation)
                 .penaltyAmount(penalty)
                 .hoursBeforeSession(hoursBefore)
-                .explanation("Huấn luyện viên hủy sát giờ (< 24 giờ). Hoàn 1 buổi cho học viên, đền bù 20% ("
-                        + compensation + " đ) vào ví Học viên và phạt 20% (" + penalty + " đ) trừ từ ví Huấn luyện viên.")
+                .explanation("Huấn luyện viên hủy ca tập đã duyệt sát giờ (< 24 giờ). Hoàn trả 1 buổi tập cho học viên, đền bù 100% tiền 1 buổi học ("
+                        + compensation.toBigInteger() + " ₫) vào ví Học viên và phạt trừ "
+                        + penalty.toBigInteger() + " ₫ từ ví Huấn luyện viên.")
                 .build();
     }
 }

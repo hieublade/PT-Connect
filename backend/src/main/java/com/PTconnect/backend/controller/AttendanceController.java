@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 /**
  * Controller phục vụ toàn bộ luồng Điểm danh ca tập xác thực hai phía bằng mã OTP (Milestone 7).
- * Phụ trách bởi: Huy.
+ * Hỗ trợ các endpoint tương thích với cả mobile/web và React frontend.
  */
 @RestController
 @RequiredArgsConstructor
@@ -24,28 +24,36 @@ public class AttendanceController {
     private final IAttendanceService attendanceService;
 
     /**
-     * Huấn luyện viên mở phiên điểm danh và lấy mã OTP 6 số (POST /api/v1/attendance/{bookingId}/start)
+     * Mở phiên điểm danh và sinh mã OTP 6 số
+     * Hỗ trợ các route:
+     * - POST /api/v1/attendance/{bookingId}/start
+     * - POST /api/v1/attendance/bookings/{bookingId}/otp/generate (React frontend)
+     * - POST /api/v1/attendance/{bookingId}/otp/generate
      */
-    @PostMapping("/{bookingId}/start")
+    @PostMapping({"/{bookingId}/start", "/bookings/{bookingId}/otp/generate", "/{bookingId}/otp/generate"})
     public ResponseEntity<ApiResponse<StartAttendanceResponse>> startAttendance(
             Authentication authentication,
             @PathVariable Long bookingId) {
-        String ptEmail = SecurityUtils.getCurrentUserEmail(authentication);
-        StartAttendanceResponse response = attendanceService.startAttendance(ptEmail, bookingId);
+        String email = SecurityUtils.getCurrentUserEmail(authentication);
+        StartAttendanceResponse response = attendanceService.startAttendance(email, bookingId);
         return ResponseEntity.ok(ApiResponse.success("Mở phiên điểm danh thành công", response));
     }
 
     /**
-     * Học viên nhập mã OTP 6 số để xác nhận có mặt (POST /api/v1/attendance/{bookingId}/student-checkin)
+     * Nhập mã OTP 6 số để xác nhận điểm danh
+     * Hỗ trợ các route:
+     * - POST /api/v1/attendance/{bookingId}/student-checkin
+     * - POST /api/v1/attendance/bookings/{bookingId}/otp/verify (React frontend)
+     * - POST /api/v1/attendance/{bookingId}/otp/verify
      */
-    @PostMapping("/{bookingId}/student-checkin")
+    @PostMapping({"/{bookingId}/student-checkin", "/bookings/{bookingId}/otp/verify", "/{bookingId}/otp/verify"})
     public ResponseEntity<ApiResponse<AttendanceResponse>> studentCheckIn(
             Authentication authentication,
             @PathVariable Long bookingId,
             @Valid @RequestBody StudentCheckInRequest request) {
-        String studentEmail = SecurityUtils.getCurrentUserEmail(authentication);
-        AttendanceResponse response = attendanceService.studentCheckIn(studentEmail, bookingId, request);
-        return ResponseEntity.ok(ApiResponse.success("Học viên xác nhận điểm danh thành công", response));
+        String email = SecurityUtils.getCurrentUserEmail(authentication);
+        AttendanceResponse response = attendanceService.studentCheckIn(email, bookingId, request);
+        return ResponseEntity.ok(ApiResponse.success("Xác nhận điểm danh thành công", response));
     }
 
     /**

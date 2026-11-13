@@ -386,7 +386,17 @@ public class BookingServiceImpl implements IBookingService {
             CancellationCalculationResult result
     ) {
         if ("STUDENT".equalsIgnoreCase(cancelledByRole)) {
-            // Học viên hủy: Nếu hủy sát giờ (< 24h), đền bù cho PT
+            // Học viên hủy ca tập đã duyệt:
+            // 1. Phạt trừ ví học viên nếu có penalty
+            if (result.getPenaltyAmount().compareTo(BigDecimal.ZERO) > 0
+                    && booking.getStudent() != null) {
+                walletService.processBookingPenalty(
+                        booking.getStudent().getId(),
+                        booking.getEnrollment(),
+                        result.getPenaltyAmount()
+                );
+            }
+            // 2. Đền bù vào ví của Huấn luyện viên
             if (result.getCompensationAmount().compareTo(BigDecimal.ZERO) > 0
                     && booking.getPt() != null && booking.getPt().getPt() != null) {
                 walletService.processBookingCompensation(

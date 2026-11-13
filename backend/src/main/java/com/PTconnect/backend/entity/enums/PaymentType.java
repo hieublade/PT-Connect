@@ -4,5 +4,7 @@ public enum PaymentType {
     TOPUP,
     PURCHASE_PACKAGE,
     COMPENSATION,
-    REFUND
+    REFUND,
+    WITHDRAW,
+    EARNING
 }

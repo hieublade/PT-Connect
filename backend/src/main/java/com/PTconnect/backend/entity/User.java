@@ -40,6 +40,13 @@ public abstract class User {
     @Column(insertable = false, updatable = false)
     private Role role;
 
+    public Role getRole() {
+        if (this instanceof PT) return Role.PT;
+        if (this instanceof Student) return Role.STUDENT;
+        if (this instanceof Admin) return Role.ADMIN;
+        return this.role != null ? this.role : Role.STUDENT;
+    }
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default

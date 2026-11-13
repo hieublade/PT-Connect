@@ -34,7 +34,7 @@ export const SlotCard: React.FC<SlotCardProps> = ({ slot, onDelete, onSelect, se
   return (
     <div
       onClick={() => selectable && slot.status === 'AVAILABLE' && onSelect?.(slot)}
-      className={`bg-white rounded-xl border p-4 shadow-sm transition-all flex items-center justify-between ${
+      className={`bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm transition-all flex items-center justify-between ${
         selectable && slot.status === 'AVAILABLE' ? 'cursor-pointer hover:border-red-400 hover:ring-2 hover:ring-red-100' : ''
       } border-slate-200`}
     >
@@ -43,8 +43,8 @@ export const SlotCard: React.FC<SlotCardProps> = ({ slot, onDelete, onSelect, se
           <Clock className="w-4 h-4" />
         </div>
         <div>
-          <div className="text-xs text-slate-500 font-medium">Bắt đầu: <span className="text-slate-800 font-bold">{formatDateTime(slot.startTime)}</span></div>
-          <div className="text-xs text-slate-500 font-medium mt-0.5">Kết thúc: <span className="text-slate-800 font-bold">{formatDateTime(slot.endTime)}</span></div>
+          <div className="text-xs text-slate-500 font-medium">Bắt đầu: <span className="text-slate-800 dark:text-white font-bold">{formatDateTime(slot.startTime)}</span></div>
+          <div className="text-xs text-slate-500 font-medium mt-0.5">Kết thúc: <span className="text-slate-800 dark:text-white font-bold">{formatDateTime(slot.endTime)}</span></div>
         </div>
       </div>
 

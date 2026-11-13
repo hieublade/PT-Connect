@@ -43,6 +43,7 @@ SECURITY_AND_SECRETS_AUDIT.md
 # Agent artifacts & Study notes
 .agents/
 .archify/
+scratch/
 BACKEND_STUDY_GUIDE.md
 DAY_28_STUDY_NOTES.md
 

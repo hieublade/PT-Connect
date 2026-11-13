@@ -17,6 +17,8 @@ public class WalletResponse {
 
     private Long id;
     private Long userId;
+    private String ownerName;
+    private String ownerEmail;
     private BigDecimal balance;
     private BigDecimal lockedBalance;
     private String currency;
@@ -30,10 +32,14 @@ public class WalletResponse {
         }
 
         Long uId = (wallet.getUser() != null) ? wallet.getUser().getId() : null;
+        String name = (wallet.getUser() != null) ? wallet.getUser().getFullName() : null;
+        String email = (wallet.getUser() != null) ? wallet.getUser().getEmail() : null;
 
         return WalletResponse.builder()
                 .id(wallet.getId())
                 .userId(uId)
+                .ownerName(name)
+                .ownerEmail(email)
                 .balance(wallet.getBalance())
                 .lockedBalance(wallet.getLockedBalance())
                 .currency(wallet.getCurrency())

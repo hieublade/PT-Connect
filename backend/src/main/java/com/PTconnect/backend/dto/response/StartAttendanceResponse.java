@@ -6,7 +6,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * DTO phản hồi khi Huấn luyện viên mở phiên điểm danh và nhận mã OTP (Milestone 7).
+ * DTO phản hồi khi Huấn luyện viên hoặc Học viên mở phiên điểm danh và nhận mã OTP (Milestone 7).
  */
 @Getter
 @Setter
@@ -22,4 +22,9 @@ public class StartAttendanceResponse {
     private LocalDateTime expiresAt;
     private AttendanceStatus status;
     private String message;
+
+    // Alias cho frontend React (res.otp)
+    public String getOtp() {
+        return this.otpCode;
+    }
 }

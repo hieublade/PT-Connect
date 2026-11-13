@@ -1,5 +1,6 @@
 package com.PTconnect.backend.entity;
 
+import com.PTconnect.backend.entity.enums.Role;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -14,6 +15,9 @@ public class PT extends User {
 
     @OneToOne(mappedBy = "pt", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private PTProfile profile;
+
+    @Override
+    public Role getRole() { return Role.PT; }
 
     @Override
     public String getHomePage() { return "PT_DASHBOARD"; }

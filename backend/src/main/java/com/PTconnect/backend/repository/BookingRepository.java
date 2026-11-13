@@ -29,7 +29,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     @Query("SELECT b FROM Booking b WHERE b.slot.pt.id = :ptId AND b.status = :status ORDER BY b.createdAt DESC")
     List<Booking> findByPtIdAndStatusOrderByCreatedAtDesc(@Param("ptId") Long ptId, @Param("status") BookingStatus status);
 
-    Optional<Booking> findBySlotId(Long slotId);
+    List<Booking> findBySlotId(Long slotId);
+
+    boolean existsBySlotIdAndStatusIn(Long slotId, List<BookingStatus> statuses);
 
     // Kiểm tra học thử: mỗi Student chỉ được 1 buổi thử với mỗi PT
     @Query("SELECT COUNT(b) > 0 FROM Booking b WHERE b.student.id = :studentId AND b.slot.pt.id = :ptId AND b.bookingType = :type")

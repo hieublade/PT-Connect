@@ -20,11 +20,16 @@ public interface PTProfileRepository extends JpaRepository<PTProfile, Long> {
     List<PTProfile> findVerifiedAndActivePTs(@Param("vStatus") VerificationStatus vStatus,
                                              @Param("uStatus") UserStatus uStatus);
 
-    // Tìm theo tên (name = "" để lấy tất cả)
+    // Tìm kiếm đa năng: theo tên HLV, tiểu sử chuyên môn hoặc địa điểm tập luyện
     @Query("""
-           SELECT p FROM PTProfile p
+           SELECT DISTINCT p FROM PTProfile p
+           LEFT JOIN p.locations loc
            WHERE p.verificationStatus = :vStatus AND p.pt.status = :uStatus
-             AND LOWER(p.pt.fullName) LIKE LOWER(CONCAT('%', :name, '%'))
+             AND (
+                 LOWER(p.pt.fullName) LIKE LOWER(CONCAT('%', :name, '%'))
+                 OR LOWER(p.bio) LIKE LOWER(CONCAT('%', :name, '%'))
+                 OR LOWER(loc.locationName) LIKE LOWER(CONCAT('%', :name, '%'))
+             )
            """)
     List<PTProfile> searchVerifiedPTs(@Param("name") String name,
                                       @Param("vStatus") VerificationStatus vStatus,

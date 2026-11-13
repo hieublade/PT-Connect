@@ -114,6 +114,23 @@ public class PTCourseServiceImpl implements IPTCourseService {
 
     @Override
     @Transactional
+    public CourseResponse toggleCourseStatus(String userEmail, Long courseId) {
+        PTProfile profile = ptProfileService.getPTProfileEntity(userEmail);
+
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy khóa học với ID: " + courseId));
+
+        if (!course.getPt().getId().equals(profile.getId())) {
+            throw new UnauthorizedException("Bạn không có quyền thay đổi trạng thái khóa học của Huấn luyện viên khác");
+        }
+
+        course.setStatus(course.getStatus() == CourseStatus.ACTIVE ? CourseStatus.INACTIVE : CourseStatus.ACTIVE);
+        Course saved = courseRepository.save(course);
+        return CourseResponse.fromEntity(saved);
+    }
+
+    @Override
+    @Transactional
     public void deleteCourse(String userEmail, Long courseId) {
         PTProfile profile = ptProfileService.getPTProfileEntity(userEmail);
 

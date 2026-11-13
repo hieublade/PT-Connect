@@ -22,17 +22,17 @@ export const CourseCard: React.FC<CourseCardProps> = ({
   const isActive = course.status === 'ACTIVE';
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-all">
+    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm hover:shadow-md transition-all">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h3 className="text-lg font-bold text-slate-900">{course.title}</h3>
-          <p className="text-sm text-slate-600 mt-1 line-clamp-2">{course.description}</p>
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white">{course.title}</h3>
+          <p className="text-sm text-slate-600 dark:text-slate-300 mt-1 line-clamp-2">{course.description}</p>
         </div>
         <span
           className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
             isActive
               ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-              : 'bg-slate-100 text-slate-600 border border-slate-200'
+              : 'bg-slate-100 text-slate-600 dark:text-slate-300 border border-slate-200'
           }`}
         >
           {isActive ? 'Đang bán (ACTIVE)' : 'Đã ngưng bán (INACTIVE)'}
@@ -40,7 +40,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
       </div>
 
       <div className="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-slate-100">
-        <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+        <div className="bg-slate-50 dark:bg-slate-950 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800">
           <span className="text-[11px] text-slate-500 font-medium flex items-center gap-1">
             <DollarSign className="w-3 h-3 text-red-500" /> Học phí trọn gói
           </span>
@@ -49,7 +49,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
           </span>
         </div>
 
-        <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+        <div className="bg-slate-50 dark:bg-slate-950 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800">
           <span className="text-[11px] text-slate-500 font-medium flex items-center gap-1">
             <Calendar className="w-3 h-3 text-blue-500" /> Tổng số buổi
           </span>
@@ -58,7 +58,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
           </span>
         </div>
 
-        <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+        <div className="bg-slate-50 dark:bg-slate-950 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800">
           <span className="text-[11px] text-slate-500 font-medium flex items-center gap-1">
             <Clock className="w-3 h-3 text-amber-500" /> Thời hạn khóa
           </span>

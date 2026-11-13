@@ -12,13 +12,18 @@ import java.time.LocalDateTime;
 
 /**
  * Hiện thực chính sách hủy lịch dành cho Học viên (StudentCancellationPolicy).
- * Triển khai chính xác bảng quy tắc mục 3.11 trong tài liệu đặc tả dự án.
+ * Triển khai chính sách:
+ * - Khi ca PENDING: hoàn buổi, không đền bù.
+ * - Khi ca đã được PT duyệt (CONFIRMED):
+ *   + Hủy trước >= 24h: hoàn buổi vào hợp đồng nhưng đền bù 50% tiền buổi cho PT (phạt trừ ví học viên).
+ *   + Hủy sát giờ (< 24h): mất buổi tập, đền bù 100% tiền buổi học cho Huấn luyện viên.
  */
 @Component
 public class StudentCancellationPolicy extends BaseCancellationPolicy {
 
     public static final double ADVANCE_NOTICE_HOURS = 24.0;
-    public static final BigDecimal COMPENSATION_RATE = BigDecimal.valueOf(0.50); // 50%
+    public static final BigDecimal ADVANCE_COMPENSATION_RATE = BigDecimal.valueOf(0.50); // 50%
+    public static final BigDecimal LATE_COMPENSATION_RATE = BigDecimal.valueOf(1.00);    // 100%
 
     @Override
     public Role getSupportedRole() {
@@ -48,7 +53,7 @@ public class StudentCancellationPolicy extends BaseCancellationPolicy {
 
         BigDecimal hoursBefore = calculateHoursBefore(booking, cancelTime);
 
-        // 2. Ca tập còn đang chờ duyệt (PENDING): Luôn hoàn buổi, không phạt
+        // 2. Ca tập còn đang chờ duyệt (PENDING): Luôn hoàn buổi, không đền bù
         if (booking.getStatus() == BookingStatus.PENDING) {
             return CancellationCalculationResult.builder()
                     .restoreSession(true)
@@ -56,31 +61,34 @@ public class StudentCancellationPolicy extends BaseCancellationPolicy {
                     .compensationAmount(BigDecimal.ZERO)
                     .penaltyAmount(BigDecimal.ZERO)
                     .hoursBeforeSession(hoursBefore)
-                    .explanation("Học viên hủy ca tập khi đang chờ duyệt (PENDING). Hoàn trả 1 buổi tập vào hợp đồng.")
+                    .explanation("Học viên hủy ca tập khi đang chờ duyệt (PENDING). Hoàn trả 1 buổi tập vào hợp đồng, không phát sinh đền bù.")
                     .build();
         }
 
-        // 3. Ca tập đã CONFIRMED và hủy trước >= 24 giờ
+        // 3. Ca tập đã CONFIRMED (PT đã duyệt) và hủy trước >= 24 giờ
         if (hoursBefore.doubleValue() >= ADVANCE_NOTICE_HOURS) {
+            BigDecimal compensation = sessionFee.multiply(ADVANCE_COMPENSATION_RATE).setScale(2, RoundingMode.HALF_UP);
             return CancellationCalculationResult.builder()
                     .restoreSession(true)
                     .refundAmount(sessionFee)
-                    .compensationAmount(BigDecimal.ZERO)
-                    .penaltyAmount(BigDecimal.ZERO)
+                    .compensationAmount(compensation)
+                    .penaltyAmount(compensation)
                     .hoursBeforeSession(hoursBefore)
-                    .explanation("Học viên hủy trước giờ tập >= 24 giờ. Hoàn trả 1 buổi tập vào hợp đồng, không phát sinh chi phí.")
+                    .explanation("Học viên hủy ca tập đã được PT duyệt (trước >= 24 giờ). Hoàn lại 1 buổi tập vào hợp đồng và đền bù 50% ("
+                            + compensation.toBigInteger() + " ₫) cho Huấn luyện viên vì đã duyệt và giữ chỗ.")
                     .build();
         }
 
-        // 4. Ca tập đã CONFIRMED và hủy sát giờ (< 24 giờ)
-        BigDecimal compensation = sessionFee.multiply(COMPENSATION_RATE).setScale(2, RoundingMode.HALF_UP);
+        // 4. Ca tập đã CONFIRMED (PT đã duyệt) và hủy sát giờ (< 24 giờ)
+        BigDecimal compensation = sessionFee.multiply(LATE_COMPENSATION_RATE).setScale(2, RoundingMode.HALF_UP);
         return CancellationCalculationResult.builder()
                 .restoreSession(false)
                 .refundAmount(BigDecimal.ZERO)
                 .compensationAmount(compensation)
                 .penaltyAmount(BigDecimal.ZERO)
                 .hoursBeforeSession(hoursBefore)
-                .explanation("Học viên hủy sát giờ (< 24 giờ). Mất buổi tập, đền bù 50% học phí ca tập (" + compensation + " đ) vào ví Huấn luyện viên.")
+                .explanation("Học viên hủy ca tập đã được PT duyệt sát giờ (< 24 giờ). Học viên bị trừ mất buổi tập và đền bù 100% tiền buổi học ("
+                        + compensation.toBigInteger() + " ₫) vào ví Huấn luyện viên.")
                 .build();
     }
 }

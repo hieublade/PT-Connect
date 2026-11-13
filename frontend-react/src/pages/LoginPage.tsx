@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import api from '../lib/axios';
 import { User } from '../types/api';
-import { Dumbbell, ShieldCheck, UserCheck, AlertCircle } from 'lucide-react';
+import { Dumbbell, ShieldCheck, UserCheck, AlertCircle, Lock } from 'lucide-react';
 
 interface LoginPageProps {
   onLoginSuccess: (user: User, token: string) => void;
@@ -152,9 +152,28 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           </div>
 
           {error && (
-            <div className="mb-5 p-3 rounded-lg bg-red-50 border border-red-200/80 text-red-700 text-xs flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
-              <span>{error}</span>
+            <div
+              className={`mb-5 p-4 rounded-xl border flex items-start gap-3 shadow-sm transition-all ${
+                error.toLowerCase().includes('khóa')
+                  ? 'bg-rose-50 border-rose-300 text-rose-900'
+                  : 'bg-red-50 border-red-200 text-red-800'
+              }`}
+            >
+              {error.toLowerCase().includes('khóa') ? (
+                <Lock className="w-5 h-5 shrink-0 text-rose-600 mt-0.5" />
+              ) : (
+                <AlertCircle className="w-5 h-5 shrink-0 text-red-500 mt-0.5" />
+              )}
+              <div className="flex-1 text-xs">
+                <p className="font-bold text-sm">
+                  {error.toLowerCase().includes('khóa') ? 'Tài khoản đã bị tạm khóa' : 'Đăng nhập không thành công'}
+                </p>
+                <p className="mt-1 leading-relaxed text-xs">
+                  {error.toLowerCase().includes('khóa')
+                    ? 'Tài khoản của bạn đã bị khóa do vi phạm quy định hoặc chính sách hệ thống. Vui lòng liên hệ Quản trị viên (Admin) để được hỗ trợ xử lý.'
+                    : error}
+                </p>
+              </div>
             </div>
           )}
 

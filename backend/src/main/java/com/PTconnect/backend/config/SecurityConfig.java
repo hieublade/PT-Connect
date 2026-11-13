@@ -53,6 +53,12 @@ public class SecurityConfig {
                 "http://127.0.0.1:8501",
                 "http://localhost:3000",
                 "http://127.0.0.1:3000",
+                "http://localhost:5173",
+                "http://127.0.0.1:5173",
+                "http://localhost:5174",
+                "http://127.0.0.1:5174",
+                "http://localhost:4173",
+                "http://127.0.0.1:4173",
                 "http://localhost:8080"
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
@@ -71,13 +77,14 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         // 1. Endpoint cap nhat avatar va thong tin me bat buoc phai dang nhap (first-match)
-                        .requestMatchers("/api/v1/users/avatar", "/api/v1/auth/me").authenticated()
+                        .requestMatchers("/api/v1/users/avatar/**", "/api/v1/users/me/avatar/**", "/api/v1/auth/me").authenticated()
 
-                        // 2. Cac endpoint cong khai (Auth, Public Health)
+                        // 2. Cac endpoint cong khai (Auth, Public Health, Uploads)
                         .requestMatchers(
                                 "/api/v1/auth/register",
                                 "/api/v1/auth/login",
                                 "/api/v1/public/**",
+                                "/uploads/**",
                                 "/error"
                         ).permitAll()
 
@@ -96,7 +103,6 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
 
                         // 6. Milestone 5: Chuc nang Student, Wallet va Enrollment
-                        .requestMatchers("/api/v1/wallet/topup").hasRole("STUDENT")
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/enrollments").hasRole("STUDENT")
                         .requestMatchers("/api/v1/enrollments/my").hasRole("STUDENT")
                         .requestMatchers("/api/v1/wallet/**").authenticated()
@@ -108,7 +114,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/reviews/**").permitAll()
                         .requestMatchers("/api/v1/attendance/**").authenticated()
 
-                        // 8. Tat ca cac request con lai bat buoc phai dang nhap
+                        // 8. Chuc nang Chat truc tiep 1-1 giua HLV va Hoc vien
+                        .requestMatchers("/api/v1/chat/**").authenticated()
+
+                        // 9. Tat ca cac request con lai bat buoc phai dang nhap
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex

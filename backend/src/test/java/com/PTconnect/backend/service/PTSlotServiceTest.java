@@ -135,7 +135,7 @@ class PTSlotServiceTest {
 
         when(ptProfileService.getPTProfileEntity("pt@test.com")).thenReturn(profile);
         when(availabilitySlotRepository.findById(300L)).thenReturn(Optional.of(slot));
-        when(bookingRepository.findBySlotId(300L)).thenReturn(Optional.of(new Booking()));
+        when(bookingRepository.findBySlotId(300L)).thenReturn(List.of(Booking.builder().status(com.PTconnect.backend.entity.enums.BookingStatus.CONFIRMED).build()));
 
         assertThrows(IllegalArgumentException.class, () -> ptSlotService.deleteSlot("pt@test.com", 300L));
         verify(availabilitySlotRepository, never()).delete(any());
@@ -148,7 +148,7 @@ class PTSlotServiceTest {
 
         when(ptProfileService.getPTProfileEntity("pt@test.com")).thenReturn(profile);
         when(availabilitySlotRepository.findById(300L)).thenReturn(Optional.of(slot));
-        when(bookingRepository.findBySlotId(300L)).thenReturn(Optional.empty());
+        when(bookingRepository.findBySlotId(300L)).thenReturn(List.of());
 
         ptSlotService.deleteSlot("pt@test.com", 300L);
 

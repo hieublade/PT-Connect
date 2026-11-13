@@ -3,6 +3,7 @@ package com.PTconnect.backend.controller;
 import com.PTconnect.backend.dto.request.UpdateUserStatusRequest;
 import com.PTconnect.backend.dto.response.*;
 import com.PTconnect.backend.entity.enums.Role;
+import com.PTconnect.backend.entity.enums.VerificationStatus;
 import com.PTconnect.backend.service.IAdminPTService;
 import com.PTconnect.backend.service.IAdminStatisticsService;
 import com.PTconnect.backend.service.IUserService;
@@ -46,6 +47,13 @@ public class AdminController {
     public ResponseEntity<ApiResponse<List<PendingPTResponse>>> getPendingPTs() {
         List<PendingPTResponse> pendingList = adminPTService.getPendingPTs();
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách PT chờ duyệt thành công", pendingList));
+    }
+
+    @GetMapping("/pt")
+    public ResponseEntity<ApiResponse<List<PendingPTResponse>>> getAllPTs(
+            @RequestParam(required = false) VerificationStatus status) {
+        List<PendingPTResponse> list = adminPTService.getAllPTs(status);
+        return ResponseEntity.ok(ApiResponse.success("Lấy danh sách Huấn luyện viên thành công", list));
     }
 
     @PutMapping("/pt/{id}/approve")

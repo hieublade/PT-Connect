@@ -17,6 +17,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
+import com.PTconnect.backend.service.IWalletService;
 import java.util.List;
 
 /**
@@ -34,18 +36,21 @@ public class AttendanceServiceImpl implements IAttendanceService {
     private final UserRepository userRepository;
     private final PTProfileRepository ptProfileRepository;
     private final OtpUtil otpUtil;
+    private final IWalletService walletService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public StartAttendanceResponse startAttendance(String ptEmail, Long bookingId) {
-        PTProfile ptProfile = ptProfileRepository.findByPtEmail(ptEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hồ sơ Huấn luyện viên cho email: " + ptEmail));
-
+    public StartAttendanceResponse startAttendance(String callerEmail, Long bookingId) {
         Booking booking = bookingRepository.findByIdWithLock(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn đặt lịch với ID: " + bookingId));
 
-        if (!booking.getPt().getId().equals(ptProfile.getId())) {
-            throw new BadRequestException("Bạn không có quyền thao tác trên đơn đặt lịch của Huấn luyện viên khác");
+        boolean isPt = booking.getPt() != null && booking.getPt().getPt() != null
+                && callerEmail.equalsIgnoreCase(booking.getPt().getPt().getEmail());
+        boolean isStudent = booking.getStudent() != null
+                && callerEmail.equalsIgnoreCase(booking.getStudent().getEmail());
+
+        if (!isPt && !isStudent) {
+            throw new BadRequestException("Bạn không có quyền thao tác trên ca tập này");
         }
 
         if (booking.getStatus() != BookingStatus.CONFIRMED) {
@@ -55,8 +60,8 @@ public class AttendanceServiceImpl implements IAttendanceService {
         LocalDateTime now = LocalDateTime.now();
         AvailabilitySlot slot = booking.getSlot();
 
-        log.info("PT {} mở điểm danh ca #{}: Thời gian hệ thống = {}, Ca tập = {} -> {}",
-                ptEmail, bookingId, now,
+        log.info("User {} mở điểm danh ca #{}: Thời gian hệ thống = {}, Ca tập = {} -> {}",
+                callerEmail, bookingId, now,
                 slot != null ? slot.getStartTime() : "N/A",
                 slot != null ? slot.getEndTime() : "N/A");
 
@@ -97,7 +102,7 @@ public class AttendanceServiceImpl implements IAttendanceService {
         attendance.setStatus(status);
         attendance = attendanceRepository.save(attendance);
 
-        log.info("PT {} đã mở phiên điểm danh ca tập #{}, OTP: {}, Status: {}", ptEmail, bookingId, otpCode, status);
+        log.info("User {} đã mở phiên điểm danh ca tập #{}, OTP: {}, Status: {}", callerEmail, bookingId, otpCode, status);
 
         return StartAttendanceResponse.builder()
                 .attendanceId(attendance.getId())
@@ -106,21 +111,23 @@ public class AttendanceServiceImpl implements IAttendanceService {
                 .checkInTime(now)
                 .expiresAt(expiresAt)
                 .status(status)
-                .message("Đã mở phiên điểm danh thành công! Vui lòng cung cấp mã OTP 6 số này cho Học viên.")
+                .message("Đã mở phiên điểm danh thành công! Vui lòng cung cấp mã OTP 6 số này cho đối tác ca tập.")
                 .build();
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public AttendanceResponse studentCheckIn(String studentEmail, Long bookingId, StudentCheckInRequest request) {
-        User student = userRepository.findByEmail(studentEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy học viên với email: " + studentEmail));
-
+    public AttendanceResponse studentCheckIn(String callerEmail, Long bookingId, StudentCheckInRequest request) {
         Booking booking = bookingRepository.findByIdWithLock(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn đặt lịch với ID: " + bookingId));
 
-        if (!booking.getStudent().getId().equals(student.getId())) {
-            throw new BadRequestException("Bạn không có quyền điểm danh cho đơn đặt lịch của học viên khác");
+        boolean isPt = booking.getPt() != null && booking.getPt().getPt() != null
+                && callerEmail.equalsIgnoreCase(booking.getPt().getPt().getEmail());
+        boolean isStudent = booking.getStudent() != null
+                && callerEmail.equalsIgnoreCase(booking.getStudent().getEmail());
+
+        if (!isPt && !isStudent) {
+            throw new BadRequestException("Bạn không có quyền thao tác trên ca tập này");
         }
 
         if (booking.getStatus() != BookingStatus.CONFIRMED) {
@@ -128,26 +135,29 @@ public class AttendanceServiceImpl implements IAttendanceService {
         }
 
         Attendance attendance = attendanceRepository.findByBookingId(bookingId)
-                .orElseThrow(() -> new BadRequestException("Huấn luyện viên chưa mở phiên điểm danh cho ca tập này. Vui lòng yêu cầu HLV bấm bắt đầu buổi tập."));
-
-        if (Boolean.TRUE.equals(attendance.getStudentConfirmed())) {
-            throw new BadRequestException("Bạn đã xác nhận điểm danh cho ca tập này rồi");
-        }
+                .orElseGet(() -> {
+                    Attendance newAtt = Attendance.builder()
+                            .booking(booking)
+                            .verificationMethod(VerificationMethod.OTP)
+                            .studentConfirmed(false)
+                            .ptConfirmed(false)
+                            .checkInTime(LocalDateTime.now())
+                            .status(AttendanceStatus.PRESENT)
+                            .build();
+                    return attendanceRepository.save(newAtt);
+                });
 
         // Kiểm tra mã OTP
         if (!otpUtil.validateOtp(bookingId, request.getOtpCode())) {
-            throw new BadRequestException("Mã OTP không chính xác hoặc đã hết thời gian hiệu lực. Vui lòng kiểm tra lại với Huấn luyện viên!");
+            throw new BadRequestException("Mã OTP không chính xác hoặc đã hết thời gian hiệu lực. Vui lòng kiểm tra lại!");
         }
 
         attendance.setStudentConfirmed(true);
-
-        // Nếu cả hai phía đã xác nhận -> Hoàn tất ca tập sang COMPLETED
-        if (Boolean.TRUE.equals(attendance.getPtConfirmed())) {
-            completeSession(booking, attendance);
-        }
+        attendance.setPtConfirmed(true);
+        completeSession(booking, attendance);
 
         attendance = attendanceRepository.save(attendance);
-        log.info("Học viên {} đã xác nhận điểm danh ca #{}, Fully confirmed: {}", studentEmail, bookingId, attendance.isFullyConfirmed());
+        log.info("Người dùng {} đã xác nhận điểm danh ca #{}, Fully confirmed: {}", callerEmail, bookingId, attendance.isFullyConfirmed());
 
         return AttendanceResponse.fromEntity(attendance);
     }
@@ -252,6 +262,21 @@ public class AttendanceServiceImpl implements IAttendanceService {
 
         // Dọn dẹp mã OTP sau khi hoàn tất
         otpUtil.clearOtp(booking.getId());
+
+        // Trả thù lao ca tập vào ví của PT (nếu là gói có phí)
+        if (booking.getBookingType() == BookingType.PACKAGE
+                && booking.getSessionFee() != null
+                && booking.getSessionFee().compareTo(BigDecimal.ZERO) > 0
+                && booking.getPt() != null
+                && booking.getPt().getPt() != null) {
+            try {
+                Long ptUserId = booking.getPt().getPt().getId();
+                walletService.processSessionPayout(ptUserId, booking.getEnrollment(), booking.getSessionFee());
+                log.info("Đã tự động cộng thù lao {} VNĐ vào ví cho PT user ID {}", booking.getSessionFee(), ptUserId);
+            } catch (Exception e) {
+                log.error("Lỗi khi cộng thù lao ca tập cho PT: {}", e.getMessage());
+            }
+        }
 
         // Kiểm tra hợp đồng khóa học: nếu đã hết buổi và không còn booking nào đang PENDING/CONFIRMED -> COMPLETED
         if (booking.getBookingType() == BookingType.PACKAGE && booking.getEnrollment() != null) {

@@ -87,12 +87,20 @@ public class PTSlotServiceImpl implements IPTSlotService {
             throw new UnauthorizedException("Bạn không có quyền xóa khung giờ của Huấn luyện viên khác");
         }
 
-        if (bookingRepository.findBySlotId(slotId).isPresent()) {
-            throw new IllegalArgumentException("Không thể xóa khung giờ đã có học viên đặt lịch");
+        List<com.PTconnect.backend.entity.Booking> existingBookings = bookingRepository.findBySlotId(slotId);
+        boolean hasActiveBooking = existingBookings.stream()
+                .anyMatch(b -> b.getStatus() == com.PTconnect.backend.entity.enums.BookingStatus.PENDING 
+                            || b.getStatus() == com.PTconnect.backend.entity.enums.BookingStatus.CONFIRMED);
+        if (hasActiveBooking) {
+            throw new IllegalArgumentException("Không thể xóa khung giờ đang có học viên đặt lịch hoặc chờ duyệt");
         }
 
         if (slot.getStatus() != SlotStatus.AVAILABLE) {
             throw new IllegalArgumentException("Chỉ có thể xóa khung giờ đang ở trạng thái AVAILABLE");
+        }
+
+        if (!existingBookings.isEmpty()) {
+            bookingRepository.deleteAll(existingBookings);
         }
 
         availabilitySlotRepository.delete(slot);

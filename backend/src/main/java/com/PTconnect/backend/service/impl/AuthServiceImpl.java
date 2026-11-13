@@ -85,7 +85,7 @@ public class AuthServiceImpl implements IAuthService {
         }
 
         if (user.getStatus() == UserStatus.SUSPENDED) {
-            throw new UnauthorizedException("Tài khoản của bạn hiện đang bị tạm khóa");
+            throw new UnauthorizedException("Tài khoản của bạn đã bị khóa do vi phạm quy định hoặc chính sách hệ thống. Vui lòng liên hệ Quản trị viên (Admin) để được hỗ trợ xử lý.");
         }
 
         String token = jwtUtil.generateToken(user);

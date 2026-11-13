@@ -2,17 +2,15 @@ server:
   port: 8080
 
 spring:
-  application:
-    name: pt-connect-backend
   datasource:
     url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:ptconnect}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Ho_Chi_Minh
-    username: ${DB_USER:ptuser}
-    password: ${DB_PASSWORD:ptpassword}
+    username: root
+    password: 123
   jpa:
     hibernate:
-      ddl-auto: none      # schema do init.sql tạo, Hibernate không tự sửa
+      ddl-auto: update      # Tự động cập nhật bảng mới như chat_messages nếu chưa có
     open-in-view: false
 
 jwt:
   secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
-  expiration: ${JWT_EXPIRATION:86400000} # 24 gio
+  expiration: ${JWT_EXPIRATION:86400000} # 24 gio

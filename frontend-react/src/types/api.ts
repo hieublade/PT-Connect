@@ -112,6 +112,8 @@ export interface PaymentTransaction {
 export interface Wallet {
   id: number;
   userId: number;
+  ownerName?: string;
+  ownerEmail?: string;
   balance: number;
   lockedBalance: number;
   currency: string;
@@ -138,3 +140,138 @@ export interface Enrollment {
   status: 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
   createdAt?: string;
 }
+
+export interface Workout {
+  id: number;
+  planId: number;
+  exerciseName: string;
+  targetMuscle?: string;
+  sets: number;
+  reps: number;
+  weightKg?: number;
+  restSeconds: number;
+  videoDemoUrl?: string;
+}
+
+export interface WorkoutPlan {
+  id: number;
+  enrollmentId: number;
+  ptId?: number;
+  ptName?: string;
+  studentName?: string;
+  courseName?: string;
+  title: string;
+  goal?: string;
+  startDate?: string;
+  endDate?: string;
+  createdAt?: string;
+  workouts?: Workout[];
+}
+
+
+export interface WithdrawPayload {
+  amount: number;
+  bankName: string;
+  accountNumber: string;
+  accountHolderName: string;
+}
+
+
+export interface AdminStatistics {
+  totalStudents: number;
+  totalPts: number;
+  totalBookings: number;
+  totalRevenue: number;
+}
+
+export interface AdminBookingAnalytics {
+  id: number;
+  studentId: number;
+  studentName: string;
+  ptId: number;
+  ptName: string;
+  bookingType: 'PACKAGE' | 'TRIAL';
+  status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
+  startTime: string;
+  endTime: string;
+  sessionFee?: number;
+  createdAt: string;
+  cancelledBy?: string;
+  cancellationReason?: string;
+}
+
+export interface AdminPaymentAnalytics {
+  id: number;
+  walletId?: number;
+  userId?: number;
+  userName?: string;
+  enrollmentId?: number;
+  amount: number;
+  paymentType: string;
+  paymentMethod: string;
+  status: string;
+  transactionRef?: string;
+  createdAt: string;
+}
+
+export interface ChatMessage {
+  id: number;
+  senderId: number;
+  senderName: string;
+  senderAvatar?: string;
+  recipientId: number;
+  recipientName: string;
+  recipientAvatar?: string;
+  content: string;
+  isRead: boolean;
+  bookingId?: number;
+  createdAt: string;
+}
+
+export interface ChatConversation {
+  partnerId: number;
+  partnerName: string;
+  partnerEmail: string;
+  partnerAvatar?: string;
+  partnerRole: string;
+  lastMessage: string;
+  lastMessageTime?: string;
+  unreadCount: number;
+}
+
+export interface DisputeCase {
+  id: number;
+  bookingId: number;
+  studentName: string;
+  studentEmail: string;
+  studentPhone: string;
+  ptName: string;
+  ptEmail: string;
+  courseTitle: string;
+  sessionFee: number;
+  scheduledTime: string;
+  disputeType: string;
+  disputeTypeLabel: string;
+  severity: 'HIGH' | 'MEDIUM' | 'LOW';
+  complainant: 'STUDENT' | 'PT';
+  summary: string;
+  studentStatement: string;
+  ptStatement: string;
+  counterStatement?: string;
+  evidenceNote: string;
+  status: string;
+  resolutionDecision?: string;
+  resolvedAt?: string;
+  createdAt?: string;
+}
+
+export interface CreateDisputePayload {
+  bookingId: number;
+  disputeType: string;
+  disputeTypeLabel?: string;
+  severity?: 'HIGH' | 'MEDIUM' | 'LOW';
+  statement: string;
+  evidenceNote?: string;
+}
+
+

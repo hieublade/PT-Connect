@@ -4,6 +4,7 @@ import { LoginPage } from './pages/LoginPage';
 import { StudentPage } from './pages/StudentPage';
 import { PtPage } from './pages/PtPage';
 import { AdminPage } from './pages/AdminPage';
+import { FloatingChatWidget } from './components/FloatingChatWidget';
 
 export const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -32,11 +33,29 @@ export const App: React.FC = () => {
   }
 
   if (currentUser.role === 'STUDENT') {
-    return <StudentPage user={currentUser} onLogout={handleLogout} />;
+    return (
+      <>
+        <StudentPage
+          user={currentUser}
+          onLogout={handleLogout}
+          onUserUpdated={(u) => setCurrentUser(u)}
+        />
+        <FloatingChatWidget currentUser={currentUser} />
+      </>
+    );
   }
 
   if (currentUser.role === 'PT') {
-    return <PtPage user={currentUser} onLogout={handleLogout} />;
+    return (
+      <>
+        <PtPage
+          user={currentUser}
+          onLogout={handleLogout}
+          onUserUpdated={(u) => setCurrentUser(u)}
+        />
+        <FloatingChatWidget currentUser={currentUser} />
+      </>
+    );
   }
 
   if (currentUser.role === 'ADMIN') {

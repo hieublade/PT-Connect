@@ -1,6 +1,7 @@
 package com.PTconnect.backend.service.impl;
 
 import com.PTconnect.backend.dto.request.TopupRequest;
+import com.PTconnect.backend.dto.request.WithdrawRequest;
 import com.PTconnect.backend.dto.response.PaymentResponse;
 import com.PTconnect.backend.dto.response.WalletResponse;
 import com.PTconnect.backend.entity.Enrollment;
@@ -94,6 +95,50 @@ public class WalletServiceImpl implements IWalletService {
 
         Payment savedPayment = paymentRepository.save(payment);
         log.info("Nạp tiền ví thành công cho user: {}, số tiền: {}, txnRef: {}", userEmail, request.getAmount(), txnRef);
+
+        return PaymentResponse.fromEntity(savedPayment);
+    }
+
+    @Override
+    @Transactional
+    public PaymentResponse withdraw(String userEmail, WithdrawRequest request) {
+        if (request.getAmount() == null || request.getAmount().compareTo(new BigDecimal("50000")) < 0) {
+            throw new BadRequestException("Số tiền rút tối thiểu là 50.000 VNĐ");
+        }
+
+        User user = getUserByEmail(userEmail);
+        Wallet wallet = walletRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ví của người dùng"));
+
+        if (wallet.getStatus() != WalletStatus.ACTIVE) {
+            throw new BadRequestException("Ví của bạn đang bị khóa, không thể rút tiền");
+        }
+
+        BigDecimal availableBalance = wallet.getBalance().subtract(wallet.getLockedBalance());
+        if (request.getAmount().compareTo(availableBalance) > 0) {
+            throw new InsufficientBalanceException("Số dư khả dụng không đủ để rút tiền (Khả dụng: "
+                    + availableBalance.stripTrailingZeros().toPlainString() + " ₫)");
+        }
+
+        wallet.debit(request.getAmount());
+        walletRepository.save(wallet);
+
+        String datePrefix = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String shortId = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        String txnRef = "TXN_WD_" + datePrefix + "_" + shortId;
+
+        Payment payment = Payment.builder()
+                .wallet(wallet)
+                .amount(request.getAmount())
+                .paymentType(PaymentType.WITHDRAW)
+                .paymentMethod(PaymentMethod.BANK_TRANSFER)
+                .status(PaymentStatus.SUCCESS)
+                .transactionRef(txnRef)
+                .build();
+
+        Payment savedPayment = paymentRepository.save(payment);
+        log.info("Rút tiền thành công: user={}, số tiền={}, bank={}, acc={}, txnRef={}",
+                userEmail, request.getAmount(), request.getBankName(), request.getAccountNumber(), txnRef);
 
         return PaymentResponse.fromEntity(savedPayment);
     }
@@ -204,6 +249,41 @@ public class WalletServiceImpl implements IWalletService {
 
         Payment savedPayment = paymentRepository.save(payment);
         log.info("Đã trừ phạt {} từ ví user ID {}, txnRef: {}", amount, userId, txnRef);
+        return savedPayment;
+    }
+
+    @Override
+    @Transactional
+    public Payment processSessionPayout(Long ptUserId, Enrollment enrollment, BigDecimal amount) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            return null;
+        }
+
+        Wallet wallet = walletRepository.findByUserId(ptUserId).orElse(null);
+        if (wallet == null) {
+            log.warn("Không tìm thấy ví của PT ID {} để trả thù lao ca tập", ptUserId);
+            return null;
+        }
+
+        wallet.credit(amount);
+        walletRepository.save(wallet);
+
+        String datePrefix = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String shortId = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        String txnRef = "TXN_EARN_" + datePrefix + "_" + shortId;
+
+        Payment payment = Payment.builder()
+                .wallet(wallet)
+                .enrollment(enrollment)
+                .amount(amount)
+                .paymentType(PaymentType.EARNING)
+                .paymentMethod(PaymentMethod.WALLET)
+                .status(PaymentStatus.SUCCESS)
+                .transactionRef(txnRef)
+                .build();
+
+        Payment savedPayment = paymentRepository.save(payment);
+        log.info("Đã thanh toán thù lao {} vào ví PT ID {}, txnRef: {}", amount, ptUserId, txnRef);
         return savedPayment;
     }
 

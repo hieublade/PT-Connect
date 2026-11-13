@@ -14,5 +14,7 @@ public interface IPTCourseService {
 
     CourseResponse updateCourse(String userEmail, Long courseId, UpdateCourseRequest request);
 
+    CourseResponse toggleCourseStatus(String userEmail, Long courseId);
+
     void deleteCourse(String userEmail, Long courseId);
 }

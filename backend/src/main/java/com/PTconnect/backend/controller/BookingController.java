@@ -61,7 +61,7 @@ public class BookingController {
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách đơn đặt lịch thành công", bookings));
     }
 
-    @PutMapping("/api/v1/pt/bookings/{id}/confirm")
+    @RequestMapping(value = {"/api/v1/pt/bookings/{id}/confirm", "/api/v1/pt/bookings/{id}/approve"}, method = {RequestMethod.PUT, RequestMethod.POST})
     public ResponseEntity<ApiResponse<BookingResponse>> confirmBooking(
             Authentication authentication,
             @PathVariable Long id) {
@@ -70,7 +70,7 @@ public class BookingController {
         return ResponseEntity.ok(ApiResponse.success("Xác nhận ca tập thành công", response));
     }
 
-    @PutMapping("/api/v1/pt/bookings/{id}/reject")
+    @RequestMapping(value = "/api/v1/pt/bookings/{id}/reject", method = {RequestMethod.PUT, RequestMethod.POST})
     public ResponseEntity<ApiResponse<BookingResponse>> rejectBooking(
             Authentication authentication,
             @PathVariable Long id,
