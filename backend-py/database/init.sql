@@ -228,7 +228,7 @@ CREATE TABLE `payments` (
 
 CREATE TABLE `booking_disputes` (
   `id` bigint PRIMARY KEY AUTO_INCREMENT,
-  `booking_id` bigint NOT NULL,
+  `booking_id` bigint UNIQUE NOT NULL,
   `sender_id` bigint NOT NULL,
   `sender_role` ENUM ('STUDENT', 'PT') NOT NULL,
   `dispute_type` ENUM ('WRONG_ABSENT', 'PT_NO_SHOW', 'STUDENT_NO_SHOW', 'ATTITUDE_QUALITY', 'CONTRACT_TERMINATION', 'OTHER') NOT NULL DEFAULT 'WRONG_ABSENT',
