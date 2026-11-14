@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
@@ -51,7 +52,14 @@ public class PTSlotServiceImpl implements IPTSlotService {
         List<AvailabilitySlot> overlapping = availabilitySlotRepository.findOverlapping(
                 profile.getId(), request.getStartTime(), request.getEndTime(), null);
         if (!overlapping.isEmpty()) {
-            throw new IllegalArgumentException("Khung giờ bị trùng hoặc chồng lấn với lịch rảnh khác của bạn");
+            AvailabilitySlot first = overlapping.get(0);
+            DateTimeFormatter tf = DateTimeFormatter.ofPattern("HH:mm");
+            DateTimeFormatter df = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+            String conflictTime = first.getStartTime().format(tf) + " - " + first.getEndTime().format(tf);
+            String statusNote = first.getStatus() == SlotStatus.BOOKED ? "Đã có học viên đặt" : "Đang mở rảnh";
+            throw new IllegalArgumentException(String.format(
+                    "Khung giờ này bị chồng lấn (trùng thời gian) với ca [%s ngày %s] (%s). Vui lòng chọn khung giờ khác!",
+                    conflictTime, first.getStartTime().format(df), statusNote));
         }
 
         AvailabilitySlot slot = AvailabilitySlot.builder()

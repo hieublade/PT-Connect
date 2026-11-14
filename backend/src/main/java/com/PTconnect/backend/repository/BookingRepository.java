@@ -44,6 +44,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     boolean existsByEnrollmentIdAndStatusIn(Long enrollmentId, List<BookingStatus> statuses);
 
+    List<Booking> findByEnrollmentId(Long enrollmentId);
+
     // Kiểm tra trùng giờ tập của Student
     @Query("SELECT COUNT(b) > 0 FROM Booking b " +
            "WHERE b.student.id = :studentId " +

@@ -241,7 +241,9 @@ export interface ChatConversation {
 
 export interface DisputeCase {
   id: number;
-  bookingId: number;
+  bookingId?: number;
+  enrollmentId?: number;
+  isContractDispute?: boolean;
   studentName: string;
   studentEmail: string;
   studentPhone: string;
@@ -259,14 +261,29 @@ export interface DisputeCase {
   ptStatement: string;
   counterStatement?: string;
   evidenceNote: string;
+  evidenceRequested?: boolean;
+  evidenceRequestTarget?: 'BOTH' | 'PT' | 'STUDENT';
+  evidenceRequestNote?: string;
+  additionalEvidencePt?: string;
+  additionalEvidenceStudent?: string;
+  studentEvidenceSubmitted?: boolean;
+  ptEvidenceSubmitted?: boolean;
   status: string;
+  verdictType?: string;
   resolutionDecision?: string;
+  verdictReason?: string;
   resolvedAt?: string;
   createdAt?: string;
+  counterDeadline?: string;
+  canAdminArbitrate?: boolean;
+  waitingReason?: string;
+  hoursRemaining?: number;
+  minutesRemaining?: number;
 }
 
 export interface CreateDisputePayload {
-  bookingId: number;
+  bookingId?: number;
+  enrollmentId?: number;
   disputeType: string;
   disputeTypeLabel?: string;
   severity?: 'HIGH' | 'MEDIUM' | 'LOW';

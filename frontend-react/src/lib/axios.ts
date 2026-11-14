@@ -12,6 +12,11 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  // Nếu dữ liệu gửi là FormData, xóa Content-Type mặc định application/json
+  // để trình duyệt tự động đính kèm multipart/form-data cùng boundary chính xác
+  if (config.data instanceof FormData && config.headers) {
+    delete config.headers['Content-Type'];
+  }
   return config;
 });
 

@@ -11,11 +11,12 @@ import lombok.*;
 @Builder
 public class CreateDisputeRequest {
 
-    @NotNull(message = "Mã ca tập (bookingId) không được để trống")
     private Long bookingId;
 
+    private Long enrollmentId;
+
     @NotBlank(message = "Loại khiếu nại không được để trống")
-    private String disputeType; // PT_ABSENT, LATE_CANCEL_STUDENT, OTP_PREMATURE, QUALITY_ISSUE, OTHER
+    private String disputeType; // PT_ABSENT, LATE_CANCEL_STUDENT, OTP_PREMATURE, QUALITY_ISSUE, CONTRACT_TERMINATION, OTHER
 
     private String disputeTypeLabel;
 

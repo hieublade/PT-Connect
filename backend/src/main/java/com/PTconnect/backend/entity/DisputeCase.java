@@ -24,8 +24,12 @@ public class DisputeCase {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "booking_id", nullable = false)
+    @JoinColumn(name = "booking_id")
     private Booking booking;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "enrollment_id")
+    private Enrollment enrollment;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "complainant_id", nullable = false)
@@ -40,7 +44,7 @@ public class DisputeCase {
     private User defendant;
 
     @Column(name = "dispute_type", nullable = false)
-    private String disputeType; // PT_ABSENT, LATE_CANCEL_STUDENT, OTP_PREMATURE, QUALITY_ISSUE, OTHER
+    private String disputeType; // PT_ABSENT, LATE_CANCEL_STUDENT, OTP_PREMATURE, QUALITY_ISSUE, CONTRACT_TERMINATION, OTHER
 
     @Column(name = "dispute_type_label", nullable = false)
     private String disputeTypeLabel;
@@ -60,17 +64,41 @@ public class DisputeCase {
     @Column(name = "evidence_note", columnDefinition = "TEXT")
     private String evidenceNote;
 
+    @Column(name = "evidence_requested")
+    private Boolean evidenceRequested;
+
+    @Column(name = "evidence_request_target")
+    private String evidenceRequestTarget; // BOTH, PT, STUDENT
+
+    @Column(name = "evidence_request_note", columnDefinition = "TEXT")
+    private String evidenceRequestNote;
+
+    @Column(name = "additional_evidence_pt", columnDefinition = "TEXT")
+    private String additionalEvidencePt;
+
+    @Column(name = "additional_evidence_student", columnDefinition = "TEXT")
+    private String additionalEvidenceStudent;
+
+    @Column(name = "student_evidence_submitted")
+    private Boolean studentEvidenceSubmitted;
+
+    @Column(name = "pt_evidence_submitted")
+    private Boolean ptEvidenceSubmitted;
+
     @Column(name = "session_fee")
     private BigDecimal sessionFee;
 
     @Column(name = "status", nullable = false)
-    private String status; // PENDING_ARBITRATION, RESOLVED_REFUND_STUDENT, RESOLVED_PAID_PT, RESOLVED_FORCE_MAJEURE
+    private String status; // PENDING_ARBITRATION, AWAITING_EVIDENCE, RESOLVED_REFUND_STUDENT, RESOLVED_PAID_PT, RESOLVED_FORCE_MAJEURE, RESOLVED_CONTRACT_TERMINATION
 
     @Column(name = "verdict_type")
-    private String verdictType; // REFUND_STUDENT, PAID_PT, FORCE_MAJEURE
+    private String verdictType; // REFUND_STUDENT, PAID_PT, FORCE_MAJEURE, CANCEL_CONTRACT_REFUND_STUDENT, CANCEL_CONTRACT_PAID_PT
 
     @Column(name = "resolution_decision", columnDefinition = "TEXT")
     private String resolutionDecision;
+
+    @Column(name = "verdict_reason", columnDefinition = "TEXT")
+    private String verdictReason;
 
     @Column(name = "resolved_at")
     private LocalDateTime resolvedAt;

@@ -26,6 +26,7 @@ const cleanOne = (raw: unknown): string | null => {
 export const resolveCertificateUrl = (src?: CertSource | null): string | null =>
   src ? cleanOne(src.certificateUrl) ?? cleanOne(src.certificateUrls) : null;
 
-export const isHttpUrl = (s?: string | null): boolean => !!s && /^https?:\/\//i.test(s.trim());
+export const isHttpUrl = (s?: string | null): boolean =>
+  !!s && (/^https?:\/\//i.test(s.trim()) || s.trim().startsWith('/') || s.trim().startsWith('data:image/') || s.trim().startsWith('blob:'));
 
 export const CERT_URL_MAX = 500;

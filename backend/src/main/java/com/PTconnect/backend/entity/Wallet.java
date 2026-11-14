@@ -48,6 +48,14 @@ public class Wallet {
     @Column(name = "updated_at", insertable = false, updatable = false)
     private LocalDateTime updatedAt;
 
+    public void setBalance(BigDecimal balance) {
+        this.balance = balance != null ? balance : BigDecimal.ZERO;
+    }
+
+    public void setLockedBalance(BigDecimal lockedBalance) {
+        this.lockedBalance = lockedBalance != null ? lockedBalance : BigDecimal.ZERO;
+    }
+
     // Đóng gói: quy tắc nghiệp vụ nằm trong Entity
     public void credit(BigDecimal amount) {
         checkUsable(amount);

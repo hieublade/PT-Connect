@@ -81,6 +81,10 @@ public class Booking {
         return this.enrollment != null ? this.enrollment.getTrainingLocation() : null;
     }
 
+    public void setStatus(BookingStatus status) {
+        this.status = status;
+    }
+
     // Phương thức nghiệp vụ tự bảo vệ trạng thái (Encapsulation / State Transition)
     public void confirm() {
         if (this.status != BookingStatus.PENDING) {

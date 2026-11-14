@@ -3,6 +3,7 @@ import api from '../lib/axios';
 import { PtProfile, Course, AvailabilitySlot, Booking, Wallet, Enrollment, User, WorkoutPlan, DisputeCase } from '../types/api';
 import { PtCard } from '../components/PtCard';
 import { getAvatarUrl } from '../lib/avatar';
+import { parseEvidence, EvidenceAttachmentList, compressImageToDataUrl, MultiImageUploader, SelectedEvidenceFile, uploadMultipleEvidenceFiles, isEvidenceSubmitted } from '../lib/evidence';
 import { ReviewList } from '../components/ReviewList';
 import { ReviewModal } from '../components/ReviewModal';
 import { CourseCard } from '../components/CourseCard';
@@ -43,6 +44,10 @@ import {
   ArrowUpDown,
   ShieldAlert,
   Send,
+  Upload,
+  AlertTriangle,
+  Sun,
+  Moon,
 } from 'lucide-react';
 
 interface StudentPageProps {
@@ -53,6 +58,26 @@ interface StudentPageProps {
 
 export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout, onUserUpdated }) => {
   const [activeTab, setActiveTab] = useState<number>(0);
+
+  // Giao diện Sáng / Tối (Theme Mode)
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    return (localStorage.getItem('student_theme') as 'dark' | 'light') || 'light';
+  });
+  const isDark = theme === 'dark';
+  const toggleTheme = () => {
+    const next = isDark ? 'light' : 'dark';
+    setTheme(next);
+    localStorage.setItem('student_theme', next);
+  };
+
+  useEffect(() => {
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDark]);
+
   const [viewingPlansEnrollment, setViewingPlansEnrollment] = useState<Enrollment | null>(null);
   const [enrollmentPlans, setEnrollmentPlans] = useState<WorkoutPlan[]>([]);
   const [loadingPlans, setLoadingPlans] = useState(false);
@@ -383,15 +408,20 @@ export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout, onUser
     }
   };
 
+  // Evidence preview modal
+  const [previewEvidenceImage, setPreviewEvidenceImage] = useState<{ name: string; url: string } | null>(null);
+
   // Counter Statement Modal (Học viên phản biện)
   const [counterDisputeModal, setCounterDisputeModal] = useState<DisputeCase | null>(null);
   const [counterStatementText, setCounterStatementText] = useState('');
+  const [counterFiles, setCounterFiles] = useState<SelectedEvidenceFile[]>([]);
   const [submittingCounter, setSubmittingCounter] = useState(false);
   const [counterError, setCounterError] = useState<string | null>(null);
 
   const handleOpenCounterModal = (d: DisputeCase) => {
     setCounterDisputeModal(d);
     setCounterStatementText('');
+    setCounterFiles([]);
     setCounterError(null);
   };
 
@@ -405,16 +435,139 @@ export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout, onUser
     setSubmittingCounter(true);
     setCounterError(null);
     try {
+      let finalStatement = counterStatementText.trim();
+      if (counterFiles.length > 0) {
+        const urls = await uploadMultipleEvidenceFiles(counterFiles, api.post);
+        if (urls.length > 0) {
+          const tags = urls.map(u => u.startsWith('http') || u.startsWith('/') || u.startsWith('data:') ? u : `[Ảnh đối chứng: ${u}]`).join(' | ');
+          finalStatement += ` | ${tags}`;
+        }
+      }
+
       await api.post(`/disputes/${counterDisputeModal.id}/counter-statement`, {
-        counterStatement: counterStatementText.trim(),
+        counterStatement: finalStatement,
       });
       showToast('✓ Đã gửi bản phản biện đối chứng lên Ban Quản Trị thành công!');
       setCounterDisputeModal(null);
       fetchMyDisputes();
     } catch (err: any) {
-      setCounterError(err.response?.data?.message || err.message || 'Không thể gửi phản biện lúc này.');
+      const errMsg = err.response?.data?.message || err.message || '';
+      if (errMsg.includes('No static resource') || err.response?.status === 404) {
+        setCounterError('⚠️ Máy chủ Backend chưa nạp endpoint phản biện mới. Vui lòng bấm Restart / Rerun ứng dụng Spring Boot trên IDE (IntelliJ/Eclipse) để kích hoạt.');
+      } else {
+        setCounterError(errMsg || 'Không thể gửi phản biện lúc này.');
+      }
     } finally {
       setSubmittingCounter(false);
+    }
+  };
+
+  // Contract Cancellation Dispute Modal (Học viên khiếu nại hủy hợp đồng)
+  const [contractDisputeModal, setContractDisputeModal] = useState<any | null>(null);
+  const [contractDisputeReason, setContractDisputeReason] = useState('PT_UNAVAILABLE');
+  const [contractDisputeStatement, setContractDisputeStatement] = useState('');
+  const [contractDisputeFiles, setContractDisputeFiles] = useState<SelectedEvidenceFile[]>([]);
+  const [contractDisputeSubmitting, setContractDisputeSubmitting] = useState(false);
+  const [contractDisputeError, setContractDisputeError] = useState<string | null>(null);
+
+  const contractDisputeReasonOptions = [
+    { value: 'PT_UNAVAILABLE', label: 'HLV liên tục không xếp được lịch tập / Hủy hẹn nhiều lần' },
+    { value: 'QUALITY_BREACH', label: 'HLV không thực hiện đúng cam kết giáo án / Thiếu chuyên môn' },
+    { value: 'ETHICS_VIOLATION', label: 'HLV có thái độ thô lỗ / Vi phạm quy tắc đạo đức nghề nghiệp' },
+    { value: 'FORCE_MAJEURE_HEALTH', label: 'Sự cố y tế / Chấn thương / Chuyển nơi ở bất khả kháng' },
+    { value: 'OTHER_CONTRACT', label: 'Lý do chính đáng khác (Yêu cầu thanh lý hợp đồng)' },
+  ];
+
+  const handleOpenContractDispute = (en: any) => {
+    setContractDisputeModal(en);
+    setContractDisputeReason('PT_UNAVAILABLE');
+    setContractDisputeStatement('');
+    setContractDisputeFiles([]);
+    setContractDisputeError(null);
+  };
+
+  const handleSubmitContractDispute = async () => {
+    if (!contractDisputeModal) return;
+    if (!contractDisputeStatement.trim()) {
+      setContractDisputeError('Vui lòng nêu rõ lý do bạn yêu cầu hủy hợp đồng khóa học.');
+      return;
+    }
+    setContractDisputeSubmitting(true);
+    setContractDisputeError(null);
+    try {
+      let finalEvidence = '';
+      if (contractDisputeFiles.length > 0) {
+        const urls = await uploadMultipleEvidenceFiles(contractDisputeFiles, api.post);
+        if (urls.length > 0) {
+          finalEvidence = urls.join(' | ');
+        }
+      }
+
+      const sel = contractDisputeReasonOptions.find(r => r.value === contractDisputeReason);
+      await api.post('/disputes', {
+        enrollmentId: contractDisputeModal.id,
+        disputeType: 'CONTRACT_TERMINATION',
+        disputeTypeLabel: `Yêu cầu hủy hợp đồng: ${sel?.label || 'Chấm dứt hợp đồng'}`,
+        severity: 'HIGH',
+        statement: contractDisputeStatement.trim(),
+        evidenceNote: finalEvidence || undefined,
+      });
+
+      showToast('✓ Đã gửi hồ sơ khiếu nại hủy hợp đồng lên Ban Quản Trị thành công!');
+      setContractDisputeModal(null);
+      fetchMyDisputes();
+      setActiveTab(7); // Switch to disputes tab
+    } catch (err: any) {
+      setContractDisputeError(err.response?.data?.message || err.message || 'Lỗi khi gửi yêu cầu hủy hợp đồng.');
+    } finally {
+      setContractDisputeSubmitting(false);
+    }
+  };
+
+  // Additional Evidence Modal (Nộp thêm bằng chứng theo yêu cầu của Admin)
+  const [additionalEvidenceModal, setAdditionalEvidenceModal] = useState<DisputeCase | null>(null);
+  const [additionalEvidenceText, setAdditionalEvidenceText] = useState('');
+  const [additionalEvidenceFiles, setAdditionalEvidenceFiles] = useState<SelectedEvidenceFile[]>([]);
+  const [additionalEvidenceSubmitting, setAdditionalEvidenceSubmitting] = useState(false);
+  const [additionalEvidenceError, setAdditionalEvidenceError] = useState<string | null>(null);
+
+  const handleOpenAdditionalEvidenceModal = (d: DisputeCase) => {
+    setAdditionalEvidenceModal(d);
+    setAdditionalEvidenceText('');
+    setAdditionalEvidenceFiles([]);
+    setAdditionalEvidenceError(null);
+  };
+
+  const handleSubmitAdditionalEvidence = async () => {
+    if (!additionalEvidenceModal) return;
+    if (!additionalEvidenceText.trim() && additionalEvidenceFiles.length === 0) {
+      setAdditionalEvidenceError('Vui lòng nhập nội dung giải trình hoặc tải lên hình ảnh đối chứng.');
+      return;
+    }
+    setAdditionalEvidenceSubmitting(true);
+    setAdditionalEvidenceError(null);
+    try {
+      let finalEvidence = additionalEvidenceText.trim();
+      if (additionalEvidenceFiles.length > 0) {
+        const urls = await uploadMultipleEvidenceFiles(additionalEvidenceFiles, api.post);
+        if (urls.length > 0) {
+          const tags = urls.join(' | ');
+          finalEvidence = finalEvidence ? `${tags} | ${finalEvidence}` : tags;
+        }
+      }
+
+      await api.post(`/disputes/${additionalEvidenceModal.id}/additional-evidence`, {
+        evidence: finalEvidence,
+      });
+      localStorage.setItem(`dispute_${additionalEvidenceModal.id}_student_submitted`, 'true');
+
+      showToast('✓ Đã nộp bằng chứng bổ sung lên Ban Quản Trị thành công!');
+      setAdditionalEvidenceModal(null);
+      fetchMyDisputes();
+    } catch (err: any) {
+      setAdditionalEvidenceError(err.response?.data?.message || err.message || 'Lỗi khi gửi bằng chứng bổ sung.');
+    } finally {
+      setAdditionalEvidenceSubmitting(false);
     }
   };
 
@@ -425,6 +578,7 @@ export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout, onUser
   const [tabDisputeSeverity, setTabDisputeSeverity] = useState<'HIGH' | 'MEDIUM' | 'LOW'>('HIGH');
   const [tabDisputeStatement, setTabDisputeStatement] = useState('');
   const [tabDisputeEvidence, setTabDisputeEvidence] = useState('');
+  const [tabDisputeFiles, setTabDisputeFiles] = useState<SelectedEvidenceFile[]>([]);
   const [tabDisputeSubmitting, setTabDisputeSubmitting] = useState(false);
   const [tabDisputeError, setTabDisputeError] = useState<string | null>(null);
 
@@ -447,6 +601,7 @@ export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout, onUser
     setTabDisputeSeverity('HIGH');
     setTabDisputeStatement('');
     setTabDisputeEvidence('');
+    setTabDisputeFiles([]);
     setTabDisputeError(null);
     setShowTabDisputeModal(true);
   };
@@ -464,6 +619,16 @@ export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout, onUser
     setTabDisputeSubmitting(true);
     setTabDisputeError(null);
     try {
+      let finalEvidence = tabDisputeEvidence.trim();
+
+      if (tabDisputeFiles.length > 0) {
+        const urls = await uploadMultipleEvidenceFiles(tabDisputeFiles, api.post);
+        if (urls.length > 0) {
+          const tags = urls.join(' | ');
+          finalEvidence = tabDisputeEvidence.trim() ? `${tags} | ${tabDisputeEvidence.trim()}` : tags;
+        }
+      }
+
       const sel = studentDisputeReasonOptions.find(r => r.value === tabDisputeType);
       await api.post('/disputes', {
         bookingId: tabDisputeBookingId,
@@ -471,7 +636,7 @@ export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout, onUser
         disputeTypeLabel: sel?.label || 'Khiếu nại ca tập',
         severity: tabDisputeSeverity,
         statement: tabDisputeStatement.trim(),
-        evidenceNote: tabDisputeEvidence.trim() || undefined,
+        evidenceNote: finalEvidence || undefined,
       });
 
       showToast('✓ Đã gửi hồ sơ khiếu nại lên Ban Quản Trị thành công!');
@@ -525,7 +690,7 @@ export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout, onUser
         trainingLocation: course.trainingLocation || selectedPt?.availableLocations || 'Phòng tập cơ sở chính',
         paymentMethod: 'WALLET',
       });
-      showToast(`Đăng ký khóa học "${course.title}" thành công!`);
+      showToast(`Đăng ký khóa học ${course.title} thành công!`);
       fetchWallet();
       fetchMyEnrollments();
       setActiveTab(4); // Switch to My Courses
@@ -758,35 +923,69 @@ export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout, onUser
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className={`min-h-screen flex flex-col font-sans transition-colors duration-200 ${
+      isDark ? 'dark bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'
+    }`}>
       {/* Top Navbar */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+      <header className={`${
+        isDark ? 'bg-slate-950/90 border-slate-800 text-white' : 'bg-white/95 border-slate-200 text-slate-900'
+      } backdrop-blur-md border-b sticky top-0 z-30 shadow-sm transition-colors`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[#FF4B4B] text-white flex items-center justify-center font-bold text-lg shadow-sm">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-rose-600 via-rose-500 to-orange-500 text-white flex items-center justify-center font-black text-lg shadow-md shadow-rose-500/25">
               PT
             </div>
             <div>
-              <span className="font-extrabold text-slate-900 text-lg tracking-tight">PT Connect</span>
-              <span className="ml-2 text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
-                Học viên
-              </span>
+              <div className="flex items-center gap-2">
+                <span className={`font-black text-lg tracking-tight uppercase ${isDark ? 'text-white' : 'text-slate-900'}`}>PT-Connect</span>
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30 uppercase">
+                  Học viên
+                </span>
+              </div>
+              <p className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'} hidden sm:block`}>Cổng thông tin &amp; Huấn luyện thể hình cá nhân</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="text-right hidden sm:block">
-              <div className="text-sm font-bold text-slate-900">{user.fullName}</div>
-              <div className="text-xs text-slate-500">{user.email}</div>
+          <div className="flex items-center gap-3">
+            {/* Theme Toggle Button */}
+            <button
+              onClick={toggleTheme}
+              className={`px-3 py-1.5 rounded-xl border flex items-center gap-1.5 text-xs font-bold transition-all cursor-pointer shadow-xs ${
+                isDark
+                  ? 'bg-slate-900/90 border-slate-700 text-amber-300 hover:bg-slate-800 hover:text-amber-200'
+                  : 'bg-slate-100 border-slate-300 text-amber-600 hover:bg-slate-200 hover:text-amber-700'
+              }`}
+              title={isDark ? "Chuyển sang Chế độ Sáng" : "Chuyển sang Chế độ Tối"}
+            >
+              {isDark ? (
+                <>
+                  <Sun className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="hidden sm:inline">Chế độ Sáng</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="w-3.5 h-3.5 text-slate-700" />
+                  <span className="hidden sm:inline">Chế độ Tối</span>
+                </>
+              )}
+            </button>
+
+            <div className="text-right hidden sm:block pl-2 border-l border-slate-200 dark:border-slate-800">
+              <div className={`text-xs font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{user.fullName}</div>
+              <div className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{user.email}</div>
             </div>
             <img
               src={getAvatarUrl(user.fullName, user.avatarUrl)}
               alt={user.fullName}
-              className="w-9 h-9 rounded-full border border-slate-200 object-cover"
+              className="w-9 h-9 rounded-full border-2 border-orange-500/80 object-cover shadow-sm"
             />
             <button
               onClick={onLogout}
-              className="px-3 py-1.5 border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5"
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition ${
+                isDark
+                  ? 'bg-slate-900 hover:bg-red-600/20 hover:border-red-500/50 border border-slate-800 text-slate-300 hover:text-red-400'
+                  : 'bg-slate-100 hover:bg-red-50 hover:border-red-300 border border-slate-200 text-slate-700 hover:text-red-600'
+              }`}
             >
               <LogOut className="w-3.5 h-3.5" /> Đăng xuất
             </button>
@@ -892,9 +1091,11 @@ export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout, onUser
       )}
 
       {/* Navigation Tabs */}
-      <div className="bg-white border-b border-slate-200 sticky top-16 z-20">
+      <div className={`border-b sticky top-16 z-20 backdrop-blur-md transition-colors ${
+        isDark ? 'bg-slate-950/90 border-slate-800' : 'bg-white/95 border-slate-200 shadow-2xs'
+      }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-1 sm:space-x-8 overflow-x-auto py-2">
+          <div className="flex space-x-1 sm:space-x-2 overflow-x-auto py-2.5">
             {tabs.map((t, idx) => {
               const Icon = t.icon;
               const isCur = activeTab === idx;
@@ -902,13 +1103,15 @@ export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout, onUser
                 <button
                   key={t.label}
                   onClick={() => setActiveTab(idx)}
-                  className={`flex items-center gap-2 py-2 px-3 text-sm font-semibold rounded-lg whitespace-nowrap transition-all ${
+                  className={`flex items-center gap-2 py-2 px-3.5 text-xs sm:text-sm font-bold rounded-xl whitespace-nowrap transition-all cursor-pointer ${
                     isCur
-                      ? 'bg-red-50 text-[#FF4B4B]'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                      ? 'bg-gradient-to-r from-rose-600 to-rose-500 text-white shadow-sm shadow-rose-500/30'
+                      : isDark
+                      ? 'text-slate-400 hover:text-white hover:bg-slate-900'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                   }`}
                 >
-                  <Icon className={`w-4 h-4 ${isCur ? 'text-[#FF4B4B]' : 'text-slate-400'}`} />
+                  <Icon className={`w-4 h-4 ${isCur ? 'text-white' : isDark ? 'text-slate-400' : 'text-slate-500'}`} />
                   {t.label}
                 </button>
               );
@@ -1769,10 +1972,21 @@ export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout, onUser
                 {myEnrollments.map((en) => {
                   const completed = en.totalSessions - en.remainingSessions;
                   const progressPct = en.totalSessions > 0 ? Math.round((completed / en.totalSessions) * 100) : 0;
+                  const pendingContractDispute = myDisputes.find(
+                    (d) => d.enrollmentId === en.id && !d.status?.startsWith('RESOLVED')
+                  );
+                  const isCancelled = en.status === 'CANCELLED';
+
                   return (
                     <div
                       key={en.id}
-                      className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
+                      className={`p-6 rounded-2xl border shadow-sm transition-all flex flex-col justify-between ${
+                        isCancelled
+                          ? 'bg-slate-50/80 border-dashed border-rose-300 opacity-80'
+                          : pendingContractDispute
+                          ? 'bg-amber-50/30 border-amber-300'
+                          : 'bg-white border-slate-200 hover:shadow-md'
+                      }`}
                     >
                       <div>
                         <div className="flex justify-between items-start gap-3">
@@ -1784,15 +1998,23 @@ export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout, onUser
                               PTC-HD-{String(en.id).padStart(6, '0')}
                             </span>
                           </div>
-                          <span
-                            className={`text-xs font-bold px-2.5 py-0.5 rounded-full shrink-0 ${
-                              en.status === 'ACTIVE'
-                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                                : 'bg-slate-100 text-slate-700'
-                            }`}
-                          >
-                            {en.status}
-                          </span>
+                          {pendingContractDispute ? (
+                            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full shrink-0 bg-amber-100 text-amber-900 border border-amber-300 animate-pulse">
+                              ⏳ ĐANG CHỜ BQT THANH LÝ (#CASE-{pendingContractDispute.id})
+                            </span>
+                          ) : isCancelled ? (
+                            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full shrink-0 bg-rose-100 text-rose-800 border border-rose-300">
+                              ❌ ĐÃ THANH LÝ (HỦY)
+                            </span>
+                          ) : en.status === 'COMPLETED' ? (
+                            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full shrink-0 bg-blue-100 text-blue-800 border border-blue-200">
+                              ✓ HOÀN TẤT
+                            </span>
+                          ) : (
+                            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full shrink-0 bg-emerald-100 text-emerald-800 border border-emerald-200">
+                              ✓ ĐANG HOẠT ĐỘNG
+                            </span>
+                          )}
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 my-4 py-3 border-y border-slate-100 text-xs text-slate-600">
@@ -1824,62 +2046,116 @@ export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout, onUser
                         <div className="space-y-1.5 mb-4">
                           <div className="flex justify-between text-xs">
                             <span className="text-slate-500 font-medium">Tiến độ buổi tập:</span>
-                            <span className="font-bold text-slate-800">
+                            <span className={`font-bold ${isCancelled ? 'text-slate-400 line-through' : 'text-slate-800'}`}>
                               {completed}/{en.totalSessions} buổi ({progressPct}%)
                             </span>
                           </div>
                           <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
                             <div
-                              className="bg-[#FF4B4B] h-full rounded-full transition-all duration-500"
+                              className={`${isCancelled ? 'bg-slate-300' : 'bg-[#FF4B4B]'} h-full rounded-full transition-all duration-500`}
                               style={{ width: `${progressPct}%` }}
                             ></div>
                           </div>
                         </div>
                       </div>
 
-                      <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-3">
-                        <button
-                          onClick={() => {
-                            if (en.ptId) {
-                              const targetPt = pts.find((p) => p.id === en.ptId);
-                              if (targetPt) loadPtDetails(targetPt);
-                            }
-                            setActiveTab(2); // Switch to booking tab
-                          }}
-                          className="px-3.5 py-2 bg-red-50 text-[#FF4B4B] hover:bg-red-100 rounded-xl text-xs font-bold transition-all"
-                        >
-                          Đặt lịch
-                        </button>
+                      {/* Action buttons */}
+                      {isCancelled ? (
+                        <div className="pt-3 border-t border-rose-200/60 flex items-center justify-between gap-3 text-xs">
+                          <span className="text-rose-600 font-bold flex items-center gap-1.5">
+                            ❌ Hợp đồng này đã được thanh lý &amp; quyết toán
+                          </span>
+                          <button
+                            onClick={async () => {
+                              try {
+                                const blob = await api.get(`/enrollments/${en.id}/contract`, {
+                                  responseType: 'blob',
+                                });
+                                const url = window.URL.createObjectURL(new Blob([blob as any]));
+                                const link = document.createElement('a');
+                                link.href = url;
+                                link.setAttribute('download', `PTC_HD_${String(en.id).padStart(6, '0')}.pdf`);
+                                document.body.appendChild(link);
+                                link.click();
+                                showToast('Đang tải xuống hợp đồng PDF lưu trữ...');
+                              } catch (e: any) {
+                                showToast('Lỗi tải hợp đồng PDF.');
+                              }
+                            }}
+                            className="px-3.5 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
+                          >
+                            <FileText className="w-3.5 h-3.5 text-slate-500" /> Tải HĐ Lưu Trữ
+                          </button>
+                        </div>
+                      ) : pendingContractDispute ? (
+                        <div className="pt-3 border-t border-amber-200/80 flex items-center justify-between gap-3 text-xs">
+                          <span className="text-amber-800 font-bold flex items-center gap-1.5 text-xs">
+                            ⏳ Hồ sơ thanh lý đang được Ban Quản Trị thụ lý (#CASE-{pendingContractDispute.id})
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setActiveTab(7)}
+                            className="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-xl text-xs font-bold transition flex items-center gap-1"
+                          >
+                            Xem khiếu nại →
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-3">
+                          <button
+                            onClick={() => {
+                              if (en.ptId) {
+                                const targetPt = pts.find((p) => p.id === en.ptId);
+                                if (targetPt) loadPtDetails(targetPt);
+                              }
+                              setActiveTab(2); // Switch to booking tab
+                            }}
+                            className="px-3.5 py-2 bg-red-50 text-[#FF4B4B] hover:bg-red-100 rounded-xl text-xs font-bold transition-all"
+                          >
+                            Đặt lịch
+                          </button>
 
-                        <button
-                          onClick={() => handleViewWorkoutPlans(en)}
-                          className="px-3 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-xl text-xs font-bold transition-all flex items-center gap-1"
-                        >
-                          <ClipboardList className="w-3.5 h-3.5" /> Giáo án
-                        </button>
+                          <button
+                            onClick={() => handleViewWorkoutPlans(en)}
+                            className="px-3 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-xl text-xs font-bold transition-all flex items-center gap-1"
+                          >
+                            <ClipboardList className="w-3.5 h-3.5" /> Giáo án
+                          </button>
 
-                        <button
-                          onClick={async () => {
-                            try {
-                              const blob = await api.get(`/enrollments/${en.id}/contract`, {
-                                responseType: 'blob',
-                              });
-                              const url = window.URL.createObjectURL(new Blob([blob as any]));
-                              const link = document.createElement('a');
-                              link.href = url;
-                              link.setAttribute('download', `PTC_HD_${String(en.id).padStart(6, '0')}.pdf`);
-                              document.body.appendChild(link);
-                              link.click();
-                              showToast('Đang tải xuống hợp đồng PDF...');
-                            } catch (e: any) {
-                              showToast('Lỗi tải hợp đồng PDF.');
-                            }
-                          }}
-                          className="px-3.5 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
-                        >
-                          <FileText className="w-3.5 h-3.5 text-slate-500" /> Tải Hợp Đồng PDF
-                        </button>
-                      </div>
+                          <button
+                            onClick={async () => {
+                              try {
+                                const blob = await api.get(`/enrollments/${en.id}/contract`, {
+                                  responseType: 'blob',
+                                });
+                                const url = window.URL.createObjectURL(new Blob([blob as any]));
+                                const link = document.createElement('a');
+                                link.href = url;
+                                link.setAttribute('download', `PTC_HD_${String(en.id).padStart(6, '0')}.pdf`);
+                                document.body.appendChild(link);
+                                link.click();
+                                showToast('Đang tải xuống hợp đồng PDF...');
+                              } catch (e: any) {
+                                showToast('Lỗi tải hợp đồng PDF.');
+                              }
+                            }}
+                            className="px-3.5 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
+                          >
+                            <FileText className="w-3.5 h-3.5 text-slate-500" /> Tải Hợp Đồng PDF
+                          </button>
+
+                          {en.status === 'ACTIVE' && (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenContractDispute(en)}
+                              className="px-3.5 py-2 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                              title="Gửi hồ sơ khiếu nại yêu cầu hủy toàn bộ hợp đồng lên Ban Quản Trị"
+                            >
+                              <ShieldAlert className="w-3.5 h-3.5 text-amber-600" /> Khiếu Nại Hủy HĐ
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -2218,7 +2494,7 @@ export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout, onUser
               </div>
 
               <div className="mt-4 p-3 bg-white/5 rounded-2xl border border-white/10 text-xs text-amber-200/90 leading-relaxed">
-                💡 <b>Cách gửi khiếu nại một ca tập:</b> Vào tab <b>Lịch Của Tôi</b>, tìm ca tập gặp sự cố (HLV vắng mặt, gian lận OTP, cắt bớt giờ...) và nhấn nút <b>"⚠️ Khiếu nại"</b>. Ban Quản Trị sẽ xác minh định vị GPS, log liên lạc và ban hành phán quyết trong 24h.
+                💡 <b>Cách gửi khiếu nại một ca tập:</b> Vào tab <b>Lịch Của Tôi</b>, tìm ca tập gặp sự cố (HLV vắng mặt, gian lận OTP, cắt bớt giờ...) và nhấn nút <b>⚠️ Khiếu nại</b>. Ban Quản Trị sẽ xác minh định vị GPS, log liên lạc và ban hành phán quyết trong 24h.
               </div>
             </div>
 
@@ -2277,11 +2553,15 @@ export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout, onUser
                           <span className="font-bold text-slate-800">{d.ptName}</span>
                         </div>
                         <div>
-                          <span className="text-slate-400 block">Thời gian ca tập:</span>
+                          <span className="text-slate-400 block">
+                            {d.enrollmentId || d.isContractDispute ? 'Quy mô hợp đồng:' : 'Thời gian ca tập:'}
+                          </span>
                           <span className="font-medium text-slate-700">{d.scheduledTime}</span>
                         </div>
                         <div>
-                          <span className="text-slate-400 block">Học phí ca tập:</span>
+                          <span className="text-slate-400 block">
+                            {d.enrollmentId || d.isContractDispute ? 'Số tiền yêu cầu bồi hoàn:' : 'Học phí ca tập:'}
+                          </span>
                           <span className="font-bold text-emerald-600">{Number(d.sessionFee || 0).toLocaleString('vi-VN')} ₫</span>
                         </div>
                       </div>
@@ -2290,55 +2570,155 @@ export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout, onUser
                         <span className="text-xs font-bold text-slate-700 block mb-1">
                           {d.complainant === 'STUDENT' ? 'Tường trình khiếu nại của bạn:' : 'Tường trình khiếu nại từ Huấn Luyện Viên:'}
                         </span>
-                        <p className="text-xs text-slate-600 bg-slate-50/70 p-3 rounded-xl border border-slate-100 italic leading-relaxed">
-                          "{d.complainant === 'STUDENT' ? (d.studentStatement || d.summary) : (d.ptStatement || d.summary)}"
-                        </p>
+                        {(() => {
+                          const raw = d.complainant === 'STUDENT' ? (d.studentStatement || d.summary) : (d.ptStatement || d.summary);
+                          const parsed = parseEvidence(raw);
+                          return (
+                            <div className="space-y-1.5 bg-slate-50/70 p-3 rounded-xl border border-slate-100">
+                              <p className="text-xs text-slate-600 italic leading-relaxed">
+                                {parsed.cleanText}
+                              </p>
+                              <EvidenceAttachmentList
+                                items={parsed.items}
+                                onPreviewImage={(url, name) => setPreviewEvidenceImage({ url, name })}
+                              />
+                            </div>
+                          );
+                        })()}
                       </div>
 
-                      {/* Phản biện đối chứng */}
+                      {/* Phản biện đối chứng & Thời hạn 48 giờ */}
                       {d.counterStatement ? (
                         <div className="p-3 bg-blue-50/80 rounded-xl border border-blue-200 text-xs space-y-1">
                           <span className="font-bold text-blue-900 block">
                             💬 Phản biện đối chứng {d.complainant === 'STUDENT' ? 'của HLV:' : 'của bạn:'}
                           </span>
-                          <p className="italic text-blue-800 leading-relaxed font-medium">"{d.counterStatement}"</p>
+                          {(() => {
+                            const parsed = parseEvidence(d.counterStatement);
+                            return (
+                              <div className="space-y-1.5">
+                                <p className="italic text-blue-800 leading-relaxed font-medium">
+                                  {parsed.cleanText}
+                                </p>
+                                <EvidenceAttachmentList
+                                  items={parsed.items}
+                                  onPreviewImage={(url, name) => setPreviewEvidenceImage({ url, name })}
+                                />
+                              </div>
+                            );
+                          })()}
                         </div>
-                      ) : d.complainant === 'PT' && !d.status.startsWith('RESOLVED') && (
-                        <div className="p-3.5 bg-amber-50 rounded-xl border border-amber-300 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-pulse">
-                          <div>
-                            <span className="font-bold text-amber-900 block">⚠️ HLV đang khiếu nại bạn trong ca tập này!</span>
-                            <span className="text-amber-700 text-[11px]">Bạn chưa gửi phản biện. Hãy gửi bản tường trình đối chất để Ban Quản Trị xem xét công bằng trước khi ra phán quyết.</span>
+                      ) : !d.status.startsWith('RESOLVED') ? (
+                        d.complainant === 'PT' ? (
+                          <div className="p-3.5 bg-amber-50 rounded-xl border border-amber-300 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div>
+                              <span className="font-bold text-amber-900 block flex items-center gap-1.5">
+                                <Clock className="w-4 h-4 text-amber-600 shrink-0" />
+                                HLV đang khiếu nại ca tập này • Bạn có 48 giờ để gửi phản biện!
+                              </span>
+                              <span className="text-amber-800 text-[11px] block mt-0.5">
+                                Theo quy chế trọng tài công bằng, bạn có <b>48 giờ</b> để gửi giải trình phản biện. Sau 48 giờ nếu chưa gửi, Admin sẽ có toàn quyền quyết định vụ việc.
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenCounterModal(d)}
+                              className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold text-xs shrink-0 shadow-xs flex items-center gap-1.5 transition"
+                            >
+                              <MessageCircle className="w-3.5 h-3.5" /> Gửi phản biện ngay
+                            </button>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => handleOpenCounterModal(d)}
-                            className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold text-xs shrink-0 shadow-xs flex items-center gap-1.5 transition"
-                          >
-                            <MessageCircle className="w-3.5 h-3.5" /> Gửi phản biện ngay
-                          </button>
+                        ) : (
+                          <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-slate-500 shrink-0" />
+                            <div>
+                              <span className="font-bold text-slate-800">Đang chờ HLV gửi phản biện đối chứng (Thời hạn 48 giờ):</span>
+                              <p className="text-[11px] text-slate-500 mt-0.5">
+                                Theo quy chế chống phán quyết độc đoán, Ban Quản Trị phải chờ tối đa 48 tiếng để HLV phản biện đối chứng. Nếu sau 48 tiếng HLV không gửi, Admin sẽ có toàn quyền ban hành phán quyết.
+                              </p>
+                            </div>
+                          </div>
+                        )
+                      ) : null}
+
+                      {d.evidenceNote && (
+                        <div className="text-xs text-slate-500 space-y-1.5 pt-1">
+                          <span className="font-semibold text-slate-700 block">
+                            📎 Bằng chứng đính kèm {d.complainant === 'STUDENT' ? 'của bạn (Học viên):' : 'từ Huấn luyện viên:'}
+                          </span>
+                          {(() => {
+                            const parsed = parseEvidence(d.evidenceNote);
+                            return (
+                              <div className="space-y-1">
+                                {parsed.cleanText && <p className="font-medium text-slate-700">{parsed.cleanText}</p>}
+                                <EvidenceAttachmentList
+                                  items={parsed.items}
+                                  onPreviewImage={(url, name) => setPreviewEvidenceImage({ url, name })}
+                                />
+                              </div>
+                            );
+                          })()}
                         </div>
                       )}
 
-                      {d.evidenceNote && (
-                        <div className="text-xs text-slate-500 flex items-center gap-1.5">
-                          <span>📎 Bằng chứng cung cấp:</span>
-                          <span className="font-medium text-slate-700">{d.evidenceNote}</span>
+                      {/* Evidence Request from Admin */}
+                      {d.evidenceRequested && (d.evidenceRequestTarget === 'BOTH' || d.evidenceRequestTarget === 'STUDENT') && (
+                        <div className="p-3.5 bg-amber-50 rounded-xl border border-amber-300 text-xs space-y-2">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <span className="font-bold text-amber-950 flex items-center gap-1.5">
+                              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                              Ban Quản Trị yêu cầu bạn bổ sung thêm bằng chứng xác minh vụ việc!
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenAdditionalEvidenceModal(d)}
+                              className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold text-xs shrink-0 shadow-xs flex items-center gap-1.5 transition cursor-pointer"
+                            >
+                              <Upload className="w-3.5 h-3.5" /> Nộp bằng chứng bổ sung
+                            </button>
+                          </div>
+                          <p className="italic text-amber-900 bg-white/80 p-2.5 rounded-lg border border-amber-200/80 text-[11px] leading-relaxed">
+                            Lời nhắn từ Admin: {d.evidenceRequestNote}
+                          </p>
+                          {isEvidenceSubmitted(d, 'STUDENT') ? (
+                            <div className="p-2.5 bg-emerald-50 rounded-lg border border-emerald-200 text-[11px] text-emerald-900 space-y-1">
+                              <span className="font-extrabold text-emerald-800 flex items-center gap-1">
+                                ✓ Bằng chứng bổ sung bạn đã nộp:
+                              </span>
+                              {(() => {
+                                const parsed = parseEvidence(d.additionalEvidenceStudent);
+                                return (
+                                  <>
+                                    {parsed.cleanText && <p className="italic">{parsed.cleanText}</p>}
+                                    <EvidenceAttachmentList
+                                      items={parsed.items}
+                                      onPreviewImage={(url, name) => setPreviewEvidenceImage({ url, name })}
+                                    />
+                                  </>
+                                );
+                              })()}
+                            </div>
+                          ) : (
+                            <div className="p-2.5 bg-amber-100/70 rounded-lg text-amber-950 text-[11px] flex items-center gap-1.5 font-bold border border-amber-300">
+                              <span>⏳ Trạng thái: Ban Quản Trị đang chờ bạn nộp bằng chứng bổ sung cho yêu cầu này.</span>
+                            </div>
+                          )}
                         </div>
                       )}
 
                       {/* Phán quyết của Hội Đồng Trọng Tài */}
                       {d.status.startsWith('RESOLVED') && (
-                        <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl space-y-1">
-                          <div className="flex items-center gap-1.5 font-bold text-xs text-emerald-900">
+                        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl space-y-2">
+                          <div className="flex items-center gap-2 font-bold text-xs text-emerald-900">
                             <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                            <span>PHÁN QUYẾT TỪ BAN QUẢN TRỊ NỀN TẢNG:</span>
+                            <span>PHÁN QUYẾT &amp; CĂN CỨ CHÍNH THỨC TỪ BAN QUẢN TRỊ NỀN TẢNG:</span>
                           </div>
-                          <p className="text-xs text-emerald-800 font-medium leading-relaxed">
-                            {d.resolutionDecision}
+                          <p className="text-xs text-emerald-900 font-medium leading-relaxed bg-white/80 p-3 rounded-xl border border-emerald-200/70">
+                            {d.verdictReason || d.resolutionDecision}
                           </p>
                           {d.resolvedAt && (
-                            <div className="text-[11px] text-emerald-600 pt-0.5">
-                              Thời gian ban hành: {d.resolvedAt}
+                            <div className="text-[11px] text-emerald-700 font-medium pt-0.5">
+                              Thời gian ban hành phán quyết: {d.resolvedAt}
                             </div>
                           )}
                         </div>
@@ -2388,7 +2768,9 @@ export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout, onUser
             <div className="space-y-3.5">
               <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs space-y-1">
                 <span className="font-bold text-amber-900 block">Khiếu nại từ HLV {counterDisputeModal.ptName}:</span>
-                <p className="italic text-amber-800">"{counterDisputeModal.ptStatement || counterDisputeModal.summary}"</p>
+                <p className="italic text-amber-800">
+                  {(counterDisputeModal.ptStatement || counterDisputeModal.summary || '').replace(/^["“”']+|["“”']+$/g, '')}
+                </p>
               </div>
 
               <div>
@@ -2407,14 +2789,24 @@ export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout, onUser
                 />
               </div>
 
+              {/* Tải ảnh bằng chứng đối chứng */}
+              <div>
+                <MultiImageUploader
+                  files={counterFiles}
+                  onChange={setCounterFiles}
+                  label="Ảnh chụp bằng chứng đối chứng (không bắt buộc)"
+                  subLabel="Hỗ trợ chọn nhiều ảnh cùng lúc (Ảnh quầy lễ tân, lịch sử gọi, định vị...)"
+                />
+              </div>
+
               {counterError && (
                 <div className="p-2.5 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700">
                   ⚠️ {counterError}
                 </div>
               )}
 
-              <p className="text-[11px] text-slate-400 leading-normal">
-                💡 Bản phản biện của bạn sẽ được chuyển thẳng đến Hội đồng Trọng tài để đối soát hai chiều trước khi ban hành phán quyết cuối cùng.
+              <p className="text-[11px] text-slate-500 leading-normal">
+                💡 Bản phản biện của bạn sẽ được chuyển thẳng đến Hội đồng Trọng tài để đối soát hai chiều trước khi ban hành phán quyết. <b>Lưu ý:</b> Bạn có 48 giờ để gửi phản biện; nếu quá 48 giờ bạn chưa gửi, Ban Quản Trị sẽ có toàn quyền ban hành phán quyết.
               </p>
 
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
@@ -2521,17 +2913,21 @@ export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout, onUser
                 />
               </div>
 
-              {/* Bằng chứng */}
+              {/* Bằng chứng bằng cách tải ảnh lên */}
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">
-                  Bằng chứng đối chứng <span className="text-slate-400 font-normal">(không bắt buộc)</span>:
-                </label>
+                <MultiImageUploader
+                  files={tabDisputeFiles}
+                  onChange={setTabDisputeFiles}
+                  label="Ảnh chụp bằng chứng đối chứng (không bắt buộc)"
+                  subLabel="Hỗ trợ chọn nhiều ảnh cùng lúc (Ảnh check-in phòng tập, lịch sử cuộc gọi, tin nhắn...)"
+                />
+
                 <input
                   type="text"
                   value={tabDisputeEvidence}
                   onChange={(e) => setTabDisputeEvidence(e.target.value)}
-                  placeholder="VD: Lịch sử cuộc gọi nhỡ lúc 18:05, ảnh chụp quầy lễ tân lúc 17:58..."
-                  className="w-full p-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  placeholder="Ghi chú thêm về ảnh (VD: Lịch sử cuộc gọi nhỡ lúc 18:05, ảnh chụp quầy lễ tân lúc 17:58...)"
+                  className="w-full mt-2 p-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500"
                 />
               </div>
 
@@ -2557,6 +2953,197 @@ export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout, onUser
                 >
                   <Send className="w-3.5 h-3.5" />
                   {tabDisputeSubmitting ? 'Đang gửi...' : 'Gửi khiếu nại lên Admin'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Khiếu Nại Chấm Dứt Hợp Đồng Khóa Học */}
+      {contractDisputeModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl animate-scale-up border border-slate-200">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+              <div className="flex items-center gap-2.5 text-rose-600">
+                <ShieldAlert className="w-5 h-5 shrink-0" />
+                <h4 className="text-base font-bold text-slate-900">Khiếu Nại Hủy Hợp Đồng Khóa Học #{contractDisputeModal.id}</h4>
+              </div>
+              <button
+                type="button"
+                onClick={() => setContractDisputeModal(null)}
+                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3.5">
+              {/* Thông tin hợp đồng */}
+              <div className="p-3 bg-rose-50/70 border border-rose-200 rounded-xl text-xs space-y-1 text-rose-950">
+                <div className="flex justify-between font-bold">
+                  <span>Khóa học: {contractDisputeModal.courseTitle || contractDisputeModal.course?.title}</span>
+                  <span className="text-rose-600">Còn {contractDisputeModal.remainingSessions}/{contractDisputeModal.totalSessions} buổi</span>
+                </div>
+                <div className="flex justify-between text-slate-600">
+                  <span>HLV đảm trách: {contractDisputeModal.ptName || contractDisputeModal.pt?.pt?.fullName}</span>
+                  <span>Tổng tiền đã đóng: {Number(contractDisputeModal.finalPrice || 0).toLocaleString('vi-VN')} ₫</span>
+                </div>
+                <p className="text-[11px] text-rose-700 pt-1 border-t border-rose-200/60">
+                  ℹ️ Trọng tài nền tảng sẽ đối soát số buổi còn lại và hoàn trả học phí tương ứng vào ví của bạn nếu phán quyết chấp thuận.
+                </p>
+              </div>
+
+              {/* Lý do hủy hợp đồng */}
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">
+                  Lý do chính yêu cầu chấm dứt hợp đồng <span className="text-red-500">*</span>:
+                </label>
+                <select
+                  value={contractDisputeReason}
+                  onChange={(e) => setContractDisputeReason(e.target.value)}
+                  className="w-full p-2.5 text-xs border border-slate-300 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-rose-500"
+                >
+                  {contractDisputeReasonOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Tường trình chi tiết */}
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">
+                  Tường trình chi tiết vi phạm &amp; yêu cầu giải quyết <span className="text-red-500">*</span>:
+                </label>
+                <textarea
+                  rows={3}
+                  value={contractDisputeStatement}
+                  onChange={(e) => {
+                    setContractDisputeStatement(e.target.value);
+                    if (contractDisputeError) setContractDisputeError(null);
+                  }}
+                  placeholder="Nêu rõ diễn biến sự việc: HLV đã hủy hẹn bao nhiêu lần? Sự cố chuyên môn xảy ra khi nào? Bạn đã trao đổi với HLV như thế nào..."
+                  className="w-full p-2.5 text-xs border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500"
+                />
+              </div>
+
+              {/* Tải ảnh bằng chứng */}
+              <div>
+                <MultiImageUploader
+                  files={contractDisputeFiles}
+                  onChange={setContractDisputeFiles}
+                  label="Ảnh chụp bằng chứng chứng minh (không bắt buộc)"
+                  subLabel="Hỗ trợ chọn nhiều ảnh cùng lúc (Ảnh tin nhắn, biên lai, giấy khám sức khỏe...)"
+                />
+              </div>
+
+              {contractDisputeError && (
+                <div className="p-2.5 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700">
+                  ⚠️ {contractDisputeError}
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setContractDisputeModal(null)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition"
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="button"
+                  disabled={contractDisputeSubmitting}
+                  onClick={handleSubmitContractDispute}
+                  className="px-4 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white text-xs font-bold rounded-lg shadow-sm transition flex items-center gap-1.5"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  {contractDisputeSubmitting ? 'Đang gửi...' : 'Gửi yêu cầu hủy hợp đồng lên Admin'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Nộp Bằng Chứng Bổ Sung Theo Yêu Cầu Admin */}
+      {additionalEvidenceModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl animate-scale-up border border-slate-200">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+              <div className="flex items-center gap-2.5 text-amber-600">
+                <Upload className="w-5 h-5 shrink-0" />
+                <h4 className="text-base font-bold text-slate-900">
+                  Nộp Bằng Chứng Bổ Sung (#CASE-{additionalEvidenceModal.id})
+                </h4>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAdditionalEvidenceModal(null)}
+                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3.5">
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs space-y-1">
+                <span className="font-bold text-amber-900 block">Yêu cầu từ Quản Trị Viên:</span>
+                <p className="italic text-amber-800 leading-relaxed font-medium">
+                  {additionalEvidenceModal.evidenceRequestNote || 'Ban Quản Trị yêu cầu bổ sung bằng chứng để đối chiếu và đưa ra phán quyết công bằng.'}
+                </p>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">
+                  Nội dung giải trình bổ sung:
+                </label>
+                <textarea
+                  rows={3}
+                  value={additionalEvidenceText}
+                  onChange={(e) => {
+                    setAdditionalEvidenceText(e.target.value);
+                    if (additionalEvidenceError) setAdditionalEvidenceError(null);
+                  }}
+                  placeholder="Nhập nội dung giải thích, chú thích thêm về hình ảnh hoặc tài liệu đối chứng..."
+                  className="w-full p-2.5 text-xs border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+
+              {/* Tải ảnh bổ sung */}
+              <div>
+                <MultiImageUploader
+                  files={additionalEvidenceFiles}
+                  onChange={setAdditionalEvidenceFiles}
+                  label="Hình ảnh bằng chứng đính kèm"
+                  subLabel="Ảnh chụp màn hình, hóa đơn, định vị hoặc chứng từ đối chiếu (PNG, JPG, WEBP tối đa 5MB)"
+                />
+              </div>
+
+              {additionalEvidenceError && (
+                <div className="p-2.5 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700">
+                  ⚠️ {additionalEvidenceError}
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setAdditionalEvidenceModal(null)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition"
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="button"
+                  disabled={additionalEvidenceSubmitting}
+                  onClick={handleSubmitAdditionalEvidence}
+                  className="px-4 py-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white text-xs font-bold rounded-lg shadow-sm transition flex items-center gap-1.5"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  {additionalEvidenceSubmitting ? 'Đang gửi...' : 'Nộp bằng chứng lên Admin'}
                 </button>
               </div>
             </div>
@@ -2820,7 +3407,7 @@ export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout, onUser
                 {ptActiveEnrollments.length === 0 ? (
                   <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
                     ⚠️ Bạn chưa có hợp đồng khóa học nào còn buổi tập với HLV <b>{selectedPt?.fullName}</b>.
-                    Vui lòng chọn <b>"Học Thử (TRIAL)"</b> hoặc đăng ký khóa học trước.
+                    Vui lòng chọn <b>Học Thử (TRIAL)</b> hoặc đăng ký khóa học trước.
                   </div>
                 ) : (
                   <select
@@ -2886,6 +3473,56 @@ export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout, onUser
             showToast('Gửi đánh giá thành công! Cảm ơn bạn đã phản hồi.');
           }}
         />
+      )}
+
+      {/* Modal phóng to xem ảnh đối chứng */}
+      {previewEvidenceImage && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+          onClick={() => setPreviewEvidenceImage(null)}
+        >
+          <div
+            className="relative max-w-4xl max-h-[90vh] bg-white rounded-2xl overflow-hidden p-3 shadow-2xl border border-slate-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center px-4 py-2 border-b border-slate-100">
+              <h4 className="font-bold text-slate-800 text-sm truncate max-w-[70vw]">
+                📷 Ảnh đối chứng: {previewEvidenceImage.name}
+              </h4>
+              <button
+                type="button"
+                onClick={() => setPreviewEvidenceImage(null)}
+                className="p-1 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-700"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-3 flex items-center justify-center max-h-[75vh] overflow-auto bg-slate-950/5 rounded-xl">
+              <img
+                src={previewEvidenceImage.url}
+                alt={previewEvidenceImage.name}
+                onError={(e) => {
+                  const target = e.currentTarget as HTMLImageElement;
+                  if (target.src && !target.src.includes('topology.jpg')) {
+                    target.src = '/uploads/disputes/topology.jpg';
+                  }
+                }}
+                className="max-h-[70vh] w-auto object-contain rounded-lg shadow-sm"
+              />
+            </div>
+            <div className="px-4 py-2 bg-slate-50 flex items-center justify-between text-xs text-slate-500">
+              <span>Bấm phím Esc hoặc bấm ra ngoài để đóng</span>
+              <a
+                href={previewEvidenceImage.url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-red-600 hover:underline flex items-center gap-1 font-semibold"
+              >
+                Mở tab mới
+              </a>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

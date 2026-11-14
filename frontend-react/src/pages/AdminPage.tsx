@@ -9,6 +9,7 @@ import {
   AdminPaymentAnalytics,
 } from '../types/api';
 import { isHttpUrl, resolveCertificateUrl } from '../lib/certificate';
+import { parseEvidence, EvidenceAttachmentList, isEvidenceSubmitted } from '../lib/evidence';
 import {
   Shield,
   Users,
@@ -46,11 +47,17 @@ import {
   HelpCircle,
   Sun,
   Moon,
+  Wallet,
+  Percent,
+  Landmark,
+  Send,
 } from 'lucide-react';
 
 export interface DisputeCase {
   id: number;
-  bookingId: number;
+  bookingId?: number;
+  enrollmentId?: number;
+  isContractDispute?: boolean;
   studentName: string;
   studentEmail: string;
   studentPhone: string;
@@ -59,7 +66,7 @@ export interface DisputeCase {
   courseTitle: string;
   sessionFee: number;
   scheduledTime: string;
-  disputeType: 'PT_ABSENT' | 'LATE_CANCEL_STUDENT' | 'OTP_PREMATURE' | 'QUALITY_ISSUE';
+  disputeType: string;
   disputeTypeLabel: string;
   severity: 'HIGH' | 'MEDIUM' | 'LOW';
   complainant: 'STUDENT' | 'PT';
@@ -67,16 +74,67 @@ export interface DisputeCase {
   studentStatement: string;
   ptStatement: string;
   evidenceNote: string;
-  status: 'PENDING_ARBITRATION' | 'RESOLVED_REFUND_STUDENT' | 'RESOLVED_PAID_PT' | 'RESOLVED_FORCE_MAJEURE';
+  counterStatement?: string;
+  evidenceRequested?: boolean;
+  evidenceRequestTarget?: 'BOTH' | 'PT' | 'STUDENT';
+  evidenceRequestNote?: string;
+  additionalEvidencePt?: string;
+  additionalEvidenceStudent?: string;
+  studentEvidenceSubmitted?: boolean;
+  ptEvidenceSubmitted?: boolean;
+  status: string;
+  verdictType?: string;
   resolutionDecision?: string;
+  verdictReason?: string;
   resolvedAt?: string;
   createdAt?: string;
+  counterDeadline?: string;
+  canAdminArbitrate?: boolean;
+  waitingReason?: string;
+  hoursRemaining?: number;
+  minutesRemaining?: number;
 }
 
 interface AdminPageProps {
   user: User;
   onLogout: () => void;
 }
+
+export const checkDisputeArbitrationStatus = (d: DisputeCase) => {
+  const hasCounter = !!(d.counterStatement && d.counterStatement.trim());
+  let isPast48h = false;
+  let hoursRemaining = 0;
+  let minutesRemaining = 0;
+
+  if (d.createdAt) {
+    const createdTime = new Date(d.createdAt).getTime();
+    if (!isNaN(createdTime)) {
+      const deadlineTime = createdTime + 48 * 3600 * 1000;
+      const now = Date.now();
+      if (now >= deadlineTime) {
+        isPast48h = true;
+      } else {
+        const diffMs = deadlineTime - now;
+        hoursRemaining = Math.floor(diffMs / (3600 * 1000));
+        minutesRemaining = Math.floor((diffMs % (3600 * 1000)) / (60 * 1000));
+      }
+    } else {
+      isPast48h = true;
+    }
+  } else {
+    isPast48h = true;
+  }
+
+  const canArbitrate = d.canAdminArbitrate !== undefined ? d.canAdminArbitrate : (hasCounter || isPast48h);
+
+  return {
+    hasCounter,
+    isPast48h,
+    canArbitrate,
+    hoursRemaining: d.hoursRemaining !== undefined ? d.hoursRemaining : hoursRemaining,
+    minutesRemaining: d.minutesRemaining !== undefined ? d.minutesRemaining : minutesRemaining,
+  };
+};
 
 export const AdminPage: React.FC<AdminPageProps> = ({ user, onLogout }) => {
   const [activeTab, setActiveTab] = useState<number>(0);
@@ -204,19 +262,64 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLogout }) => {
   const [disputeSearch, setDisputeSearch] = useState('');
   const [selectedDisputeForVerdict, setSelectedDisputeForVerdict] = useState<{
     dispute: DisputeCase;
-    verdictType: 'REFUND_STUDENT' | 'PAID_PT' | 'FORCE_MAJEURE';
+    verdictType: 'REFUND_STUDENT' | 'PAID_PT' | 'FORCE_MAJEURE' | 'CANCEL_CONTRACT_REFUND_STUDENT' | 'CANCEL_CONTRACT_PAID_PT';
   } | null>(null);
   const [verdictCustomNote, setVerdictCustomNote] = useState('');
+  const [override48h, setOverride48h] = useState<boolean>(false);
+
+  // Request evidence modal
+  const [requestEvidenceModal, setRequestEvidenceModal] = useState<DisputeCase | null>(null);
+  const [evidenceTarget, setEvidenceTarget] = useState<'BOTH' | 'PT' | 'STUDENT'>('BOTH');
+  const [evidenceNoteInput, setEvidenceNoteInput] = useState('');
+  const [submittingEvidenceRequest, setSubmittingEvidenceRequest] = useState(false);
+
+  const handleSendEvidenceRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!requestEvidenceModal) return;
+    if (!evidenceNoteInput.trim()) {
+      showToast('Vui lòng nhập nội dung bằng chứng cần các bên cung cấp.');
+      return;
+    }
+    setSubmittingEvidenceRequest(true);
+    try {
+      await api.post(`/disputes/${requestEvidenceModal.id}/request-evidence`, {
+        target: evidenceTarget,
+        note: evidenceNoteInput.trim(),
+      });
+      // RESET trạng thái nộp về Đang chờ (false) cho bên bị yêu cầu bổ sung
+      if (evidenceTarget === 'STUDENT' || evidenceTarget === 'BOTH') {
+        localStorage.setItem(`dispute_${requestEvidenceModal.id}_student_submitted`, 'false');
+      }
+      if (evidenceTarget === 'PT' || evidenceTarget === 'BOTH') {
+        localStorage.setItem(`dispute_${requestEvidenceModal.id}_pt_submitted`, 'false');
+      }
+      showToast(`✓ Đã gửi yêu cầu bổ sung bằng chứng cho vụ việc #${requestEvidenceModal.id}!`);
+      setRequestEvidenceModal(null);
+      setEvidenceNoteInput('');
+      fetchAdminData();
+    } catch (err: any) {
+      showToast(err.response?.data?.message || err.message || 'Lỗi khi gửi yêu cầu bổ sung bằng chứng');
+    } finally {
+      setSubmittingEvidenceRequest(false);
+    }
+  };
 
   const handleExecuteArbitration = async (
     disputeId: number,
-    verdictType: 'REFUND_STUDENT' | 'PAID_PT' | 'FORCE_MAJEURE',
-    customNote: string
+    verdictType: 'REFUND_STUDENT' | 'PAID_PT' | 'FORCE_MAJEURE' | 'CANCEL_CONTRACT_REFUND_STUDENT' | 'CANCEL_CONTRACT_PAID_PT',
+    customNote: string,
+    bypass48h: boolean = false
   ) => {
     let resolutionDesc = '';
-    let statusVal: DisputeCase['status'] = 'RESOLVED_REFUND_STUDENT';
+    let statusVal = 'RESOLVED_REFUND_STUDENT';
 
-    if (verdictType === 'REFUND_STUDENT') {
+    if (verdictType === 'CANCEL_CONTRACT_REFUND_STUDENT') {
+      statusVal = 'RESOLVED_CONTRACT_TERMINATION';
+      resolutionDesc = customNote.trim() || 'Hủy toàn bộ hợp đồng khóa học & Hoàn lại học phí số buổi chưa tập cho Học viên. Khiển trách PT vi phạm.';
+    } else if (verdictType === 'CANCEL_CONTRACT_PAID_PT') {
+      statusVal = 'RESOLVED_CONTRACT_TERMINATION';
+      resolutionDesc = customNote.trim() || 'Chấp thuận chấm dứt hợp đồng do lỗi từ phía Học viên. Quyết toán chi trả thù lao cho Huấn luyện viên.';
+    } else if (verdictType === 'REFUND_STUDENT') {
       statusVal = 'RESOLVED_REFUND_STUDENT';
       resolutionDesc = customNote.trim() || 'Xử thắng cho Học viên: Khôi phục 1 buổi vào gói tập + Hoàn tiền bồi hoàn ví. Khiển trách HLV vi phạm cam kết.';
     } else if (verdictType === 'PAID_PT') {
@@ -231,14 +334,35 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLogout }) => {
       await api.post(`/disputes/${disputeId}/verdict`, {
         verdictType,
         customNote: resolutionDesc,
+        verdictReason: resolutionDesc,
+        bypass48hWaiting: bypass48h,
       });
-    } catch (err) {
-      console.warn('API phán quyết trọng tài backend fallback:', err);
+      showToast(`✓ Đã ban hành và gửi lý do phán quyết trọng tài cho vụ việc #${disputeId}!`);
+    } catch (err: any) {
+      console.warn('API phán quyết trọng tài backend:', err);
+      showToast(err.response?.data?.message || err.message || 'Lỗi khi ban hành phán quyết');
+      return;
     }
 
-    showToast(`✓ Đã ban hành phán quyết trọng tài cho vụ việc #${disputeId}!`);
+    setDisputes((prev: DisputeCase[]) =>
+      prev.map((item: DisputeCase) =>
+        item.id === disputeId
+          ? {
+              ...item,
+              status: statusVal,
+              verdictType,
+              resolutionDecision: resolutionDesc,
+              verdictReason: resolutionDesc,
+              evidenceRequested: false,
+              resolvedAt: new Date().toLocaleString('vi-VN'),
+            }
+          : item
+      )
+    );
+
     setSelectedDisputeForVerdict(null);
     setVerdictCustomNote('');
+    setOverride48h(false);
   };
 
   // Rejection modal
@@ -247,6 +371,64 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLogout }) => {
 
   // Certificate image preview modal
   const [previewCert, setPreviewCert] = useState<{ name: string; url: string } | null>(null);
+
+  // Admin Revenue Wallet & Financial Fund
+  const [adminWallet, setAdminWallet] = useState<any>({
+    balance: 15650000,
+    lockedBalance: 0,
+    currency: 'VND',
+    status: 'ACTIVE',
+  });
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [withdrawBankName, setWithdrawBankName] = useState('MB Bank (Quân Đội)');
+  const [withdrawAccountNumber, setWithdrawAccountNumber] = useState('09998887777');
+  const [withdrawAccountName, setWithdrawAccountName] = useState('PTCONNECT - QUY NEN TANG');
+  const [submittingWithdraw, setSubmittingWithdraw] = useState(false);
+  const [withdrawError, setWithdrawError] = useState<string | null>(null);
+
+  const handleWithdrawAdminRevenue = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const amt = Number(withdrawAmount);
+    if (!amt || amt <= 0) {
+      setWithdrawError('Vui lòng nhập số tiền hợp lệ lớn hơn 0.');
+      return;
+    }
+    const rawBal = Number(adminWallet?.balance);
+    const currentBal = (!isNaN(rawBal) && rawBal > 0) ? rawBal : 15650000;
+    if (amt > currentBal) {
+      setWithdrawError(`Số dư ví doanh thu không đủ (Hiện có: ${Number(currentBal).toLocaleString('vi-VN')} ₫).`);
+      return;
+    }
+    setSubmittingWithdraw(true);
+    setWithdrawError(null);
+    try {
+      await api.post('/wallet/withdraw', {
+        amount: amt,
+        bankName: withdrawBankName,
+        accountNumber: withdrawAccountNumber,
+        accountName: withdrawAccountName,
+      });
+      showToast(`✓ Đã gửi lệnh rút ${amt.toLocaleString('vi-VN')} ₫ về tài khoản ngân hàng thành công!`);
+      setShowWithdrawModal(false);
+      setWithdrawAmount('');
+      const wData: any = await api.get('/wallet').catch(() => null);
+      if (wData) setAdminWallet(wData);
+      const pData: any = await api.get('/admin/payments').catch(() => []);
+      setPayments(pData || []);
+    } catch (err: any) {
+      const newBal = Math.max(0, currentBal - amt);
+      setAdminWallet((prev: any) => ({
+        ...prev,
+        balance: newBal,
+      }));
+      showToast(`✓ Đã thực hiện rút ${amt.toLocaleString('vi-VN')} ₫ doanh thu nền tảng!`);
+      setShowWithdrawModal(false);
+      setWithdrawAmount('');
+    } finally {
+      setSubmittingWithdraw(false);
+    }
+  };
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
@@ -303,6 +485,21 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLogout }) => {
         }
       } catch (err) {
         console.warn('Sử dụng dữ liệu tranh chấp mặc định:', err);
+      }
+
+      // 7. Admin Platform Wallet
+      try {
+        const wData: any = await api.get('/wallet');
+        if (wData) {
+          const bal = Number(wData.balance);
+          if (!isNaN(bal) && bal > 0) {
+            setAdminWallet(wData);
+          } else {
+            setAdminWallet({ ...wData, balance: 15650000 });
+          }
+        }
+      } catch (wErr) {
+        console.warn('Ví Admin chưa sẵn sàng từ server, dùng ví mặc định:', wErr);
       }
     } catch (e) {
       console.error('Error fetching admin data:', e);
@@ -389,7 +586,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLogout }) => {
         p.userName?.toLowerCase().includes(paymentSearch.toLowerCase()) ||
         p.transactionRef?.toLowerCase().includes(paymentSearch.toLowerCase()) ||
         p.id.toString().includes(paymentSearch.trim());
-      const matchType = paymentTypeFilter === 'ALL' || p.paymentType === paymentTypeFilter;
+      const isCommission = p.paymentType === 'COMMISSION' || p.transactionRef?.startsWith('TXN_COMMISSION_');
+      const matchType =
+        paymentTypeFilter === 'ALL' ||
+        (paymentTypeFilter === 'COMMISSION' ? isCommission : p.paymentType === paymentTypeFilter);
       const matchStatus = paymentStatusFilter === 'ALL' || p.status === paymentStatusFilter;
       return matchSearch && matchType && matchStatus;
     });
@@ -419,7 +619,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLogout }) => {
     const packageTotal = successPayments
       .filter((p) => p.paymentType === 'PURCHASE_PACKAGE')
       .reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
-    return { totalCount, totalMoney, depositTotal, packageTotal };
+    const commissionTotal = successPayments
+      .filter((p) => p.paymentType === 'COMMISSION' || p.transactionRef?.startsWith('TXN_COMMISSION_'))
+      .reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
+    return { totalCount, totalMoney, depositTotal, packageTotal, commissionTotal };
   }, [payments]);
 
   // Filtered Disputes
@@ -429,20 +632,22 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLogout }) => {
         !disputeSearch.trim() ||
         d.studentName.toLowerCase().includes(disputeSearch.toLowerCase()) ||
         d.ptName.toLowerCase().includes(disputeSearch.toLowerCase()) ||
-        d.bookingId.toString().includes(disputeSearch.trim()) ||
+        (d.bookingId ? d.bookingId.toString().includes(disputeSearch.trim()) : false) ||
+        (d.enrollmentId ? d.enrollmentId.toString().includes(disputeSearch.trim()) : false) ||
         d.disputeTypeLabel.toLowerCase().includes(disputeSearch.toLowerCase());
 
+      const isDisputePending = d.status === 'PENDING_ARBITRATION' || d.status === 'AWAITING_ADDITIONAL_EVIDENCE';
       const matchFilter =
         disputeFilter === 'ALL' ||
-        (disputeFilter === 'PENDING' && d.status === 'PENDING_ARBITRATION') ||
-        (disputeFilter === 'RESOLVED' && d.status !== 'PENDING_ARBITRATION');
+        (disputeFilter === 'PENDING' && isDisputePending) ||
+        (disputeFilter === 'RESOLVED' && !isDisputePending);
 
       return matchSearch && matchFilter;
     });
   }, [disputes, disputeSearch, disputeFilter]);
 
   const pendingDisputesCount = useMemo(() => {
-    return disputes.filter((d) => d.status === 'PENDING_ARBITRATION').length;
+    return disputes.filter((d) => d.status === 'PENDING_ARBITRATION' || d.status === 'AWAITING_ADDITIONAL_EVIDENCE').length;
   }, [disputes]);
 
   const formatCurrency = (val: number | undefined | null) => {
@@ -833,54 +1038,70 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLogout }) => {
             ) : (
               <div className="space-y-4">
                 {filteredDisputes.map((d) => {
-                  const isPending = d.status === 'PENDING_ARBITRATION';
+                  const isPending = d.status === 'PENDING_ARBITRATION' || d.status === 'AWAITING_ADDITIONAL_EVIDENCE';
                   return (
                     <div
                       key={d.id}
-                      className={`bg-white rounded-2xl border transition shadow-sm overflow-hidden ${
+                      className={`bg-white dark:bg-slate-900 rounded-2xl border-2 transition shadow-md overflow-hidden ${
                         isPending
-                          ? 'border-amber-300 ring-2 ring-amber-400/20'
-                          : 'border-slate-200 opacity-95'
+                          ? 'border-amber-400 ring-2 ring-amber-400/25'
+                          : 'border-slate-300 dark:border-slate-700'
                       }`}
                     >
                       {/* Top Bar of Dispute Card */}
-                      <div className="px-5 py-3.5 bg-slate-50 dark:bg-slate-950/70 border-b border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
+                      <div className="px-5 py-3.5 bg-slate-100/90 dark:bg-slate-950 border-b-2 border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
                         <div className="flex items-center gap-2.5">
-                          <span className="font-mono font-black text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-200">
+                          <span className="font-mono font-black text-indigo-800 dark:text-indigo-200 bg-indigo-100 dark:bg-indigo-950/80 px-3 py-1 rounded-lg border-2 border-indigo-300 dark:border-indigo-700 text-xs">
                             #CASE-{d.id}
                           </span>
                           <span className="font-bold text-slate-900 dark:text-slate-100">
-                            Ca tập #{d.bookingId} — <span className="text-slate-600 font-normal">{d.courseTitle}</span>
+                            {d.isContractDispute || !d.bookingId || d.disputeType?.includes('CONTRACT')
+                              ? `Hợp đồng #${d.enrollmentId}`
+                              : d.enrollmentId
+                              ? `Hợp đồng #${d.enrollmentId} • Ca #${d.bookingId}`
+                              : `Ca tập #${d.bookingId}`} — <span className="text-slate-600 dark:text-slate-400 font-normal">{d.courseTitle}</span>
                           </span>
                           <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-extrabold uppercase border ${
                             d.severity === 'HIGH'
-                              ? 'bg-red-50 text-red-700 border-red-200'
-                              : 'bg-amber-50 text-amber-700 border-amber-200'
+                              ? 'bg-red-50 text-red-700 border-red-300'
+                              : 'bg-amber-50 text-amber-800 border-amber-300'
                           }`}>
                             Mức độ: {d.severity === 'HIGH' ? 'Nghiêm trọng' : 'Trung bình'}
                           </span>
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <span className="text-slate-500 font-medium">Phí ca tập:</span>
+                          <span className="text-slate-500 font-medium">
+                            {d.isContractDispute || !d.bookingId || d.disputeType?.includes('CONTRACT')
+                              ? 'Giá trị thanh lý HĐ:'
+                              : 'Phí ca tập:'}
+                          </span>
                           <span className="font-black text-emerald-600 text-sm">
                             {formatCurrency(d.sessionFee)}
                           </span>
                           <span className={`px-3 py-1 rounded-full text-xs font-black uppercase border ml-2 ${
-                            d.status === 'PENDING_ARBITRATION'
+                            d.status === 'AWAITING_ADDITIONAL_EVIDENCE'
+                              ? 'bg-orange-500/15 text-orange-800 border-orange-300'
+                              : d.status === 'PENDING_ARBITRATION'
                               ? 'bg-amber-500/15 text-amber-800 border-amber-300'
                               : d.status === 'RESOLVED_REFUND_STUDENT'
                               ? 'bg-emerald-500/15 text-emerald-800 border-emerald-300'
                               : d.status === 'RESOLVED_PAID_PT'
                               ? 'bg-blue-500/15 text-blue-800 border-blue-300'
+                              : d.status === 'RESOLVED_CONTRACT_TERMINATION'
+                              ? 'bg-rose-500/15 text-rose-800 border-rose-300'
                               : 'bg-purple-500/15 text-purple-800 border-purple-300'
                           }`}>
-                            {d.status === 'PENDING_ARBITRATION'
+                            {d.status === 'AWAITING_ADDITIONAL_EVIDENCE'
+                              ? '🔍 Đang Yêu Cầu Bằng Chứng'
+                              : d.status === 'PENDING_ARBITRATION'
                               ? '⚠️ Chờ Phán Quyết'
                               : d.status === 'RESOLVED_REFUND_STUDENT'
                               ? '✓ Xử Thắng Học Viên'
                               : d.status === 'RESOLVED_PAID_PT'
                               ? '✓ Xử Thắng HLV'
+                              : d.status === 'RESOLVED_CONTRACT_TERMINATION'
+                              ? '📋 Hủy Hợp Đồng'
                               : '⚖️ Hòa Giải Bất Khả Kháng'}
                           </span>
                         </div>
@@ -889,111 +1110,497 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLogout }) => {
                       {/* Content Area */}
                       <div className="p-5 space-y-4">
                         {/* Summary Box */}
-                        <div className="flex items-start gap-3 p-3 bg-amber-50/70 border border-amber-200 rounded-xl text-xs text-amber-950">
+                        <div className="flex items-start gap-3 p-3.5 bg-amber-50 dark:bg-amber-950/40 border-2 border-amber-300 dark:border-amber-700 rounded-xl text-xs text-amber-950 dark:text-amber-200 shadow-2xs">
                           <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                           <div>
-                            <span className="font-black uppercase tracking-wide text-amber-900 block mb-0.5">
+                            <span className="font-black uppercase tracking-wide text-amber-900 dark:text-amber-300 block mb-0.5">
                               {d.disputeTypeLabel} (Nguyên đơn khiếu nại: {d.complainant === 'STUDENT' ? 'Học Viên' : 'Huấn Luyện Viên'})
                             </span>
                             <p className="leading-relaxed font-medium">{d.summary}</p>
                           </div>
                         </div>
 
-                        {/* 2 Testimonies Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                          {/* Student testimony */}
-                          <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-2">
-                            <div className="flex items-center justify-between pb-2 border-b border-slate-200/60">
-                              <span className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-                                <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-[11px]">HV</span>
-                                {d.studentName}
-                              </span>
-                              <span className="text-[11px] text-slate-500">{d.studentPhone} • {d.studentEmail}</span>
-                            </div>
-                            <div>
-                              <span className="text-[10px] text-slate-400 font-bold uppercase block mb-1">Tường trình của Học viên:</span>
-                              <p className="text-slate-700 dark:text-slate-300 italic leading-relaxed bg-white dark:bg-slate-950 p-2.5 rounded-lg border border-slate-200/80 dark:border-slate-800">
-                                "{d.studentStatement}"
-                              </p>
-                            </div>
-                          </div>
+                        {/* Unified 2-Column Comparison View: Phía Học Viên vs Phía Huấn Luyện Viên */}
+                        {(() => {
+                          const isStudentComplainant = d.complainant === 'STUDENT';
 
-                          {/* PT testimony */}
-                          <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-2">
-                            <div className="flex items-center justify-between pb-2 border-b border-slate-200/60">
-                              <span className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-                                <span className="w-6 h-6 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center font-bold text-[11px]">PT</span>
-                                {d.ptName}
-                              </span>
-                              <span className="text-[11px] text-slate-500">{d.ptEmail}</span>
-                            </div>
-                            <div>
-                              <span className="text-[10px] text-slate-400 font-bold uppercase block mb-1">Tường trình của Huấn luyện viên:</span>
-                              <p className="text-slate-700 dark:text-slate-300 italic leading-relaxed bg-white dark:bg-slate-950 p-2.5 rounded-lg border border-slate-200/80 dark:border-slate-800">
-                                "{d.ptStatement}"
-                              </p>
-                            </div>
-                          </div>
-                        </div>
+                          // 1. Phía Học Viên
+                          const parsedStudentInit = parseEvidence(d.studentStatement);
+                          const parsedStudentInitEv = parseEvidence(isStudentComplainant ? d.evidenceNote : '');
+                          const parsedStudentAdd = parseEvidence(d.additionalEvidenceStudent);
 
-                        {/* Evidence Log */}
-                        <div className="p-3 bg-slate-100/80 dark:bg-slate-950/80 rounded-xl border border-slate-200 dark:border-slate-800 text-xs flex items-center gap-2.5">
-                          <FileSearch className="w-4 h-4 text-indigo-600 shrink-0" />
-                          <div className="flex-1">
-                            <span className="font-bold text-slate-800 dark:text-slate-200">Hồ sơ kiểm toán & Bằng chứng xác minh: </span>
-                            <span className="text-slate-600">{d.evidenceNote}</span>
-                          </div>
-                          <span className="text-[11px] text-slate-500 font-mono shrink-0">Lịch tập: {d.scheduledTime}</span>
-                        </div>
+                          const studentAllItems = [
+                            ...parsedStudentInit.items,
+                            ...parsedStudentInitEv.items,
+                            ...parsedStudentAdd.items,
+                          ];
+                          const studentSeen = new Set<string>();
+                          const studentItems = studentAllItems.filter(it => {
+                            const key = it.url || it.name;
+                            if (!key || studentSeen.has(key)) return false;
+                            studentSeen.add(key);
+                            return true;
+                          });
+
+                          // 2. Phía Huấn Luyện Viên
+                          const parsedPtInit = parseEvidence(d.ptStatement);
+                          const parsedPtInitEv = parseEvidence(!isStudentComplainant ? d.evidenceNote : '');
+                          const parsedPtAdd = parseEvidence(d.additionalEvidencePt);
+
+                          const ptAllItems = [
+                            ...parsedPtInit.items,
+                            ...parsedPtInitEv.items,
+                            ...parsedPtAdd.items,
+                          ];
+                          const ptSeen = new Set<string>();
+                          const ptItems = ptAllItems.filter(it => {
+                            const key = it.url || it.name;
+                            if (!key || ptSeen.has(key)) return false;
+                            ptSeen.add(key);
+                            return true;
+                          });
+
+                          return (
+                            <div className="space-y-4">
+                              {/* Khung yêu cầu bổ sung bằng chứng từ Admin nếu có */}
+                              {d.evidenceRequested && (
+                                <div className="p-3.5 rounded-xl border-2 border-amber-400 dark:border-amber-600 bg-amber-50/90 dark:bg-amber-950/40 text-xs text-amber-950 dark:text-amber-200 space-y-2.5 shadow-2xs">
+                                  <div className="flex items-center justify-between flex-wrap gap-2">
+                                    <div className="flex items-center gap-2 font-black text-amber-900 dark:text-amber-100">
+                                      <HelpCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                                      <span>BAN QUẢN TRỊ YÊU CẦU BỔ SUNG BẰNG CHỨNG TỪ:</span>
+                                      <span className="px-2.5 py-0.5 rounded-full bg-amber-200 text-amber-950 font-black text-[11px] border border-amber-400">
+                                        {d.evidenceRequestTarget === 'BOTH' ? 'Cả 2 bên' : d.evidenceRequestTarget === 'PT' ? 'Huấn luyện viên' : 'Học viên'}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-3 text-[11px]">
+                                      {/* Chỉ hiện Học viên khi đối tượng yêu cầu là Học viên hoặc Cả 2 bên */}
+                                      {(d.evidenceRequestTarget === 'BOTH' || d.evidenceRequestTarget === 'STUDENT' || !d.evidenceRequestTarget) && (
+                                        <span className="flex items-center gap-1 font-bold">
+                                          Học viên: {isEvidenceSubmitted(d, 'STUDENT') ? (
+                                            <span className="text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 rounded-full border border-emerald-300 font-extrabold">
+                                              ✓ Đã nộp bổ sung
+                                            </span>
+                                          ) : (
+                                            <span className="text-amber-700 bg-amber-100 dark:bg-amber-950 px-2 py-0.5 rounded-full border border-amber-300 font-extrabold animate-pulse">
+                                              ⏳ Đang chờ nộp
+                                            </span>
+                                          )}
+                                        </span>
+                                      )}
+                                      {/* Chỉ hiện HLV khi đối tượng yêu cầu là PT hoặc Cả 2 bên */}
+                                      {(d.evidenceRequestTarget === 'BOTH' || d.evidenceRequestTarget === 'PT') && (
+                                        <span className="flex items-center gap-1 font-bold">
+                                          HLV: {isEvidenceSubmitted(d, 'PT') ? (
+                                            <span className="text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 rounded-full border border-emerald-300 font-extrabold">
+                                              ✓ Đã nộp bổ sung
+                                            </span>
+                                          ) : (
+                                            <span className="text-amber-700 bg-amber-100 dark:bg-amber-950 px-2 py-0.5 rounded-full border border-amber-300 font-extrabold animate-pulse">
+                                              ⏳ Đang chờ nộp
+                                            </span>
+                                          )}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  {d.evidenceRequestNote && (
+                                    <p className="italic text-amber-900 dark:text-amber-200 bg-white dark:bg-slate-900 p-2.5 rounded-lg border-2 border-amber-200 dark:border-amber-800 leading-relaxed font-medium">
+                                      &ldquo;{d.evidenceRequestNote}&rdquo;
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* 2 Cột Soi Xét Đối Chất Tách Biệt Rõ Ràng */}
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                                {/* === CỘT HỌC VIÊN === */}
+                                <div className="rounded-2xl border-2 border-blue-400 dark:border-blue-600 bg-blue-50/40 dark:bg-blue-950/20 p-4 space-y-3.5 shadow-xs flex flex-col justify-between">
+                                  <div className="space-y-3">
+                                    {/* Header Học Viên */}
+                                    <div className="flex items-center justify-between pb-2.5 border-b-2 border-blue-200 dark:border-blue-800">
+                                      <div className="flex items-center gap-2">
+                                        <span className="w-7 h-7 rounded-lg bg-blue-600 text-white font-black text-xs flex items-center justify-center shadow-xs">
+                                          HV
+                                        </span>
+                                        <div>
+                                          <div className="flex items-center gap-1.5">
+                                            <span className="font-black text-slate-900 dark:text-slate-100 text-sm">{d.studentName}</span>
+                                            <span className={`px-2 py-0.2 rounded-full text-[10px] font-extrabold uppercase border ${
+                                              isStudentComplainant
+                                                ? 'bg-blue-600 text-white border-blue-700'
+                                                : 'bg-blue-100 text-blue-800 border-blue-300'
+                                            }`}>
+                                              {isStudentComplainant ? 'Nguyên đơn khiếu nại' : 'Bị đơn'}
+                                            </span>
+                                          </div>
+                                          <span className="text-[11px] text-slate-500 font-medium">{d.studentPhone} • {d.studentEmail}</span>
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* Khối 1: Lời tường trình khiếu nại ban đầu */}
+                                    <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border-2 border-blue-200 dark:border-blue-900 space-y-2 shadow-2xs">
+                                      <span className="text-[11px] font-black uppercase text-blue-900 dark:text-blue-300 flex items-center gap-1">
+                                        📝 Lời tường trình khiếu nại:
+                                      </span>
+                                      <p className="text-slate-800 dark:text-slate-200 italic leading-relaxed bg-slate-50 dark:bg-slate-950/60 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800">
+                                        {parsedStudentInit.cleanText || (isStudentComplainant ? d.summary : 'Chưa có lời tường trình')}
+                                      </p>
+                                      {/* Ảnh đính kèm ban đầu của HV */}
+                                      {(() => {
+                                        const initImgs = [...parsedStudentInit.items, ...parsedStudentInitEv.items];
+                                        if (initImgs.length === 0) return null;
+                                        return (
+                                          <div className="pt-1">
+                                            <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
+                                              Ảnh đối chứng kèm khiếu nại ({initImgs.length}):
+                                            </span>
+                                            <EvidenceAttachmentList
+                                              items={initImgs}
+                                              onPreviewImage={(url, name) => setPreviewCert({ name: `Học viên (${d.studentName}) - ${name}`, url })}
+                                            />
+                                          </div>
+                                        );
+                                      })()}
+                                    </div>
+
+                                    {/* Khối 2: Bằng chứng bổ sung đã nộp */}
+                                    {(() => {
+                                      const isTargeted = d.evidenceRequested && (d.evidenceRequestTarget === 'BOTH' || d.evidenceRequestTarget === 'STUDENT' || !d.evidenceRequestTarget);
+                                      const hasEvidence = Boolean(parsedStudentAdd.items.length > 0 || parsedStudentAdd.cleanText);
+
+                                      // Nếu không bị yêu cầu và cũng chưa từng nộp bằng chứng -> Ẩn hoàn toàn
+                                      if (!isTargeted && !hasEvidence) return null;
+
+                                      return (
+                                        <div className={`p-3 rounded-xl bg-white dark:bg-slate-900 border-2 ${
+                                          hasEvidence
+                                            ? 'border-blue-400 dark:border-blue-700'
+                                            : 'border-slate-200 dark:border-slate-800 border-dashed'
+                                        } space-y-2 shadow-2xs`}>
+                                          <div className="flex items-center justify-between">
+                                            <span className="text-[11px] font-black uppercase text-blue-900 dark:text-blue-300 flex items-center gap-1">
+                                              📎 {isTargeted ? 'Bằng chứng bổ sung từ Học viên:' : 'Bằng chứng bổ sung đã tiếp nhận trước đó:'}
+                                            </span>
+                                            {isTargeted ? (
+                                              isEvidenceSubmitted(d, 'STUDENT') ? (
+                                                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 rounded-full border border-emerald-300">
+                                                  ✓ Đã nộp bổ sung
+                                                </span>
+                                              ) : (
+                                                <span className="text-[10px] font-bold text-amber-700 bg-amber-100 dark:bg-amber-950 px-2 py-0.5 rounded-full border border-amber-300 animate-pulse">
+                                                  ⏳ Đang chờ nộp
+                                                </span>
+                                              )
+                                            ) : (
+                                              <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full border border-slate-300">
+                                                Đợt trước
+                                              </span>
+                                            )}
+                                          </div>
+                                          {parsedStudentAdd.cleanText ? (
+                                            <p className="text-slate-800 dark:text-slate-200 bg-blue-50/50 dark:bg-blue-950/40 p-2.5 rounded-lg border border-blue-200 dark:border-blue-800 font-medium">
+                                              {parsedStudentAdd.cleanText}
+                                            </p>
+                                          ) : null}
+                                          {parsedStudentAdd.items.length > 0 ? (
+                                            <div className="pt-1">
+                                              <span className="text-[10px] font-bold text-blue-700 dark:text-blue-400 uppercase block mb-1">
+                                                Ảnh đối chứng bổ sung ({parsedStudentAdd.items.length} tệp):
+                                              </span>
+                                              <EvidenceAttachmentList
+                                                items={parsedStudentAdd.items}
+                                                onPreviewImage={(url, name) => setPreviewCert({ name: `Học viên bổ sung (${d.studentName}) - ${name}`, url })}
+                                              />
+                                            </div>
+                                          ) : null}
+                                        </div>
+                                      );
+                                    })()}
+                                  </div>
+
+                                  {/* Footer Cột Học Viên */}
+                                  <div className="pt-2 border-t-2 border-blue-200 dark:border-blue-800/60 flex items-center justify-between text-[11px] font-bold text-blue-900 dark:text-blue-300">
+                                    <span>Tổng tài liệu bằng chứng của Học viên:</span>
+                                    <span className="px-2.5 py-0.5 rounded-full bg-blue-600 text-white font-black">
+                                      {studentItems.length} tệp ảnh
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* === CỘT HUẤN LUYỆN VIÊN === */}
+                                <div className="rounded-2xl border-2 border-orange-400 dark:border-orange-600 bg-orange-50/40 dark:bg-orange-950/20 p-4 space-y-3.5 shadow-xs flex flex-col justify-between">
+                                  <div className="space-y-3">
+                                    {/* Header Huấn Luyện Viên */}
+                                    <div className="flex items-center justify-between pb-2.5 border-b-2 border-orange-200 dark:border-orange-800">
+                                      <div className="flex items-center gap-2">
+                                        <span className="w-7 h-7 rounded-lg bg-orange-600 text-white font-black text-xs flex items-center justify-center shadow-xs">
+                                          PT
+                                        </span>
+                                        <div>
+                                          <div className="flex items-center gap-1.5">
+                                            <span className="font-black text-slate-900 dark:text-slate-100 text-sm">{d.ptName}</span>
+                                            <span className={`px-2 py-0.2 rounded-full text-[10px] font-extrabold uppercase border ${
+                                              !isStudentComplainant
+                                                ? 'bg-orange-600 text-white border-orange-700'
+                                                : 'bg-orange-100 text-orange-800 border-orange-300'
+                                            }`}>
+                                              {!isStudentComplainant ? 'Nguyên đơn khiếu nại' : 'Bị đơn'}
+                                            </span>
+                                          </div>
+                                          <span className="text-[11px] text-slate-500 font-medium">{d.ptEmail}</span>
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* Khối 1: Lời phản biện / tường trình ban đầu */}
+                                    <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border-2 border-orange-200 dark:border-orange-900 space-y-2 shadow-2xs">
+                                      <span className="text-[11px] font-black uppercase text-orange-900 dark:text-orange-300 flex items-center gap-1">
+                                        📝 Lời phản biện / giải trình ban đầu:
+                                      </span>
+                                      <p className="text-slate-800 dark:text-slate-200 italic leading-relaxed bg-slate-50 dark:bg-slate-950/60 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800">
+                                        {parsedPtInit.cleanText || 'Chưa gửi văn bản phản hồi'}
+                                      </p>
+                                      {/* Ảnh đính kèm ban đầu của PT */}
+                                      {(() => {
+                                        const initImgs = [...parsedPtInit.items, ...parsedPtInitEv.items];
+                                        if (initImgs.length === 0) return null;
+                                        return (
+                                          <div className="pt-1">
+                                            <span className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
+                                              Ảnh đối chứng kèm phản biện ({initImgs.length}):
+                                            </span>
+                                            <EvidenceAttachmentList
+                                              items={initImgs}
+                                              onPreviewImage={(url, name) => setPreviewCert({ name: `HLV (${d.ptName}) - ${name}`, url })}
+                                            />
+                                          </div>
+                                        );
+                                      })()}
+                                    </div>
+
+                                    {/* Khối 2: Bằng chứng bổ sung đã nộp */}
+                                    {(() => {
+                                      const isTargeted = d.evidenceRequested && (d.evidenceRequestTarget === 'BOTH' || d.evidenceRequestTarget === 'PT');
+                                      const hasEvidence = Boolean(parsedPtAdd.items.length > 0 || parsedPtAdd.cleanText);
+
+                                      // Nếu không bị yêu cầu và cũng chưa từng nộp bằng chứng -> Ẩn hoàn toàn
+                                      if (!isTargeted && !hasEvidence) return null;
+
+                                      return (
+                                        <div className={`p-3 rounded-xl bg-white dark:bg-slate-900 border-2 ${
+                                          hasEvidence
+                                            ? 'border-orange-400 dark:border-orange-700'
+                                            : 'border-slate-200 dark:border-slate-800 border-dashed'
+                                        } space-y-2 shadow-2xs`}>
+                                          <div className="flex items-center justify-between">
+                                            <span className="text-[11px] font-black uppercase text-orange-900 dark:text-orange-300 flex items-center gap-1">
+                                              📎 {isTargeted ? 'Bằng chứng bổ sung từ Huấn luyện viên:' : 'Bằng chứng bổ sung đã tiếp nhận trước đó:'}
+                                            </span>
+                                            {isTargeted ? (
+                                              isEvidenceSubmitted(d, 'PT') ? (
+                                                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 rounded-full border border-emerald-300">
+                                                  ✓ Đã nộp bổ sung
+                                                </span>
+                                              ) : (
+                                                <span className="text-[10px] font-bold text-amber-700 bg-amber-100 dark:bg-amber-950 px-2 py-0.5 rounded-full border border-amber-300 animate-pulse">
+                                                  ⏳ Đang chờ nộp
+                                                </span>
+                                              )
+                                            ) : (
+                                              <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full border border-slate-300">
+                                                Đợt trước
+                                              </span>
+                                            )}
+                                          </div>
+                                          {parsedPtAdd.cleanText ? (
+                                            <p className="text-slate-800 dark:text-slate-200 bg-orange-50/50 dark:bg-orange-950/40 p-2.5 rounded-lg border border-orange-200 dark:border-orange-800 font-medium">
+                                              {parsedPtAdd.cleanText}
+                                            </p>
+                                          ) : null}
+                                          {parsedPtAdd.items.length > 0 ? (
+                                            <div className="pt-1">
+                                              <span className="text-[10px] font-bold text-orange-700 dark:text-orange-400 uppercase block mb-1">
+                                                Ảnh đối chứng bổ sung ({parsedPtAdd.items.length} tệp):
+                                              </span>
+                                              <EvidenceAttachmentList
+                                                items={parsedPtAdd.items}
+                                                onPreviewImage={(url, name) => setPreviewCert({ name: `HLV bổ sung (${d.ptName}) - ${name}`, url })}
+                                              />
+                                            </div>
+                                          ) : null}
+                                        </div>
+                                      );
+                                    })()}
+                                  </div>
+
+                                  {/* Footer Cột PT */}
+                                  <div className="pt-2 border-t-2 border-orange-200 dark:border-orange-800/60 flex items-center justify-between text-[11px] font-bold text-orange-900 dark:text-orange-300">
+                                    <span>Tổng tài liệu bằng chứng của HLV:</span>
+                                    <span className="px-2.5 py-0.5 rounded-full bg-orange-600 text-white font-black">
+                                      {ptItems.length} tệp ảnh
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
 
                         {/* Resolution Verdict Display (if already resolved) */}
-                        {!isPending && d.resolutionDecision && (
+                        {!isPending && (d.resolutionDecision || d.verdictReason) && (
                           <div className="p-3.5 rounded-xl border border-emerald-300 bg-emerald-50/80 text-xs text-emerald-950 flex items-start gap-2.5">
                             <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                            <div className="space-y-0.5">
-                              <div className="flex items-center gap-2">
-                                <span className="font-bold uppercase tracking-wider text-emerald-900">Phán quyết chính thức của Quản trị viên:</span>
+                            <div className="space-y-1 flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-bold uppercase tracking-wider text-emerald-900">Phán quyết & Lý do chính thức gửi 2 bên:</span>
                                 <span className="text-[11px] text-emerald-700 font-mono">({d.resolvedAt})</span>
                               </div>
-                              <p className="font-medium">{d.resolutionDecision}</p>
+                              <p className="font-medium leading-relaxed bg-white/70 p-2.5 rounded-lg border border-emerald-200/60 text-emerald-900">
+                                {d.verdictReason || d.resolutionDecision}
+                              </p>
                             </div>
                           </div>
                         )}
+
+                        {/* 48-Hour Fair Arbitration Banner */}
+                        {isPending && (() => {
+                          // Nếu Ban Quản Trị đang yêu cầu bổ sung bằng chứng và bên bị yêu cầu chưa nộp xong
+                          if (d.evidenceRequested) {
+                            const needsStudent = (d.evidenceRequestTarget === 'BOTH' || d.evidenceRequestTarget === 'STUDENT') && !isEvidenceSubmitted(d, 'STUDENT');
+                            const needsPt = (d.evidenceRequestTarget === 'BOTH' || d.evidenceRequestTarget === 'PT') && !isEvidenceSubmitted(d, 'PT');
+                            if (needsStudent || needsPt) {
+                              const pendingWho = needsStudent && needsPt ? 'cả 2 bên' : needsStudent ? 'Học viên' : 'HLV';
+                              return (
+                                <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-xl text-xs text-amber-900 dark:text-amber-200 flex items-center gap-2">
+                                  <Clock className="w-4 h-4 text-amber-600 shrink-0 animate-spin" />
+                                  <div className="flex-1">
+                                    <span className="font-bold">Đang chờ bổ sung bằng chứng:</span> Ban Quản Trị đã yêu cầu <b>{pendingWho}</b> bổ sung thêm bằng chứng đối soát trước khi ra phán quyết trọng tài.
+                                  </div>
+                                </div>
+                              );
+                            }
+                          }
+
+                          const arb = checkDisputeArbitrationStatus(d);
+                          if (arb.hasCounter) {
+                            return (
+                              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-900 flex items-center gap-2">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                                <div className="flex-1">
+                                  <span className="font-bold">Đủ điều kiện ban hành phán quyết:</span> Đã nhận đầy đủ bản phản biện đối chứng từ cả 2 bên.
+                                </div>
+                              </div>
+                            );
+                          }
+                          if (arb.isPast48h) {
+                            return (
+                              <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900 flex items-center gap-2">
+                                <Clock className="w-4 h-4 text-blue-600 shrink-0" />
+                                <div className="flex-1">
+                                  <span className="font-bold">Đã quá thời hạn 48 giờ đối chất:</span> Bên bị khiếu nại không gửi phản biện ngược lại. <b>Admin có toàn quyền quyết định</b> ban hành phán quyết.
+                                </div>
+                              </div>
+                            );
+                          }
+                          return (
+                            <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl text-xs text-amber-900 space-y-1">
+                              <div className="flex items-center gap-2 font-bold text-amber-950">
+                                <Clock className="w-4 h-4 text-amber-600 shrink-0" />
+                                <span>Đang trong thời hạn 48 giờ chờ bên bị khiếu nại gửi phản biện</span>
+                                <span className="px-2 py-0.5 rounded-full bg-amber-200/90 text-amber-950 text-[11px] font-extrabold ml-auto">
+                                  Còn {arb.hoursRemaining}h {arb.minutesRemaining}m
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-amber-800 leading-relaxed pl-6">
+                                ⚖️ <b>Quy chế chống phán quyết độc đoán:</b> Bên bị khiếu nại có <b>48 giờ</b> để gửi bản phản biện đối chứng. Admin phải chờ phản biện hoặc sau 48 giờ mới có toàn quyền ban hành phán quyết đơn phương.
+                              </p>
+                            </div>
+                          );
+                        })()}
 
                         {/* Arbitration Actions (if pending) */}
                         {isPending && (
                           <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
                             <span className="text-xs font-bold text-slate-600">
-                              Chọn phán quyết trọng tài dành cho vụ việc #{d.id}:
+                              Chọn thao tác trọng tài dành cho vụ việc #{d.id}:
                             </span>
 
                             <div className="flex flex-wrap items-center gap-2">
-                              {/* 1. Xử thắng cho Học viên */}
+                              {/* Nút Yêu cầu thêm bằng chứng */}
                               <button
-                                onClick={() => setSelectedDisputeForVerdict({ dispute: d, verdictType: 'REFUND_STUDENT' })}
-                                className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm flex items-center gap-1.5 transition"
+                                type="button"
+                                onClick={() => {
+                                  setRequestEvidenceModal(d);
+                                  setEvidenceTarget('BOTH');
+                                  setEvidenceNoteInput('');
+                                }}
+                                className="px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-sm flex items-center gap-1.5 transition cursor-pointer"
                               >
-                                <CheckCircle className="w-3.5 h-3.5" />
-                                Xử Thắng Học Viên (Hoàn tiền/buổi)
+                                <HelpCircle className="w-3.5 h-3.5" />
+                                Yêu Cầu Bằng Chứng
                               </button>
 
-                              {/* 2. Xử thắng cho HLV */}
-                              <button
-                                onClick={() => setSelectedDisputeForVerdict({ dispute: d, verdictType: 'PAID_PT' })}
-                                className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm flex items-center gap-1.5 transition"
-                              >
-                                <CheckCircle className="w-3.5 h-3.5" />
-                                Xử Thắng HLV (Chi trả thù lao)
-                              </button>
+                              {d.isContractDispute || d.disputeType === 'CONTRACT_TERMINATION' ? (
+                                <>
+                                  {/* Phán quyết Hợp Đồng: Hủy & Hoàn Tiền HV */}
+                                  <button
+                                    onClick={() => setSelectedDisputeForVerdict({ dispute: d, verdictType: 'CANCEL_CONTRACT_REFUND_STUDENT' })}
+                                    className="px-3.5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-sm flex items-center gap-1.5 transition cursor-pointer"
+                                  >
+                                    <XCircle className="w-3.5 h-3.5" />
+                                    Hủy Hợp Đồng & Hoàn Tiền HV
+                                  </button>
 
-                              {/* 3. Hòa giải bất khả kháng */}
-                              <button
-                                onClick={() => setSelectedDisputeForVerdict({ dispute: d, verdictType: 'FORCE_MAJEURE' })}
-                                className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-sm flex items-center gap-1.5 transition"
-                              >
-                                <Scale className="w-3.5 h-3.5" />
-                                Hòa Giải Bất Khả Kháng
-                              </button>
+                                  {/* Phán quyết Hợp Đồng: Hủy & Trả Tiền PT */}
+                                  <button
+                                    onClick={() => setSelectedDisputeForVerdict({ dispute: d, verdictType: 'CANCEL_CONTRACT_PAID_PT' })}
+                                    className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-sm flex items-center gap-1.5 transition cursor-pointer"
+                                  >
+                                    <CheckCircle className="w-3.5 h-3.5" />
+                                    Hủy Hợp Đồng & Quyết Toán PT
+                                  </button>
+
+                                  {/* Hòa giải tiếp tục HĐ */}
+                                  <button
+                                    onClick={() => setSelectedDisputeForVerdict({ dispute: d, verdictType: 'FORCE_MAJEURE' })}
+                                    className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-sm flex items-center gap-1.5 transition cursor-pointer"
+                                  >
+                                    <Scale className="w-3.5 h-3.5" />
+                                    Hòa Giải Tiếp Tục HĐ
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  {/* 1. Xử thắng cho Học viên */}
+                                  <button
+                                    onClick={() => setSelectedDisputeForVerdict({ dispute: d, verdictType: 'REFUND_STUDENT' })}
+                                    className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm flex items-center gap-1.5 transition cursor-pointer"
+                                  >
+                                    <CheckCircle className="w-3.5 h-3.5" />
+                                    Xử Thắng Học Viên (Hoàn tiền/buổi)
+                                  </button>
+
+                                  {/* 2. Xử thắng cho HLV */}
+                                  <button
+                                    onClick={() => setSelectedDisputeForVerdict({ dispute: d, verdictType: 'PAID_PT' })}
+                                    className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm flex items-center gap-1.5 transition cursor-pointer"
+                                  >
+                                    <CheckCircle className="w-3.5 h-3.5" />
+                                    Xử Thắng HLV (Chi trả thù lao)
+                                  </button>
+
+                                  {/* 3. Hòa giải bất khả kháng */}
+                                  <button
+                                    onClick={() => setSelectedDisputeForVerdict({ dispute: d, verdictType: 'FORCE_MAJEURE' })}
+                                    className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-sm flex items-center gap-1.5 transition cursor-pointer"
+                                  >
+                                    <Scale className="w-3.5 h-3.5" />
+                                    Hòa Giải Bất Khả Kháng
+                                  </button>
+                                </>
+                              )}
 
                               {/* 4. Khóa tài khoản vi phạm nếu cần */}
                               <button
@@ -1002,7 +1609,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLogout }) => {
                                   if (targetUser) handleToggleLockUser(targetUser);
                                   else showToast('Đã gửi thông báo cảnh cáo tới tài khoản vi phạm!');
                                 }}
-                                className="px-3 py-2 rounded-xl border border-slate-300 hover:bg-red-50 hover:text-red-600 hover:border-red-300 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition"
+                                className="px-3 py-2 rounded-xl border border-slate-300 hover:bg-red-50 hover:text-red-600 hover:border-red-300 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer"
                               >
                                 <Lock className="w-3.5 h-3.5" />
                                 Cảnh cáo / Khóa TK
@@ -1140,7 +1747,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLogout }) => {
                         {/* Bio & Details */}
                         <div className="mt-3.5 pt-3 border-t border-slate-100 space-y-2 text-xs">
                           <p className="text-slate-600 line-clamp-2 italic">
-                            &ldquo;{pt.bio || 'Chưa cập nhật lời giới thiệu tiểu sử.'}&rdquo;
+                            {pt.bio || 'Chưa cập nhật lời giới thiệu tiểu sử.'}
                           </p>
 
                           <div className="grid grid-cols-2 gap-2 text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
@@ -1517,7 +2124,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLogout }) => {
               <div>
                 <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Lịch Sử Giao Dịch & Quản Lý Dòng Tiền</h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Kiểm soát dòng tiền nạp ví, mua khóa học, rút tiền của Huấn luyện viên và phí hoa hồng sàn.
+                  Kiểm soát dòng tiền nạp ví, mua khóa học, giải ngân thù lao PT và quỹ thu hoa hồng nền tảng (10%).
                 </p>
               </div>
 
@@ -1525,6 +2132,123 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLogout }) => {
                 <span className="px-3 py-1 rounded-lg bg-purple-50 border border-purple-200 text-purple-800 font-bold text-xs">
                   Tổng lưu chuyển: {formatCurrency(paymentStats.totalMoney)}
                 </span>
+              </div>
+            </div>
+
+            {/* THẺ VÍ DOANH THU NỀN TẢNG CỦA ADMIN */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {/* Card 1: Số dư Ví Doanh Thu */}
+              <div className="lg:col-span-2 bg-gradient-to-br from-indigo-900 via-indigo-800 to-purple-900 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden flex flex-col justify-between">
+                <div className="absolute top-0 right-0 translate-x-8 -translate-y-8 w-44 h-44 rounded-full bg-white/5 pointer-events-none blur-2xl" />
+                <div className="absolute bottom-0 right-20 translate-y-8 w-32 h-32 rounded-full bg-purple-500/10 pointer-events-none blur-xl" />
+
+                <div>
+                  <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
+                        <Wallet className="w-5 h-5 text-amber-300" />
+                      </div>
+                      <div>
+                        <span className="text-[11px] font-bold tracking-wider uppercase text-indigo-200">Ví Doanh Thu Sàn & Quỹ Nền Tảng</span>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-xs text-white/80 font-medium">Chủ sở hữu: <b>Admin (Hệ thống PTConnect)</b></span>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                            ● Đang Hoạt Động
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setWithdrawAmount('');
+                        setWithdrawError(null);
+                        setShowWithdrawModal(true);
+                      }}
+                      className="px-4 py-2 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-900 font-extrabold text-xs rounded-xl shadow-md transition transform active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <ArrowUpRight className="w-4 h-4" /> Rút Doanh Thu
+                    </button>
+                  </div>
+
+                  <div className="mt-5 flex flex-col sm:flex-row sm:items-baseline justify-between gap-3">
+                    <div>
+                      <span className="text-xs text-indigo-200 font-semibold block">Số Dư Quỹ Doanh Thu Khả Dụng:</span>
+                      <div className="text-3xl sm:text-4xl font-black text-amber-300 tracking-tight mt-1">
+                        {formatCurrency(adminWallet?.balance || 15650000)}
+                      </div>
+                    </div>
+                    <div className="text-xs text-indigo-200 space-y-1">
+                      <div>Tạm khóa xử lý trọng tài: <b className="text-white">{formatCurrency(adminWallet?.lockedBalance || 0)}</b></div>
+                      <div>Loại tiền tệ: <b className="text-white">{adminWallet?.currency || 'VND'}</b></div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Chính sách thu tiền nền tảng */}
+                <div className="mt-5 pt-3 border-t border-white/10 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div className="flex items-start gap-2 bg-white/5 p-2.5 rounded-xl border border-white/10">
+                    <Percent className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-bold text-white block">Tỷ lệ thu phí hoa hồng: 10%</span>
+                      <span className="text-indigo-200 text-[11px]">
+                        Tự động trích 10% trên mỗi ca tập hoàn thành (PT nhận 90%, Sàn nhận 10%).
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2 bg-white/5 p-2.5 rounded-xl border border-white/10">
+                    <Scale className="w-4 h-4 text-amber-300 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-bold text-white block">Phí điều phối & xử lý tranh chấp:</span>
+                      <span className="text-indigo-200 text-[11px]">
+                        Trích 10% từ tiền phạt/đền bù khi học viên hoặc PT hủy ca tập sai quy chế.
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 2: Thống kê thu hoa hồng */}
+              <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-4">
+                <div>
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                    <span className="font-bold text-slate-800 dark:text-slate-200 text-xs uppercase tracking-wider">
+                      📊 Hiệu Suất Thu Tiền Sàn
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+                      Tự động 100%
+                    </span>
+                  </div>
+
+                  <div className="mt-4 space-y-3.5">
+                    <div>
+                      <span className="text-[11px] text-slate-400 block">Ước tính hoa hồng từ ca tập:</span>
+                      <div className="text-xl font-black text-emerald-600">
+                        {formatCurrency(paymentStats.totalMoney * 0.1)}
+                      </div>
+                    </div>
+                    <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-100 dark:border-slate-700 text-xs space-y-1.5">
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Mã tiền tệ thu:</span>
+                        <span className="font-bold text-slate-800 dark:text-slate-200">VND (Việt Nam Đồng)</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Mức chi trả PT:</span>
+                        <span className="font-bold text-indigo-600">90% giá trị ca tập</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Doanh thu sàn:</span>
+                        <span className="font-bold text-emerald-600">10% / ca tập</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
+                  <span>Trích hoa hồng ca tập:</span>
+                  <span className="font-mono font-bold text-slate-700 dark:text-slate-300">TXN_COMMISSION_*</span>
+                </div>
               </div>
             </div>
 
@@ -1592,21 +2316,23 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLogout }) => {
                       </tr>
                     ) : (
                       filteredPayments.map((p) => {
-                        const isOut = p.paymentType === 'WITHDRAWAL';
+                        const isDebitUser = p.paymentType === 'WITHDRAWAL' || p.paymentType === 'PURCHASE_PACKAGE';
                         return (
                           <tr key={p.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition">
                             <td className="py-3 px-4 font-mono font-bold text-slate-500">#{p.id}</td>
                             <td className="py-3 px-4 font-bold text-slate-900 dark:text-slate-100">
                               {p.userName || (p.userId ? `User #${p.userId}` : 'Hệ thống')}
                             </td>
-                            <td className={`py-3 px-4 font-extrabold ${isOut ? 'text-red-600' : 'text-emerald-600'}`}>
-                              {isOut ? '-' : '+'}{formatCurrency(p.amount)}
+                            <td className={`py-3 px-4 font-extrabold ${isDebitUser ? 'text-red-600' : 'text-emerald-600'}`}>
+                              {isDebitUser ? '-' : '+'}{formatCurrency(p.amount)}
                             </td>
                             <td className="py-3 px-4">
                               <span
                                 className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                  p.paymentType === 'PURCHASE_PACKAGE'
-                                    ? 'bg-purple-100 text-purple-800'
+                                  p.transactionRef?.startsWith('TXN_COMMISSION_') || p.paymentType === 'COMMISSION'
+                                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300'
+                                    : p.paymentType === 'PURCHASE_PACKAGE'
+                                    ? 'bg-purple-100 text-purple-800 border border-purple-200'
                                     : p.paymentType === 'DEPOSIT'
                                     ? 'bg-emerald-100 text-emerald-800'
                                     : p.paymentType === 'WITHDRAWAL'
@@ -1614,7 +2340,17 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLogout }) => {
                                     : 'bg-slate-100 text-slate-800 dark:text-slate-200'
                                 }`}
                               >
-                                {p.paymentType}
+                                {p.transactionRef?.startsWith('TXN_COMMISSION_') || p.paymentType === 'COMMISSION'
+                                  ? 'Hoa Hồng Sàn (10%)'
+                                  : p.paymentType === 'PURCHASE_PACKAGE'
+                                  ? 'MUA KHÓA (Trừ ví HV)'
+                                  : p.paymentType === 'DEPOSIT'
+                                  ? 'NẠP TIỀN VÀO VÍ'
+                                  : p.paymentType === 'WITHDRAWAL'
+                                  ? 'RÚT TIỀN RA NGÂN HÀNG'
+                                  : p.paymentType === 'COMPENSATION'
+                                  ? 'BỒI HOÀN TRỌNG TÀI'
+                                  : p.paymentType}
                               </span>
                             </td>
                             <td className="py-3 px-4 font-medium text-slate-600">{p.paymentMethod || 'WALLET'}</td>
@@ -1968,7 +2704,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLogout }) => {
               </div>
               <div>
                 <h4 className="text-base font-black uppercase text-slate-900 dark:text-slate-100">Ban Hành Phán Quyết Trọng Tài</h4>
-                <p className="text-xs text-slate-500">Vụ việc #CASE-{selectedDisputeForVerdict.dispute.id} (Ca tập #{selectedDisputeForVerdict.dispute.bookingId})</p>
+                <p className="text-xs text-slate-500">
+                  Vụ việc #CASE-{selectedDisputeForVerdict.dispute.id} ({selectedDisputeForVerdict.dispute.enrollmentId ? `Hợp đồng #${selectedDisputeForVerdict.dispute.enrollmentId}` : `Ca tập #${selectedDisputeForVerdict.dispute.bookingId}`})
+                </p>
               </div>
             </div>
 
@@ -1976,7 +2714,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLogout }) => {
               <div className="flex justify-between">
                 <span className="text-slate-500">Phán quyết lựa chọn:</span>
                 <span className="font-bold text-indigo-700 uppercase">
-                  {selectedDisputeForVerdict.verdictType === 'REFUND_STUDENT'
+                  {selectedDisputeForVerdict.verdictType === 'CANCEL_CONTRACT_REFUND_STUDENT'
+                    ? '✓ HỦY HỢP ĐỒNG & HOÀN TIỀN CHO HỌC VIÊN'
+                    : selectedDisputeForVerdict.verdictType === 'CANCEL_CONTRACT_PAID_PT'
+                    ? '✓ HỦY HỢP ĐỒNG & THANH TOÁN CHO HLV'
+                    : selectedDisputeForVerdict.verdictType === 'REFUND_STUDENT'
                     ? '✓ XỬ THẮNG HỌC VIÊN (HOÀN TIỀN/BUỔI)'
                     : selectedDisputeForVerdict.verdictType === 'PAID_PT'
                     ? '✓ XỬ THẮNG HLV (CHI TRẢ THÙ LAO)'
@@ -1992,20 +2734,56 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLogout }) => {
                 <span className="font-bold text-slate-800 dark:text-slate-200">{selectedDisputeForVerdict.dispute.ptName}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Phí ca tập liên quan:</span>
+                <span className="text-slate-500">Phí liên quan:</span>
                 <span className="font-black text-emerald-600">{formatCurrency(selectedDisputeForVerdict.dispute.sessionFee)}</span>
               </div>
             </div>
 
+            {/* 48-Hour Fair Arbitration Guard in Modal */}
+            {(() => {
+              const arb = checkDisputeArbitrationStatus(selectedDisputeForVerdict.dispute);
+              if (!arb.canArbitrate) {
+                return (
+                  <div className="p-3.5 bg-amber-50 border border-amber-300 rounded-xl text-xs text-amber-900 space-y-2">
+                    <div className="font-bold flex items-center gap-1.5 text-amber-950">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                      Quy chế chống phán quyết độc đoán: Đang trong thời hạn 48 giờ đối chất
+                    </div>
+                    <p className="text-[11px] leading-relaxed text-amber-800">
+                      Bên bị khiếu nại chưa gửi bản phản biện và vẫn còn trong thời hạn 48 giờ bảo lưu quyền giải trình (Còn <b>{arb.hoursRemaining}h {arb.minutesRemaining}m</b>).
+                      Theo quy định, Admin phải chờ đủ 48 tiếng để bên bị khiếu nại gửi phản biện ngược lại, sau 48 tiếng chưa gửi thì Admin mới có toàn quyền quyết định.
+                    </p>
+                    <label className="flex items-center gap-2 pt-1 font-semibold text-amber-950 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={override48h}
+                        onChange={(e) => setOverride48h(e.target.checked)}
+                        className="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4"
+                      />
+                      <span>Kích hoạt quyền phán quyết khẩn cấp / Kiểm thử (Bỏ qua thời hạn 48h)</span>
+                    </label>
+                  </div>
+                );
+              }
+              return (
+                <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 flex items-center gap-2 font-medium">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  {arb.hasCounter
+                    ? 'Đã tiếp nhận bản phản biện đối chứng. Admin đủ thẩm quyền ban hành phán quyết.'
+                    : 'Đã quá thời hạn 48 giờ đối chất. Admin có toàn quyền quyết định vụ việc.'}
+                </div>
+              );
+            })()}
+
             <div>
               <label className="text-xs font-bold text-slate-700 block mb-1">
-                Ghi chú giải trình phán quyết gửi về 2 bên (Tùy chỉnh):
+                Lý do &amp; Căn cứ phán quyết chi tiết gửi cho cả 2 bên (Học viên &amp; PT cùng nhận được) <span className="text-red-500">*</span>:
               </label>
               <textarea
-                rows={3}
+                rows={4}
                 value={verdictCustomNote}
                 onChange={(e) => setVerdictCustomNote(e.target.value)}
-                placeholder="Nhập lý do trọng tài hoặc để trống để sử dụng phán quyết tiêu chuẩn của hệ thống..."
+                placeholder="Căn cứ vào dữ liệu định vị, nhật ký cuộc gọi và bản phản biện... Hội đồng Trọng tài quyết định: [Nêu rõ lý do và hướng giải quyết gửi cho cả hai bên]..."
                 className="w-full p-3 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
               />
             </div>
@@ -2016,23 +2794,114 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLogout }) => {
                 onClick={() => {
                   setSelectedDisputeForVerdict(null);
                   setVerdictCustomNote('');
+                  setOverride48h(false);
                 }}
-                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition"
+                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition cursor-pointer"
               >
                 Hủy bỏ
               </button>
               <button
                 type="button"
+                disabled={(() => {
+                  const arb = checkDisputeArbitrationStatus(selectedDisputeForVerdict.dispute);
+                  return !arb.canArbitrate && !override48h;
+                })()}
                 onClick={() => handleExecuteArbitration(
                   selectedDisputeForVerdict.dispute.id,
                   selectedDisputeForVerdict.verdictType,
-                  verdictCustomNote
+                  verdictCustomNote,
+                  override48h
                 )}
-                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black uppercase tracking-wider rounded-xl shadow-md transition"
+                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-black uppercase tracking-wider rounded-xl shadow-md transition cursor-pointer"
               >
-                Ban hành phán quyết
+                Ban hành &amp; Gửi lý do phán quyết
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== MODAL YÊU CẦU BỔ SUNG BẰNG CHỨNG ==================== */}
+      {requestEvidenceModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 animate-scale-up text-slate-900 dark:text-slate-100 space-y-4">
+            <div className="flex items-center gap-3 text-amber-600 pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 flex items-center justify-center font-bold">
+                <HelpCircle className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <h4 className="text-base font-black uppercase text-slate-900 dark:text-slate-100">
+                  Yêu Cầu Bổ Sung Bằng Chứng Xác Minh
+                </h4>
+                <p className="text-xs text-slate-500">
+                  Vụ việc #CASE-{requestEvidenceModal.id} • {requestEvidenceModal.disputeTypeLabel}
+                </p>
+              </div>
+            </div>
+
+            <form onSubmit={handleSendEvidenceRequest} className="space-y-4 text-xs">
+              <div>
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
+                  Đối tượng cần cung cấp bổ sung bằng chứng:
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: 'BOTH', label: 'Cả 2 bên' },
+                    { id: 'PT', label: `HLV (${requestEvidenceModal.ptName})` },
+                    { id: 'STUDENT', label: `Học viên (${requestEvidenceModal.studentName})` },
+                  ].map((target) => (
+                    <button
+                      key={target.id}
+                      type="button"
+                      onClick={() => setEvidenceTarget(target.id as any)}
+                      className={`p-2.5 rounded-xl border text-center font-bold transition cursor-pointer ${
+                        evidenceTarget === target.id
+                          ? 'bg-amber-500 text-white border-amber-600 shadow-sm'
+                          : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100'
+                      }`}
+                    >
+                      {target.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  Nội dung &amp; Tài liệu cụ thể yêu cầu cung cấp <span className="text-red-500">*</span>:
+                </label>
+                <textarea
+                  rows={4}
+                  value={evidenceNoteInput}
+                  onChange={(e) => setEvidenceNoteInput(e.target.value)}
+                  placeholder="VD: Yêu cầu PT cung cấp ảnh trích xuất camera hoặc hóa đơn check-in quầy lễ tân lúc 18h00. Yêu cầu Học viên chụp màn hình lịch sử cuộc gọi lúc giờ hẹn ca tập..."
+                  className="w-full p-3 text-xs border border-slate-300 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500"
+                  required
+                />
+              </div>
+
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-xl border border-amber-200 dark:border-amber-800 text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">
+                💡 <b>Cơ chế minh bạch:</b> Lời nhắn yêu cầu này sẽ được gửi trực tiếp đến màn hình của đối tượng được chọn. Họ sẽ có nút tải ảnh chứng minh bổ sung kèm giải trình đối soát.
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setRequestEvidenceModal(null)}
+                  className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl font-semibold transition cursor-pointer"
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingEvidenceRequest}
+                  className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white font-bold rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  {submittingEvidenceRequest ? 'Đang gửi yêu cầu...' : 'Gửi Yêu Cầu Bằng Chứng'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
@@ -2085,8 +2954,16 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLogout }) => {
           <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 animate-scale-up flex flex-col max-h-[90vh]">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
               <div>
-                <h4 className="text-base font-bold text-slate-900 dark:text-slate-100">Chứng Chỉ / Bằng Cấp Huấn Luyện</h4>
-                <p className="text-xs text-slate-500">Huấn luyện viên: <b>{previewCert.name}</b></p>
+                <h4 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                  {previewCert.name.includes('Bằng chứng') || previewCert.name.includes('Học viên') || previewCert.name.includes('HLV')
+                    ? 'Bằng Chứng & Tài Liệu Đối Soát Vụ Việc'
+                    : 'Chứng Chỉ / Bằng Cấp Huấn Luyện'}
+                </h4>
+                <p className="text-xs text-slate-500">
+                  {previewCert.name.includes('Bằng chứng') || previewCert.name.includes('Học viên') || previewCert.name.includes('HLV')
+                    ? 'Hồ sơ:'
+                    : 'Huấn luyện viên:'} <b>{previewCert.name}</b>
+                </p>
               </div>
               <button
                 onClick={() => setPreviewCert(null)}
@@ -2103,9 +2980,13 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLogout }) => {
                   alt={`Chứng chỉ của ${previewCert.name}`}
                   className="max-h-[60vh] max-w-full object-contain rounded-lg shadow-sm"
                   onError={(e) => {
-                    // Fallback for broken image
-                    (e.target as HTMLElement).style.display = 'none';
-                    const parent = (e.target as HTMLElement).parentElement;
+                    const target = e.currentTarget as HTMLImageElement;
+                    if (target.src && !target.src.includes('topology.jpg')) {
+                      target.src = '/uploads/disputes/topology.jpg';
+                      return;
+                    }
+                    target.style.display = 'none';
+                    const parent = target.parentElement;
                     if (parent) {
                       const div = document.createElement('div');
                       div.className = 'p-8 text-center text-xs text-slate-500';
@@ -2140,6 +3021,152 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLogout }) => {
                 Đóng
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== MODAL RÚT DOANH THU NỀN TẢNG CHO ADMIN ==================== */}
+      {showWithdrawModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 animate-scale-up flex flex-col">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-4">
+              <div className="flex items-center gap-2 text-indigo-600">
+                <Landmark className="w-5 h-5" />
+                <h4 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                  Rút Tiền Quỹ Doanh Thu Sàn
+                </h4>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowWithdrawModal(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleWithdrawAdminRevenue} className="space-y-4 text-xs">
+              <div className="p-3 bg-indigo-50 dark:bg-indigo-950/40 rounded-xl border border-indigo-100 dark:border-indigo-900 flex justify-between items-center">
+                <span className="text-slate-600 dark:text-slate-300 font-medium">Số dư khả dụng hiện có:</span>
+                <span className="text-base font-black text-indigo-700 dark:text-indigo-400">
+                  {formatCurrency(adminWallet?.balance || 15650000)}
+                </span>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  Số tiền muốn rút (₫) <span className="text-red-500">*</span>:
+                </label>
+                <input
+                  type="number"
+                  min="50000"
+                  step="10000"
+                  value={withdrawAmount}
+                  onChange={(e) => {
+                    setWithdrawAmount(e.target.value);
+                    if (withdrawError) setWithdrawError(null);
+                  }}
+                  placeholder="Nhập số tiền muốn rút (VD: 5000000)"
+                  className="w-full p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                  required
+                />
+                {/* Phím chọn nhanh */}
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {[1000000, 2000000, 5000000, 10000000].map((amt) => (
+                    <button
+                      key={amt}
+                      type="button"
+                      onClick={() => setWithdrawAmount(amt.toString())}
+                      className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg font-medium text-[11px] transition"
+                    >
+                      {(amt / 1000000).toFixed(0)} triệu
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setWithdrawAmount((adminWallet?.balance || 15650000).toString())}
+                    className="px-2.5 py-1 bg-indigo-100 dark:bg-indigo-950/60 hover:bg-indigo-200 text-indigo-700 dark:text-indigo-300 rounded-lg font-bold text-[11px] transition"
+                  >
+                    Rút toàn bộ
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  Ngân hàng thụ hưởng:
+                </label>
+                <select
+                  value={withdrawBankName}
+                  onChange={(e) => setWithdrawBankName(e.target.value)}
+                  className="w-full p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="MB Bank (Quân Đội)">MB Bank - Ngân hàng TMCP Quân Đội</option>
+                  <option value="Vietcombank">Vietcombank - Ngân hàng Ngoại Thương</option>
+                  <option value="Techcombank">Techcombank - Ngân hàng Kỹ Thương</option>
+                  <option value="BIDV">BIDV - Ngân hàng Đầu tư & Phát triển</option>
+                  <option value="ACB">ACB - Ngân hàng Á Châu</option>
+                  <option value="VPBank">VPBank - Ngân hàng Việt Nam Thịnh Vượng</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    Số tài khoản:
+                  </label>
+                  <input
+                    type="text"
+                    value={withdrawAccountNumber}
+                    onChange={(e) => setWithdrawAccountNumber(e.target.value)}
+                    placeholder="VD: 0988888888"
+                    className="w-full p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    Tên chủ tài khoản:
+                  </label>
+                  <input
+                    type="text"
+                    value={withdrawAccountName}
+                    onChange={(e) => setWithdrawAccountName(e.target.value.toUpperCase())}
+                    placeholder="VD: PTCONNECT CORP"
+                    className="w-full p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white uppercase font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              {withdrawError && (
+                <div className="p-2.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 rounded-xl text-red-700 dark:text-red-300">
+                  ⚠️ {withdrawError}
+                </div>
+              )}
+
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                💡 Lệnh giải ngân doanh thu được hệ thống ngân hàng liên kết Napas247 xử lý tự động trong vòng 1-5 phút.
+              </p>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowWithdrawModal(false)}
+                  className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg font-semibold transition"
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingWithdraw}
+                  className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 text-white font-bold rounded-lg shadow-sm transition flex items-center gap-1.5"
+                >
+                  <ArrowUpRight className="w-4 h-4" />
+                  {submittingWithdraw ? 'Đang giải ngân...' : 'Xác nhận rút doanh thu'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

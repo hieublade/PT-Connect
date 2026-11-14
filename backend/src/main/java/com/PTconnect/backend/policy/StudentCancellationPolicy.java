@@ -87,8 +87,8 @@ public class StudentCancellationPolicy extends BaseCancellationPolicy {
                 .compensationAmount(compensation)
                 .penaltyAmount(BigDecimal.ZERO)
                 .hoursBeforeSession(hoursBefore)
-                .explanation("Học viên hủy ca tập đã được PT duyệt sát giờ (< 24 giờ). Học viên bị trừ mất buổi tập và đền bù 100% tiền buổi học ("
-                        + compensation.toBigInteger() + " ₫) vào ví Huấn luyện viên.")
+                .explanation("Học viên hủy ca tập đã được PT duyệt sát giờ (< 24 giờ). Học viên bị trừ mất buổi tập và đền bù tiền buổi học ("
+                        + compensation.toBigInteger() + " ₫) vào ví Huấn luyện viên (Nền tảng khấu trừ 10% phí điều phối & trọng tài).")
                 .build();
     }
 }

@@ -95,7 +95,7 @@ INSERT INTO `pt_locations` (`pt_id`, `location_name`) VALUES
 
 -- 3. WALLETS
 INSERT INTO `wallets` (`id`, `user_id`, `balance`, `locked_balance`, `currency`, `status`) VALUES
-  (1, 1, 0.00, 0.00, 'VND', 'ACTIVE'),
+  (1, 1, 15650000.00, 0.00, 'VND', 'ACTIVE'),
   (2, 2, 0.00, 0.00, 'VND', 'ACTIVE'),
   (3, 3, 0.00, 0.00, 'VND', 'ACTIVE'),
   (4, 4, 0.00, 0.00, 'VND', 'ACTIVE'),

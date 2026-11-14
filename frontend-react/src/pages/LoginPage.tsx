@@ -103,21 +103,30 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50/70 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-slate-100/60 to-slate-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      {/* Decorative ambient background glows */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-rose-500/10 blur-[100px] pointer-events-none rounded-full" />
+      <div className="absolute bottom-0 right-10 w-[400px] h-[300px] bg-orange-500/10 blur-[100px] pointer-events-none rounded-full" />
+
       {/* Brand Header */}
-      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center mb-6">
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-[#FF4B4B] text-white shadow-sm mb-3">
-          <Dumbbell className="w-6 h-6" />
+      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center mb-6 relative z-10">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 border border-rose-200/80 text-rose-600 text-[11px] font-bold tracking-wide uppercase mb-3 shadow-xs">
+          <Dumbbell className="w-3.5 h-3.5 text-rose-600" /> PTConnect Elite Platform
         </div>
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">PT-Connect</h1>
-        <p className="mt-1 text-xs text-slate-500 font-normal">
-          Nền tảng kết nối Huấn luyện viên cá nhân chuyên nghiệp
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-rose-600 via-rose-500 to-orange-500 text-white shadow-md shadow-rose-500/25 flex items-center justify-center font-black text-xl">
+            PT
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">PT-Connect</h1>
+        </div>
+        <p className="mt-1 text-xs sm:text-sm text-slate-500 font-medium">
+          Nền tảng kết nối Huấn luyện viên cá nhân &amp; Đảm bảo hợp đồng minh bạch
         </p>
       </div>
 
       {/* Main Card */}
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-6 sm:px-8 rounded-2xl border border-slate-200/90 shadow-sm">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
+        <div className="bg-white/95 backdrop-blur-md py-8 px-6 sm:px-8 rounded-3xl border border-slate-200/90 shadow-xl shadow-slate-200/50">
           
           {/* Linear / iOS Style Segmented Control */}
           <div className="flex bg-slate-100 p-1 rounded-xl mb-6">
@@ -227,30 +236,35 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
               {/* Minimalist Demo Accounts Bar */}
               <div className="mt-6 pt-5 border-t border-slate-100">
-                <div className="flex items-center justify-between text-[11px] text-slate-500 mb-2">
-                  <span className="font-medium text-slate-600">Tài khoản thử nghiệm:</span>
-                  <span className="text-slate-400">1-click để điền</span>
+                <div className="flex items-center justify-between text-[11px] text-slate-500 mb-2.5">
+                  <span className="font-bold text-slate-700 flex items-center gap-1.5">
+                    <UserCheck className="w-3.5 h-3.5 text-rose-500" /> Tài khoản mẫu kiểm thử:
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-semibold">1-chạm để điền</span>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   <button
                     type="button"
                     onClick={() => fillDemoAccount('student_24@ptconnect.vn')}
-                    className="py-1.5 px-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-md text-[11px] font-medium text-slate-700 text-center transition truncate"
+                    className="py-2 px-2 bg-slate-50 hover:bg-rose-50/60 hover:border-rose-300 border border-slate-200/90 rounded-xl text-[11px] font-bold text-slate-700 hover:text-rose-700 text-center transition-all shadow-2xs active:scale-[0.98] cursor-pointer"
                   >
+                    <span className="block text-[9px] uppercase font-black text-rose-500">Student</span>
                     Học viên (24)
                   </button>
                   <button
                     type="button"
                     onClick={() => fillDemoAccount('pt.hoangc@ptconnect.vn')}
-                    className="py-1.5 px-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-md text-[11px] font-medium text-slate-700 text-center transition truncate"
+                    className="py-2 px-2 bg-slate-50 hover:bg-orange-50/60 hover:border-orange-300 border border-slate-200/90 rounded-xl text-[11px] font-bold text-slate-700 hover:text-orange-700 text-center transition-all shadow-2xs active:scale-[0.98] cursor-pointer"
                   >
+                    <span className="block text-[9px] uppercase font-black text-orange-500">Trainer</span>
                     Huấn luyện viên
                   </button>
                   <button
                     type="button"
                     onClick={() => fillDemoAccount('admin@ptconnect.vn')}
-                    className="py-1.5 px-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-md text-[11px] font-medium text-slate-700 text-center transition truncate"
+                    className="py-2 px-2 bg-slate-50 hover:bg-indigo-50/60 hover:border-indigo-300 border border-slate-200/90 rounded-xl text-[11px] font-bold text-slate-700 hover:text-indigo-700 text-center transition-all shadow-2xs active:scale-[0.98] cursor-pointer"
                   >
+                    <span className="block text-[9px] uppercase font-black text-indigo-500">Admin</span>
                     Quản trị viên
                   </button>
                 </div>

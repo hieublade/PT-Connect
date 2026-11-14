@@ -136,10 +136,7 @@ class AuthControllerTest {
                 .andExpect(status().isCreated());
 
         // Đăng nhập đúng mật khẩu
-        LoginRequest loginReq = LoginRequest.builder()
-                .email(uniqueEmail)
-                .password("password123")
-                .build();
+        LoginRequest loginReq = new LoginRequest(uniqueEmail, "password123");
 
         MvcResult loginResult = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -163,10 +160,7 @@ class AuthControllerTest {
     @Test
     @DisplayName("Đăng nhập sai mật khẩu phải trả về lỗi 401")
     void testLoginWrongPassword() throws Exception {
-        LoginRequest loginReq = LoginRequest.builder()
-                .email("student.a@ptconnect.vn")
-                .password("sai_mat_khau_123")
-                .build();
+        LoginRequest loginReq = new LoginRequest("student.a@ptconnect.vn", "sai_mat_khau_123");
 
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)

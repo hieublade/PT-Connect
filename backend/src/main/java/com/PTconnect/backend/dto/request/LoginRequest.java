@@ -8,7 +8,6 @@ import lombok.*;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class LoginRequest {
 
     @NotBlank(message = "Email không được để trống")

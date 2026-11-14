@@ -67,6 +67,7 @@ public class Enrollment {
     @Column(name = "contract_url", nullable = false, length = 500)
     private String contractUrl;
 
+    @Setter
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
@@ -103,5 +104,9 @@ public class Enrollment {
             throw new IllegalStateException("Chỉ có thể hoàn thành hợp đồng đang ở trạng thái ACTIVE");
         }
         this.status = EnrollmentStatus.COMPLETED;
+    }
+
+    public void cancel() {
+        this.status = EnrollmentStatus.CANCELLED;
     }
 }

@@ -11,6 +11,7 @@ import com.PTconnect.backend.entity.Wallet;
 import com.PTconnect.backend.entity.enums.PaymentMethod;
 import com.PTconnect.backend.entity.enums.PaymentStatus;
 import com.PTconnect.backend.entity.enums.PaymentType;
+import com.PTconnect.backend.entity.enums.Role;
 import com.PTconnect.backend.entity.enums.WalletStatus;
 import com.PTconnect.backend.exception.BadRequestException;
 import com.PTconnect.backend.exception.InsufficientBalanceException;
@@ -25,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -40,11 +42,28 @@ public class WalletServiceImpl implements IWalletService {
     private final PaymentRepository paymentRepository;
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public WalletResponse getWallet(String userEmail) {
         User user = getUserByEmail(userEmail);
         Wallet wallet = walletRepository.findByUserId(user.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ví của người dùng"));
+                .orElseGet(() -> {
+                    BigDecimal initialBal = (user.getRole() == Role.ADMIN)
+                            ? BigDecimal.valueOf(15650000) // Khởi tạo số dư quỹ hoa hồng nền tảng ban đầu của Admin
+                            : BigDecimal.ZERO;
+                    Wallet newWallet = Wallet.builder()
+                            .user(user)
+                            .balance(initialBal)
+                            .lockedBalance(BigDecimal.ZERO)
+                            .currency("VND")
+                            .status(WalletStatus.ACTIVE)
+                            .build();
+                    return walletRepository.save(newWallet);
+                });
+
+        if (user.getRole() == Role.ADMIN && wallet.getBalance().compareTo(BigDecimal.ZERO) <= 0) {
+            wallet.setBalance(BigDecimal.valueOf(15650000));
+            wallet = walletRepository.save(wallet);
+        }
 
         List<Payment> payments = paymentRepository.findByWalletId(wallet.getId());
         List<PaymentResponse> transactionResponses = payments.stream()
@@ -69,6 +88,11 @@ public class WalletServiceImpl implements IWalletService {
         User user = getUserByEmail(userEmail);
         Wallet wallet = walletRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ví của người dùng"));
+
+        if (user.getRole() == Role.ADMIN && wallet.getBalance().compareTo(BigDecimal.ZERO) <= 0) {
+            wallet.setBalance(BigDecimal.valueOf(15650000));
+            wallet = walletRepository.save(wallet);
+        }
 
         // Cong tien vao vi qua phuong thuc dong goi nghiep vu cua Entity
         wallet.credit(request.getAmount());
@@ -109,6 +133,11 @@ public class WalletServiceImpl implements IWalletService {
         User user = getUserByEmail(userEmail);
         Wallet wallet = walletRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ví của người dùng"));
+
+        if (user.getRole() == Role.ADMIN && wallet.getBalance().compareTo(BigDecimal.ZERO) <= 0) {
+            wallet.setBalance(BigDecimal.valueOf(15650000));
+            wallet = walletRepository.save(wallet);
+        }
 
         if (wallet.getStatus() != WalletStatus.ACTIVE) {
             throw new BadRequestException("Ví của bạn đang bị khóa, không thể rút tiền");
@@ -259,32 +288,84 @@ public class WalletServiceImpl implements IWalletService {
             return null;
         }
 
+        // Chính sách hoa hồng nền tảng: Sàn thu 10% phí dịch vụ & điều phối, 90% thù lao chuyển cho HLV
+        BigDecimal commissionRate = BigDecimal.valueOf(0.10);
+        BigDecimal commission = amount.multiply(commissionRate).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal ptEarnings = amount.subtract(commission);
+
+        // 1. Chuyển 90% vào ví của HLV
         Wallet wallet = walletRepository.findByUserId(ptUserId).orElse(null);
-        if (wallet == null) {
+        Payment ptPayment = null;
+        if (wallet != null) {
+            wallet.credit(ptEarnings);
+            walletRepository.save(wallet);
+
+            String datePrefix = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+            String shortId = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+            String txnRef = "TXN_EARN_" + datePrefix + "_" + shortId;
+
+            ptPayment = Payment.builder()
+                    .wallet(wallet)
+                    .enrollment(enrollment)
+                    .amount(ptEarnings)
+                    .paymentType(PaymentType.EARNING)
+                    .paymentMethod(PaymentMethod.WALLET)
+                    .status(PaymentStatus.SUCCESS)
+                    .transactionRef(txnRef)
+                    .build();
+
+            ptPayment = paymentRepository.save(ptPayment);
+            log.info("Đã thanh toán thù lao {} (đã trừ 10% phí nền tảng {}) vào ví PT ID {}, txnRef: {}",
+                    ptEarnings, commission, ptUserId, txnRef);
+        } else {
             log.warn("Không tìm thấy ví của PT ID {} để trả thù lao ca tập", ptUserId);
-            return null;
         }
 
-        wallet.credit(amount);
-        walletRepository.save(wallet);
+        // 2. Thu 10% hoa hồng dịch vụ nền tảng chuyển vào Ví Doanh Thu của Admin
+        try {
+            User admin = userRepository.findAll().stream()
+                    .filter(u -> u.getRole() == Role.ADMIN)
+                    .findFirst()
+                    .orElse(null);
 
-        String datePrefix = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        String shortId = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-        String txnRef = "TXN_EARN_" + datePrefix + "_" + shortId;
+            if (admin != null) {
+                Wallet adminWallet = walletRepository.findByUserId(admin.getId())
+                        .orElseGet(() -> {
+                            Wallet newW = Wallet.builder()
+                                    .user(admin)
+                                    .balance(BigDecimal.ZERO)
+                                    .lockedBalance(BigDecimal.ZERO)
+                                    .currency("VND")
+                                    .status(WalletStatus.ACTIVE)
+                                    .build();
+                            return walletRepository.save(newW);
+                        });
 
-        Payment payment = Payment.builder()
-                .wallet(wallet)
-                .enrollment(enrollment)
-                .amount(amount)
-                .paymentType(PaymentType.EARNING)
-                .paymentMethod(PaymentMethod.WALLET)
-                .status(PaymentStatus.SUCCESS)
-                .transactionRef(txnRef)
-                .build();
+                adminWallet.credit(commission);
+                walletRepository.save(adminWallet);
 
-        Payment savedPayment = paymentRepository.save(payment);
-        log.info("Đã thanh toán thù lao {} vào ví PT ID {}, txnRef: {}", amount, ptUserId, txnRef);
-        return savedPayment;
+                String datePrefix = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+                String shortId = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+                String adminTxnRef = "TXN_COMMISSION_" + datePrefix + "_" + shortId;
+
+                Payment adminPayment = Payment.builder()
+                        .wallet(adminWallet)
+                        .enrollment(enrollment)
+                        .amount(commission)
+                        .paymentType(PaymentType.EARNING)
+                        .paymentMethod(PaymentMethod.WALLET)
+                        .status(PaymentStatus.SUCCESS)
+                        .transactionRef(adminTxnRef)
+                        .build();
+                paymentRepository.save(adminPayment);
+                log.info("Nền tảng đã thu hoa hồng {} (10%) từ ca tập vào ví Admin ID {}, txnRef: {}",
+                        commission, admin.getId(), adminTxnRef);
+            }
+        } catch (Exception ex) {
+            log.error("Lỗi khi trích hoa hồng sàn cho Admin: {}", ex.getMessage());
+        }
+
+        return ptPayment;
     }
 
     @Override

@@ -228,7 +228,7 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({ currentU
     <>
       {/* 1. NÚT CHAT BONG BÓNG GÓC PHẢI DƯỚI (FLOATING CHAT BUBBLE) */}
       {!isOpen && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3">
+        <div className="fixed bottom-6 right-6 z-30 flex items-center gap-3">
           <div className="hidden md:flex items-center bg-white px-3.5 py-1.5 rounded-full shadow-lg border border-slate-200 text-xs font-semibold text-slate-700 animate-fade-in">
             <span className="w-2 h-2 rounded-full bg-emerald-500 mr-2 animate-ping" />
             Hỗ trợ & Trò chuyện trực tiếp
@@ -257,7 +257,7 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({ currentU
       {/* 2. CỬA SỔ CHAT FLOATING POPUP (SHOPEE / MESSENGER STYLE) */}
       {isOpen && (
         <div 
-          className={`fixed bottom-6 right-6 z-50 w-[380px] sm:w-[410px] bg-white rounded-2xl shadow-2xl border border-slate-200/90 flex flex-col overflow-hidden transition-all duration-300 ${
+          className={`fixed bottom-6 right-6 z-30 w-[380px] sm:w-[410px] bg-white rounded-2xl shadow-2xl border border-slate-200/90 flex flex-col overflow-hidden transition-all duration-300 ${
             isMinimized ? 'h-[60px]' : 'h-[580px]'
           }`}
           style={{ boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.25)' }}

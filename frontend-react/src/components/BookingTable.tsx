@@ -1,7 +1,8 @@
 import api from '../lib/axios';
 import React, { useState } from 'react';
 import { Booking } from '../types/api';
-import { CheckCircle, XCircle, Key, Calendar, Filter, AlertTriangle, X, ShieldAlert, Send } from 'lucide-react';
+import { CheckCircle, XCircle, Key, Calendar, Filter, AlertTriangle, X, ShieldAlert, Send, Upload, CheckCircle2 } from 'lucide-react';
+import { compressImageToDataUrl, MultiImageUploader, SelectedEvidenceFile, uploadMultipleEvidenceFiles } from '../lib/evidence';
 
 interface BookingTableProps {
   bookings: Booking[];
@@ -41,6 +42,7 @@ export const BookingTable: React.FC<BookingTableProps> = ({
   const [disputeSeverity, setDisputeSeverity] = useState<'HIGH' | 'MEDIUM' | 'LOW'>('HIGH');
   const [disputeStatement, setDisputeStatement] = useState<string>('');
   const [disputeEvidence, setDisputeEvidence] = useState<string>('');
+  const [disputeFiles, setDisputeFiles] = useState<SelectedEvidenceFile[]>([]);
   const [disputeSubmitting, setDisputeSubmitting] = useState<boolean>(false);
   const [disputeError, setDisputeError] = useState<string | null>(null);
   const [disputeSuccessMsg, setDisputeSuccessMsg] = useState<string | null>(null);
@@ -69,6 +71,7 @@ export const BookingTable: React.FC<BookingTableProps> = ({
     setDisputeSeverity(currentReasons[0].severity);
     setDisputeStatement('');
     setDisputeEvidence('');
+    setDisputeFiles([]);
     setDisputeError(null);
     setDisputeSuccessMsg(null);
   };
@@ -83,6 +86,16 @@ export const BookingTable: React.FC<BookingTableProps> = ({
     setDisputeSubmitting(true);
     setDisputeError(null);
     try {
+      let finalEvidence = disputeEvidence.trim();
+
+      if (disputeFiles.length > 0) {
+        const urls = await uploadMultipleEvidenceFiles(disputeFiles, api.post);
+        if (urls.length > 0) {
+          const joinedUrls = urls.join(' | ');
+          finalEvidence = finalEvidence ? `${joinedUrls} | ${finalEvidence}` : joinedUrls;
+        }
+      }
+
       const selectedOption = currentReasons.find(r => r.value === disputeType);
       await api.post('/disputes', {
         bookingId: disputeModalBooking.id,
@@ -90,7 +103,7 @@ export const BookingTable: React.FC<BookingTableProps> = ({
         disputeTypeLabel: selectedOption?.label || 'Khiếu nại ca tập',
         severity: disputeSeverity,
         statement: disputeStatement.trim(),
-        evidenceNote: disputeEvidence.trim() || undefined,
+        evidenceNote: finalEvidence || undefined,
       });
 
       setDisputedBookingIds(prev => new Set(prev).add(disputeModalBooking.id));
@@ -467,17 +480,21 @@ export const BookingTable: React.FC<BookingTableProps> = ({
                   />
                 </div>
 
-                {/* Bằng chứng xác minh */}
+                {/* Bằng chứng bằng cách tải ảnh lên */}
                 <div>
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">
-                    Bằng chứng xác minh <span className="font-normal text-slate-400">(không bắt buộc)</span>:
-                  </label>
+                  <MultiImageUploader
+                    files={disputeFiles}
+                    onChange={setDisputeFiles}
+                    label="Ảnh chụp bằng chứng xác minh (không bắt buộc)"
+                    subLabel="Hỗ trợ chọn nhiều ảnh cùng lúc (Ảnh check-in phòng tập, lịch sử gọi điện, tin nhắn...)"
+                  />
+
                   <input
                     type="text"
                     value={disputeEvidence}
                     onChange={(e) => setDisputeEvidence(e.target.value)}
-                    placeholder="VD: Lịch sử 3 cuộc gọi nhỡ lúc 18:05, check-in lễ tân Elite Fitness, link ảnh..."
-                    className="w-full p-2 text-xs border border-slate-300 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    placeholder="Ghi chú thêm về ảnh (VD: Lịch sử 3 cuộc gọi nhỡ lúc 18:05, check-in quầy lễ tân...)"
+                    className="w-full mt-2 p-2.5 text-xs border border-slate-300 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                   />
                 </div>
 

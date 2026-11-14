@@ -84,4 +84,71 @@ public class DisputeController {
         DisputeResponse response = disputeService.submitCounterStatement(email, id, request.getCounterStatement());
         return ResponseEntity.ok(ApiResponse.success("Đã gửi phản biện đối chứng thành công!", response));
     }
+
+    /**
+     * Admin yêu cầu bổ sung bằng chứng từ PT hoặc Học viên
+     * POST /api/v1/disputes/{id}/request-evidence
+     */
+    @PostMapping("/{id}/request-evidence")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<DisputeResponse>> requestAdditionalEvidence(
+            Authentication authentication,
+            @PathVariable Long id,
+            @Valid @RequestBody com.PTconnect.backend.dto.request.RequestEvidenceRequest request) {
+        String email = SecurityUtils.getCurrentUserEmail(authentication);
+        DisputeResponse response = disputeService.requestAdditionalEvidence(email, id, request.getTarget(), request.getNote());
+        return ResponseEntity.ok(ApiResponse.success("Đã gửi yêu cầu bổ sung bằng chứng tới các bên liên quan!", response));
+    }
+
+    /**
+     * Học viên hoặc HLV nộp thêm bằng chứng theo yêu cầu của Admin
+     * POST /api/v1/disputes/{id}/additional-evidence
+     */
+    @PostMapping("/{id}/additional-evidence")
+    public ResponseEntity<ApiResponse<DisputeResponse>> submitAdditionalEvidence(
+            Authentication authentication,
+            @PathVariable Long id,
+            @Valid @RequestBody com.PTconnect.backend.dto.request.SubmitAdditionalEvidenceRequest request) {
+        String email = SecurityUtils.getCurrentUserEmail(authentication);
+        DisputeResponse response = disputeService.submitAdditionalEvidence(email, id, request.getEvidence());
+        return ResponseEntity.ok(ApiResponse.success("Đã gửi bổ sung bằng chứng lên Ban Quản Trị thành công!", response));
+    }
+
+    /**
+     * Tải ảnh bằng chứng xác minh khiếu nại (Bill, ảnh chụp phòng tập, lịch sử cuộc gọi...)
+     * POST /api/v1/disputes/upload-evidence
+     */
+    @PostMapping(value = "/upload-evidence", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<java.util.Map<String, String>>> uploadEvidence(
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new com.PTconnect.backend.exception.BadRequestException("Tập tin hình ảnh không được để trống!");
+        }
+        String contentType = file.getContentType();
+        if (contentType != null && !contentType.startsWith("image/")) {
+            throw new com.PTconnect.backend.exception.BadRequestException("Chỉ chấp nhận các định dạng tệp hình ảnh (JPEG, PNG, WEBP, GIF)!");
+        }
+        if (file.getSize() > 5 * 1024 * 1024) {
+            throw new com.PTconnect.backend.exception.BadRequestException("Dung lượng tập tin ảnh không được vượt quá 5MB!");
+        }
+        try {
+            java.nio.file.Path uploadDir = java.nio.file.Paths.get("uploads", "disputes");
+            if (!java.nio.file.Files.exists(uploadDir)) {
+                java.nio.file.Files.createDirectories(uploadDir);
+            }
+            String originalFilename = file.getOriginalFilename();
+            String extension = ".png";
+            if (originalFilename != null && originalFilename.contains(".")) {
+                extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+            }
+            String newFilename = "evidence_" + System.currentTimeMillis() + "_" + java.util.UUID.randomUUID().toString().substring(0, 8) + extension;
+            java.nio.file.Path destination = uploadDir.resolve(newFilename);
+            file.transferTo(destination.toFile());
+
+            String fileUrl = "/uploads/disputes/" + newFilename;
+            return ResponseEntity.ok(ApiResponse.success("Tải ảnh bằng chứng thành công", java.util.Map.of("url", fileUrl)));
+        } catch (java.io.IOException e) {
+            throw new com.PTconnect.backend.exception.BadRequestException("Lỗi lưu trữ tập tin hình ảnh: " + e.getMessage());
+        }
+    }
 }

@@ -30,6 +30,10 @@ public class PTProfile {
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private PT pt;
 
+    public User getUser() {
+        return this.pt;
+    }
+
     @Column(columnDefinition = "TEXT")
     private String bio;
 

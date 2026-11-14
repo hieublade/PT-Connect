@@ -17,4 +17,8 @@ public interface IDisputeService {
     DisputeResponse issueVerdict(String adminEmail, Long disputeId, ArbitrationVerdictRequest request);
 
     DisputeResponse submitCounterStatement(String callerEmail, Long disputeId, String counterStatement);
+
+    DisputeResponse requestAdditionalEvidence(String adminEmail, Long disputeId, String target, String note);
+
+    DisputeResponse submitAdditionalEvidence(String callerEmail, Long disputeId, String evidence);
 }
