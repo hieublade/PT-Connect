@@ -1,0 +1,6 @@
+streamlit>=1.38.0
+requests>=2.32.3
+pandas>=2.2.2
+plotly>=5.24.1
+faker>=28.4.1
+bcrypt>=4.2.0

@@ -1,0 +1,151 @@
+from typing import Any, Dict, Optional
+import streamlit as st
+from api.client import ApiException, api_client
+
+
+class AuthApi:
+    """Các hàm gọi API Xác thực (Authentication) tới Backend."""
+
+    @staticmethod
+    def login(email: str, password: str) -> Dict[str, Any]:
+        """
+        Đăng nhập vào hệ thống bằng Email và Mật khẩu.
+        Trả về dict gồm: token, tokenType, user (UserDTO).
+        """
+        payload = {
+            "email": email.strip(),
+            "password": password
+        }
+        try:
+            return api_client.post("/api/v1/auth/login", json=payload)
+        except ApiException as e:
+            if e.status_code == 404:
+                return api_client.post("/auth/login", json=payload)
+            raise e
+
+    @staticmethod
+    def register(payload: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Đăng ký tài khoản mới (Học viên STUDENT hoặc PT).
+        Payload gồm: fullName, email, password, phone, role, và các trường mở rộng nếu là PT.
+        """
+        clean_payload = {k: v for k, v in payload.items() if v is not None and v != ""}
+        try:
+            return api_client.post("/api/v1/auth/register", json=clean_payload)
+        except ApiException as e:
+            if e.status_code == 404:
+                return api_client.post("/auth/register", json=clean_payload)
+            raise e
+
+    @staticmethod
+    def get_me() -> Dict[str, Any]:
+        """
+        Lấy thông tin người dùng hiện tại dựa trên Bearer Token trong header.
+        """
+        try:
+            return api_client.get("/api/v1/auth/me")
+        except ApiException as e:
+            if e.status_code == 404:
+                return api_client.get("/auth/me")
+            raise e
+
+    @staticmethod
+    def update_avatar(avatar_url: str) -> Dict[str, Any]:
+        """Cập nhật URL ảnh đại diện của người dùng (PUT /api/v1/users/avatar)."""
+        payload = {"avatarUrl": avatar_url.strip()}
+        try:
+            res = api_client.put("/api/v1/users/avatar", json=payload)
+        except ApiException as e:
+            if e.status_code == 404:
+                res = api_client.put("/users/avatar", json=payload)
+            else:
+                raise e
+
+        # Đồng bộ lại user trong st.session_state
+        if st.session_state.get("user") and isinstance(res, dict):
+            st.session_state["user"]["avatarUrl"] = res.get("avatarUrl", avatar_url)
+        return res
+
+    @staticmethod
+    def upload_avatar_file(file_bytes: bytes, filename: str) -> Dict[str, Any]:
+        """Upload file avatar trực tiếp lên Backend API (POST /api/v1/users/avatar/upload)."""
+        files = {"file": (filename, file_bytes, "image/jpeg")}
+        res = api_client.post_files("/api/v1/users/avatar/upload", files=files)
+        if st.session_state.get("user") and isinstance(res, dict):
+            st.session_state["user"]["avatarUrl"] = res.get("avatarUrl")
+        return res
+
+    @staticmethod
+    def update_profile(
+        full_name: Optional[str] = None,
+        phone: Optional[str] = None,
+        avatar_url: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Cập nhật thông tin tài khoản (PUT /api/v1/users/profile)."""
+        payload = {}
+        if full_name:
+            payload["fullName"] = full_name.strip()
+        if phone:
+            payload["phone"] = phone.strip()
+        if avatar_url:
+            payload["avatarUrl"] = avatar_url.strip()
+        res = api_client.put("/api/v1/users/profile", json=payload)
+        if st.session_state.get("user") and isinstance(res, dict):
+            if "fullName" in res:
+                st.session_state["user"]["fullName"] = res["fullName"]
+            if "phone" in res:
+                st.session_state["user"]["phone"] = res["phone"]
+            if "avatarUrl" in res:
+                st.session_state["user"]["avatarUrl"] = res["avatarUrl"]
+        return res
+
+
+# ===================================================================
+# Helper Functions quản lý Session State trong Streamlit
+# ===================================================================
+
+def save_auth_session(auth_data: Dict[str, Any]) -> None:
+    """Lưu token và thông tin user vào st.session_state và st.query_params."""
+    token = auth_data.get("token")
+    user = auth_data.get("user")
+    st.session_state["token"] = token
+    st.session_state["user"] = user
+    st.session_state["logged_in"] = True
+    if token:
+        st.query_params["session_token"] = token
+
+
+def clear_auth_session() -> None:
+    """Đăng xuất, xóa token và thông tin phiên làm việc khỏi st.session_state và URL query."""
+    st.session_state.pop("token", None)
+    st.session_state.pop("user", None)
+    st.session_state["logged_in"] = False
+    if "session_token" in st.query_params:
+        del st.query_params["session_token"]
+
+
+def get_current_user() -> Optional[Dict[str, Any]]:
+    """Lấy thông tin user hiện tại từ st.session_state."""
+    return st.session_state.get("user")
+
+
+def is_authenticated() -> bool:
+    """Kiểm tra xem người dùng hiện tại đã đăng nhập hợp lệ hay chưa (hỗ trợ khôi phục khi F5)."""
+    if st.session_state.get("logged_in") and st.session_state.get("token") and st.session_state.get("user"):
+        return True
+
+    # Khôi phục phiên làm việc khi người dùng F5 tải lại trang từ st.query_params
+    token = st.query_params.get("session_token")
+    if token:
+        st.session_state["token"] = token
+        try:
+            user = AuthApi.get_me()
+            if user:
+                st.session_state["user"] = user
+                st.session_state["logged_in"] = True
+                return True
+        except Exception:
+            # Token hết hạn hoặc không hợp lệ
+            clear_auth_session()
+
+    return False
