@@ -126,6 +126,9 @@ erDiagram
         varchar password_hash
         enum role
         enum status
+        varchar avatar_url
+        timestamp created_at
+        timestamp updated_at
     }
 
     PT_PROFILES {
@@ -133,9 +136,13 @@ erDiagram
         bigint user_id UK,FK
         text bio
         int experience_years
+        text location_pricing_note
+        varchar certificate_url
         decimal average_rating
         int total_reviews
         enum verification_status
+        timestamp created_at
+        timestamp updated_at
     }
 
     PT_LOCATIONS {
@@ -148,10 +155,12 @@ erDiagram
         bigint id PK
         bigint pt_id FK
         varchar title
+        text description
         int total_sessions
         int validity_days
         decimal base_price
         enum status
+        timestamp created_at
     }
 
     ENROLLMENTS {
@@ -164,7 +173,9 @@ erDiagram
         int remaining_sessions
         date start_date
         date end_date
+        varchar contract_url
         enum status
+        timestamp created_at
     }
 
     AVAILABILITY_SLOTS {
@@ -173,6 +184,7 @@ erDiagram
         datetime start_time
         datetime end_time
         enum status
+        timestamp created_at
     }
 
     BOOKINGS {
@@ -183,6 +195,9 @@ erDiagram
         bigint slot_id FK
         decimal session_fee
         enum status
+        varchar student_note
+        timestamp created_at
+        timestamp updated_at
         bigint active_slot_id UK
     }
 
@@ -191,6 +206,7 @@ erDiagram
         bigint booking_id UK,FK
         smallint rating
         text comment
+        timestamp created_at
     }
 
     ATTENDANCE {
@@ -209,10 +225,14 @@ erDiagram
         bigint booking_id UK,FK
         bigint cancelled_by_id FK
         enum cancelled_by_role
+        varchar reason
+        timestamp cancelled_at
         decimal hours_before_session
         decimal refund_amount
         decimal compensation_amount
         decimal penalty_amount
+        decimal penalty_shortfall
+        varchar evidence_url
         enum status
     }
 
@@ -226,8 +246,10 @@ erDiagram
         varchar counter_evidence_url
         text counter_argument
         enum status
+        text admin_notes
         timestamp deadline_at
         timestamp resolved_at
+        timestamp created_at
     }
 
     WALLETS {
@@ -237,6 +259,7 @@ erDiagram
         decimal locked_balance
         varchar currency
         enum status
+        timestamp updated_at
     }
 
     PAYMENTS {
@@ -248,6 +271,7 @@ erDiagram
         enum payment_method
         enum status
         varchar transaction_ref UK
+        timestamp created_at
     }
 
     WALLET_AUDIT_LOGS {
@@ -258,6 +282,8 @@ erDiagram
         decimal old_locked_balance
         decimal new_locked_balance
         enum action_type
+        varchar reason
+        timestamp created_at
     }
 
     WORKOUT_PLANS {
@@ -267,6 +293,7 @@ erDiagram
         varchar goal
         date start_date
         date end_date
+        timestamp created_at
     }
 
     WORKOUTS {
@@ -279,6 +306,7 @@ erDiagram
         int reps
         decimal weight_kg
         int rest_seconds
+        varchar video_demo_url
     }
 ```
 
