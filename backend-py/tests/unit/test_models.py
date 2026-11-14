@@ -76,9 +76,10 @@ def test_wallet_domain_methods():
         wallet.debit(Decimal("400000.00"))
     assert "Số dư khả dụng không đủ" in str(exc_info.value)
 
-    # Debit penalty (allows going below locked or negative)
-    wallet.debit_penalty(Decimal("600000.00"))
-    assert wallet.balance == Decimal("-100000.00")
+    # Debit penalty (caps at usable balance to satisfy CHECK balance >= 0; returns applied)
+    applied = wallet.debit_penalty(Decimal("600000.00"))
+    assert applied == Decimal("300000.00")
+    assert wallet.balance == Decimal("200000.00")
 
     # Frozen wallet check
     wallet.status = WalletStatus.FROZEN

@@ -9,8 +9,8 @@ from app.policies.result import CancellationCalculationResult
 
 class PtCancellationPolicy(BaseCancellationPolicy):
     ADVANCE_NOTICE_HOURS = 24.0
-    COMPENSATION_RATE = Decimal("0.20")
-    PENALTY_RATE = Decimal("0.20")
+    COMPENSATION_RATE = Decimal("1.00")
+    PENALTY_RATE = Decimal("1.00")
 
     def get_supported_role(self) -> Role:
         return Role.PT
@@ -67,7 +67,7 @@ class PtCancellationPolicy(BaseCancellationPolicy):
             penalty_amount=penalty,
             hours_before_session=hours_before,
             explanation=(
-                f"Huấn luyện viên hủy sát giờ (< 24 giờ). Hoàn 1 buổi cho học viên, đền bù 20% ({compensation} đ) "
-                f"vào ví Học viên và phạt 20% ({penalty} đ) trừ từ ví Huấn luyện viên."
+                f"Huấn luyện viên hủy sát giờ (< 24 giờ). Hoàn 1 buổi cho học viên, đền bù 100% ({compensation} đ) "
+                f"vào ví Học viên và phạt 100% ({penalty} đ) trừ từ ví Huấn luyện viên."
             ),
         )

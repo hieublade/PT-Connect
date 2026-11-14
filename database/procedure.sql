@@ -427,6 +427,7 @@ proc_label: BEGIN
     DECLARE `v_shortfall` DECIMAL(12,2) DEFAULT 0.00;
     DECLARE `v_lock_id` BIGINT;
     DECLARE `v_comp_user_id` BIGINT;
+    DECLARE `v_pen_user_id` BIGINT;
     DECLARE `v_applied` DECIMAL(14,2) DEFAULT 0.00;
     DECLARE `v_settle_code` INT DEFAULT 0;
 
@@ -527,18 +528,33 @@ proc_label: BEGIN
         LEAVE proc_label;
     END IF;
 
-    IF `v_booking_status` = 'CONFIRMED' AND `v_hours_before` < 24.0 THEN
-        IF `v_actor_role` = 'STUDENT' THEN
-            IF `v_booking_type` = 'PACKAGE' AND `v_enrollment_id` IS NOT NULL THEN
-                CALL `sp_consume_session`(`v_enrollment_id`);
+    IF `v_booking_status` = 'CONFIRMED' THEN
+        IF `v_hours_before` >= 24.0 THEN
+            IF `v_actor_role` = 'STUDENT' THEN
+                -- Học viên hủy trước >= 24h: Hoàn 1 buổi, phạt học viên 50%, đền bù PT 50%
+                SET `v_pen_user_id` = `v_student_id`;
+                SET `v_pen_due` = ROUND(`v_session_fee` * 0.5, 2);
+                SET `v_comp_due` = ROUND(`v_session_fee` * 0.5, 2);
+                SET `v_comp_user_id` = `v_pt_user_id`;
             END IF;
-            SET `v_comp_due` = ROUND(`v_session_fee` * 0.5, 2);
-            SET `v_comp_user_id` = `v_pt_user_id`;
-            SET `v_comp` = `v_comp_due`;
-        ELSEIF `v_actor_role` = 'PT' THEN
-            SET `v_pen_due` = ROUND(`v_session_fee` * 0.2, 2);
-            SET `v_comp_due` = ROUND(`v_session_fee` * 0.2, 2);
-            SET `v_comp_user_id` = `v_student_id`;
+            -- PT hủy trước >= 24h: Hoàn 1 buổi, không phạt
+        ELSE
+            -- Hủy sát giờ < 24h
+            IF `v_actor_role` = 'STUDENT' THEN
+                -- Học viên hủy sát giờ: Mất buổi, PT hưởng 90% thù lao, Sàn thu 10%
+                IF `v_booking_type` = 'PACKAGE' AND `v_enrollment_id` IS NOT NULL THEN
+                    CALL `sp_consume_session`(`v_enrollment_id`);
+                END IF;
+                SET `v_comp_due` = ROUND(`v_session_fee` * 0.9, 2);
+                SET `v_comp_user_id` = `v_pt_user_id`;
+                SET `v_comp` = `v_comp_due`;
+            ELSEIF `v_actor_role` = 'PT' THEN
+                -- PT hủy sát giờ: Hoàn 1 buổi, phạt PT 100%, đền bù học viên 100%
+                SET `v_pen_user_id` = `v_pt_user_id`;
+                SET `v_pen_due` = ROUND(`v_session_fee` * 1.0, 2);
+                SET `v_comp_due` = ROUND(`v_session_fee` * 1.0, 2);
+                SET `v_comp_user_id` = `v_student_id`;
+            END IF;
         END IF;
     END IF;
 
@@ -548,15 +564,15 @@ proc_label: BEGIN
 
     IF `v_pen_due` > 0 THEN
         CALL `sp_wallet_settle`(
-            `v_pt_user_id`, `v_pen_due`, 'PENALTY', `v_enrollment_id`,
+            `v_pen_user_id`, `v_pen_due`, 'PENALTY', `v_enrollment_id`,
             CONCAT('CXL-', `p_booking_id`, '-PEN'),
-            CONCAT('Phạt PT hủy muộn ca #', `p_booking_id`),
+            IF(`v_actor_role` = 'STUDENT', CONCAT('Phạt học viên hủy báo trước ca #', `p_booking_id`), CONCAT('Phạt PT hủy sát giờ ca #', `p_booking_id`)),
             `v_applied`, `v_settle_code`
         );
         IF `v_settle_code` <> 0 THEN
             ROLLBACK;
             SET `p_status_code` = 10;
-            SET `p_message` = 'Không tìm thấy ví PT để thu tiền phạt.';
+            SET `p_message` = 'Không tìm thấy ví người hủy để thu tiền phạt.';
             LEAVE proc_label;
         END IF;
         SET `v_pen` = `v_applied`;
@@ -577,6 +593,16 @@ proc_label: BEGIN
             SET `p_message` = 'Không tìm thấy ví để quyết toán tiền đền bù.';
             LEAVE proc_label;
         END IF;
+    END IF;
+
+    -- Thu 10% phí dịch vụ sàn nếu học viên hủy sát giờ (< 24h)
+    IF `v_booking_status` = 'CONFIRMED' AND `v_hours_before` < 24.0 AND `v_actor_role` = 'STUDENT' AND `v_session_fee` > 0 THEN
+        CALL `sp_wallet_settle`(
+            1, ROUND(`v_session_fee` * 0.1, 2), 'PLATFORM_FEE', `v_enrollment_id`,
+            CONCAT('CXL-', `p_booking_id`, '-PFEE'),
+            CONCAT('Phí sàn hủy sát giờ ca #', `p_booking_id`),
+            `v_applied`, `v_settle_code`
+        );
     END IF;
 
     INSERT INTO `cancellations` (

@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from decimal import ROUND_HALF_UP, Decimal
 
 from sqlalchemy.exc import IntegrityError
@@ -13,7 +14,17 @@ from app.core.exceptions import (
 from app.models.booking import Booking
 from app.models.cancellation import Cancellation
 from app.models.enrollment import Enrollment
-from app.models.enums import BookingStatus, BookingType, CancellationStatus, Role, SlotStatus
+from app.models.enums import (
+    BookingStatus,
+    BookingType,
+    CancellationStatus,
+    PaymentMethod,
+    PaymentStatus,
+    PaymentType,
+    Role,
+    SlotStatus,
+)
+from app.models.payment import Payment
 from app.models.user import User
 from app.policies.factory import cancellation_policy_factory
 from app.policies.result import CancellationCalculationResult
@@ -341,8 +352,14 @@ class BookingService:
             if result.restore_session and booking.booking_type == BookingType.PACKAGE and locked_enrollment:
                 locked_enrollment.restore_session()
                 self.enrollment_repo.save(locked_enrollment)
+            elif not result.restore_session and booking.booking_type == BookingType.PACKAGE and locked_enrollment:
+                if locked_enrollment.remaining_sessions == 0:
+                    open_count = self.booking_repo.count_open_bookings_for_enrollment(locked_enrollment.id, booking.id)
+                    if open_count == 0:
+                        locked_enrollment.complete()
+                        self.enrollment_repo.save(locked_enrollment)
 
-        # 4. Handle wallet effects (xử lý phạt PT trước, tránh sinh tiền đền bù ảo)
+        # 4. Handle wallet effects (xử lý phạt trước, tránh sinh tiền đền bù ảo)
         self._handle_wallet_effects(booking, cancelled_by_role, result)
 
         # 5. Record cancellation row
@@ -373,12 +390,53 @@ class BookingService:
         result: CancellationCalculationResult,
     ) -> None:
         if cancelled_by_role.upper() == "STUDENT":
-            if result.compensation_amount > Decimal(0) and booking.pt and booking.pt.pt:
-                self.wallet_service.process_booking_compensation(
-                    booking.pt.pt.id,
+            # 1. Trừ tiền phạt từ ví học viên (nếu có, e.g. hủy trước >= 24h phạt 50%)
+            penalty_applied = Decimal("0.00")
+            if result.penalty_amount > Decimal(0) and booking.student:
+                _, penalty_applied = self.wallet_service.process_booking_penalty(
+                    booking.student.id,
                     booking.enrollment,
-                    result.compensation_amount,
+                    result.penalty_amount,
                 )
+            result.penalty_shortfall = result.penalty_amount - penalty_applied
+            result.penalty_amount = penalty_applied
+
+            # 2. Đền bù cho Huấn luyện viên
+            if result.hours_before_session is not None and float(result.hours_before_session) >= 24.0:
+                # Trước >= 24h: Đền bù PT được bảo chứng từ tiền phạt thực thu của học viên
+                comp_to_give = min(result.compensation_amount, penalty_applied)
+                result.compensation_amount = comp_to_give
+                if comp_to_give > Decimal(0) and booking.pt and booking.pt.pt:
+                    self.wallet_service.process_booking_compensation(
+                        booking.pt.pt.id,
+                        booking.enrollment,
+                        comp_to_give,
+                    )
+            else:
+                # Sát giờ < 24h: PT nhận 90% thù lao buổi học, Sàn thu 10% hoa hồng nền tảng
+                if result.compensation_amount > Decimal(0) and booking.pt and booking.pt.pt:
+                    self.wallet_service.process_booking_compensation(
+                        booking.pt.pt.id,
+                        booking.enrollment,
+                        result.compensation_amount,
+                    )
+                # Thu 10% hoa hồng sàn vào ví Quản trị viên (Admin: user_id = 1)
+                if booking.session_fee and booking.session_fee > Decimal("0.00"):
+                    admin_wallet = self.wallet_service.wallet_repo.get_by_user_id(1)
+                    platform_fee = (booking.session_fee * Decimal("0.10")).quantize(Decimal("0.01"))
+                    if admin_wallet and platform_fee > Decimal("0.00"):
+                        admin_wallet.credit(platform_fee)
+                        self.wallet_service.wallet_repo.save(admin_wallet)
+                        p_fee = Payment(
+                            wallet_id=admin_wallet.id,
+                            enrollment_id=booking.enrollment_id,
+                            amount=platform_fee,
+                            payment_type=PaymentType.PLATFORM_FEE,
+                            payment_method=PaymentMethod.WALLET,
+                            status=PaymentStatus.SUCCESS,
+                            transaction_ref=f"PFEE_CXL_{booking.id}_{datetime.now().strftime('%Y%m%d%H%M%S')}",
+                        )
+                        self.wallet_service.payment_repo.save(p_fee)
         elif cancelled_by_role.upper() == "PT":
             # PT penalty must be processed FIRST to back student compensation
             penalty_applied = Decimal("0.00")

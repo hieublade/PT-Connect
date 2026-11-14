@@ -9,7 +9,9 @@ from app.policies.result import CancellationCalculationResult
 
 class StudentCancellationPolicy(BaseCancellationPolicy):
     ADVANCE_NOTICE_HOURS = 24.0
-    COMPENSATION_RATE = Decimal("0.50")
+    ADVANCE_PENALTY_RATE = Decimal("0.50")
+    ADVANCE_COMPENSATION_RATE = Decimal("0.50")
+    LATE_COMPENSATION_RATE = Decimal("0.90")
 
     def get_supported_role(self) -> Role:
         return Role.STUDENT
@@ -49,22 +51,30 @@ class StudentCancellationPolicy(BaseCancellationPolicy):
 
         # 3. Ca tập đã CONFIRMED và hủy trước >= 24 giờ
         if float(hours_before) >= self.ADVANCE_NOTICE_HOURS:
+            penalty = (session_fee * self.ADVANCE_PENALTY_RATE).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            compensation = (session_fee * self.ADVANCE_COMPENSATION_RATE).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
             return CancellationCalculationResult(
                 restore_session=True,
                 refund_amount=session_fee,
-                compensation_amount=Decimal("0.00"),
-                penalty_amount=Decimal("0.00"),
+                compensation_amount=compensation,
+                penalty_amount=penalty,
                 hours_before_session=hours_before,
-                explanation="Học viên hủy trước giờ tập >= 24 giờ. Hoàn trả 1 buổi tập vào hợp đồng, không phát sinh chi phí.",
+                explanation=(
+                    f"Học viên hủy trước giờ tập >= 24 giờ. Hoàn trả 1 buổi tập vào hợp đồng, "
+                    f"phạt 50% ({penalty} đ) trừ ví học viên và đền bù 50% ({compensation} đ) cho Huấn luyện viên."
+                ),
             )
 
         # 4. Ca tập đã CONFIRMED và hủy sát giờ (< 24 giờ)
-        compensation = (session_fee * self.COMPENSATION_RATE).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        compensation = (session_fee * self.LATE_COMPENSATION_RATE).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
         return CancellationCalculationResult(
             restore_session=False,
             refund_amount=Decimal("0.00"),
             compensation_amount=compensation,
             penalty_amount=Decimal("0.00"),
             hours_before_session=hours_before,
-            explanation=f"Học viên hủy sát giờ (< 24 giờ). Mất buổi tập, đền bù 50% học phí ca tập ({compensation} đ) vào ví Huấn luyện viên.",
+            explanation=(
+                f"Học viên hủy sát giờ (< 24 giờ). Mất buổi tập, Huấn luyện viên hưởng 90% thù lao ca tập ({compensation} đ) "
+                f"và sàn thu 10% phí dịch vụ."
+            ),
         )

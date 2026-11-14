@@ -54,8 +54,10 @@ def test_student_cancel_confirmed_advance_notice(factory):
 
     assert result.restore_session is True
     assert result.refund_amount == SESSION_FEE
-    assert result.compensation_amount == Decimal("0.00")
-    assert result.penalty_amount == Decimal("0.00")
+    expected_pen = SESSION_FEE * Decimal("0.50")
+    expected_comp = SESSION_FEE * Decimal("0.50")
+    assert result.penalty_amount == expected_pen
+    assert result.compensation_amount == expected_comp
     assert result.hours_before_session >= Decimal("24.00")
 
 
@@ -69,7 +71,7 @@ def test_student_cancel_confirmed_late(factory):
 
     assert result.restore_session is False
     assert result.refund_amount == Decimal("0.00")
-    expected_comp = SESSION_FEE * Decimal("0.50")
+    expected_comp = SESSION_FEE * Decimal("0.90")
     assert result.compensation_amount == expected_comp
     assert result.penalty_amount == Decimal("0.00")
 
@@ -126,7 +128,7 @@ def test_pt_cancel_confirmed_late(factory):
 
     assert result.restore_session is True
     assert result.refund_amount == SESSION_FEE
-    expected = SESSION_FEE * Decimal("0.20")
+    expected = SESSION_FEE * Decimal("1.00")
     assert result.compensation_amount == expected
     assert result.penalty_amount == expected
 

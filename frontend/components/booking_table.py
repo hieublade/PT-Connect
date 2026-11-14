@@ -242,7 +242,7 @@ def render_booking_card(
                     with st.popover("Hủy ca tập", use_container_width=True):
                         st.markdown("**Chính sách hủy ca tập (Phía HLV):**")
                         st.caption("• Hủy trước >= 24h: Hoàn 1 buổi, không phạt.")
-                        st.caption("• Hủy sát giờ < 24h: Hoàn 1 buổi, đền bù 20% cho học viên & phạt 20% trừ ví PT.")
+                        st.caption("• Hủy sát giờ < 24h: Hoàn 1 buổi, đền bù 100% cho học viên & phạt 100% trừ ví PT.")
                         try:
                             preview = BookingApi.preview_cancel_booking(booking_id)
                             st.info(f"Dự kiến: {preview.get('explanation')}")
@@ -311,8 +311,9 @@ def render_booking_card(
                 with col_st_act2:
                     with st.popover("Hủy Đặt Lịch Ca Tập", use_container_width=True):
                         st.markdown("**Chính sách hủy ca tập (Học viên):**")
-                        st.caption("• PENDING hoặc CONFIRMED trước >= 24h: Hoàn lại 1 buổi tập.")
-                        st.caption("• Hủy sát giờ < 24h: Mất buổi tập, đền bù 50% học phí ca cho HLV.")
+                        st.caption("• PENDING: Hoàn lại 1 buổi tập, không phạt.")
+                        st.caption("• CONFIRMED trước >= 24h: Hoàn 1 buổi, phạt học viên 50% & đền bù 50% cho HLV.")
+                        st.caption("• Hủy sát giờ < 24h: Mất buổi tập, HLV hưởng 90% thù lao (sàn thu 10% phí).")
 
                         try:
                             preview = BookingApi.preview_cancel_booking(booking_id)
