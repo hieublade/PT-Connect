@@ -19,7 +19,7 @@ class BookingDispute(Base):
     __tablename__ = "booking_disputes"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    booking_id: Mapped[int] = mapped_column(ForeignKey("bookings.id"), unique=True, nullable=False)
+    booking_id: Mapped[int] = mapped_column(ForeignKey("bookings.id"), nullable=False)
     sender_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     sender_role: Mapped[str] = mapped_column(String(20), nullable=False, default="STUDENT")
     dispute_type: Mapped[DisputeType] = mapped_column(
