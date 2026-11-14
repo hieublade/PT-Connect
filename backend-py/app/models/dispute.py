@@ -19,9 +19,8 @@ class BookingDispute(Base):
     __tablename__ = "booking_disputes"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    booking_id: Mapped[int] = mapped_column(ForeignKey("bookings.id"), nullable=False)
+    booking_id: Mapped[int] = mapped_column(ForeignKey("bookings.id"), unique=True, nullable=False)
     sender_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
-    sender_role: Mapped[str] = mapped_column(String(20), nullable=False, default="STUDENT")
     dispute_type: Mapped[DisputeType] = mapped_column(
         SQLEnum(DisputeType, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
@@ -44,4 +43,17 @@ class BookingDispute(Base):
     # Relationships
     booking: Mapped["Booking"] = relationship("Booking", back_populates="disputes")
     sender: Mapped["User"] = relationship("User")
+
+    @property
+    def sender_role(self) -> str:
+        """Suy ra vai trò của bên khiếu nại (Chuẩn hóa BCNF: không lưu cột thừa)."""
+        if self.booking:
+            if self.booking.student_id == self.sender_id:
+                return "STUDENT"
+            if self.booking.slot and self.booking.slot.pt and self.booking.slot.pt.user_id == self.sender_id:
+                return "PT"
+        if self.sender and hasattr(self.sender, "role"):
+            role_val = getattr(self.sender.role, "value", self.sender.role)
+            return str(role_val)
+        return "STUDENT"
 

@@ -115,13 +115,11 @@ class DisputeService:
                         "Theo quy định, bạn chỉ được quyền gửi khiếu nại trong thời hạn tối đa 2 ngày (48 giờ) kể từ thời điểm ca tập bị hủy."
                     )
 
-        sender_role = "STUDENT" if is_student else ("PT" if is_pt else "ADMIN")
         deadline = datetime.utcnow() + timedelta(hours=48)
 
         dispute = BookingDispute(
             booking_id=req.booking_id,
             sender_id=user.id,
-            sender_role=sender_role,
             dispute_type=req.dispute_type,
             reason=req.reason,
             evidence_url=req.evidence_url,

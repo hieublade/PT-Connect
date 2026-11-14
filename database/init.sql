@@ -230,7 +230,6 @@ CREATE TABLE `booking_disputes` (
   `id` bigint PRIMARY KEY AUTO_INCREMENT,
   `booking_id` bigint UNIQUE NOT NULL,
   `sender_id` bigint NOT NULL,
-  `sender_role` ENUM ('STUDENT', 'PT') NOT NULL,
   `dispute_type` ENUM ('WRONG_ABSENT', 'PT_NO_SHOW', 'STUDENT_NO_SHOW', 'ATTITUDE_QUALITY', 'CONTRACT_TERMINATION', 'OTHER') NOT NULL DEFAULT 'WRONG_ABSENT',
   `reason` text NOT NULL,
   `evidence_url` varchar(500),
@@ -252,7 +251,6 @@ CREATE INDEX `idx_bookings_student` ON `bookings` (`student_id`, `status`);
 CREATE INDEX `idx_bookings_enroll_status` ON `bookings` (`enrollment_id`, `status`);
 CREATE INDEX `idx_wal_audit_wallet` ON `wallet_audit_logs` (`wallet_id`);
 CREATE INDEX `idx_wal_audit_created` ON `wallet_audit_logs` (`created_at`);
-CREATE INDEX `idx_disputes_booking` ON `booking_disputes` (`booking_id`);
 CREATE INDEX `idx_disputes_sender` ON `booking_disputes` (`sender_id`, `status`);
 
 -- =====================================================================

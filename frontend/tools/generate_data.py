@@ -1153,8 +1153,8 @@ def main():
         }
     ]
     sql_lines.append("-- 10b. BOOKING DISPUTES")
-    sql_lines.append("INSERT INTO `booking_disputes` (`id`, `booking_id`, `sender_id`, `sender_role`, `dispute_type`, `reason`, `evidence_url`, `counter_evidence_url`, `counter_argument`, `status`, `admin_notes`, `deadline_at`, `resolved_at`, `created_at`) VALUES")
-    disp_vals = [f"  ({d['id']}, {d['booking_id']}, {d['sender_id']}, '{d['sender_role']}', '{d['dispute_type']}', {escape_sql(d['reason'])}, {escape_sql(d['evidence_url'])}, {escape_sql(d['counter_evidence_url'])}, {escape_sql(d['counter_argument'])}, '{d['status']}', {escape_sql(d['admin_notes'])}, {escape_sql(d['deadline_at'])}, {escape_sql(d['resolved_at'])}, '{d['created_at']}')" for d in disputes]
+    sql_lines.append("INSERT INTO `booking_disputes` (`id`, `booking_id`, `sender_id`, `dispute_type`, `reason`, `evidence_url`, `counter_evidence_url`, `counter_argument`, `status`, `admin_notes`, `deadline_at`, `resolved_at`, `created_at`) VALUES")
+    disp_vals = [f"  ({d['id']}, {d['booking_id']}, {d['sender_id']}, '{d['dispute_type']}', {escape_sql(d['reason'])}, {escape_sql(d['evidence_url'])}, {escape_sql(d['counter_evidence_url'])}, {escape_sql(d['counter_argument'])}, '{d['status']}', {escape_sql(d['admin_notes'])}, {escape_sql(d['deadline_at'])}, {escape_sql(d['resolved_at'])}, '{d['created_at']}')" for d in disputes]
     sql_lines.append(",\n".join(disp_vals) + ";\n")
 
     # 11. payments
