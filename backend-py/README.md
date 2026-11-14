@@ -198,7 +198,7 @@ erDiagram
         varchar student_note
         timestamp created_at
         timestamp updated_at
-        bigint active_slot_id UK
+        bigint active_slot_id UK "generated physical column for conditional unique"
     }
 
     REVIEWS {

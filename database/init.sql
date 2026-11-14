@@ -270,7 +270,7 @@ ALTER TABLE `reviews`            ADD FOREIGN KEY (`booking_id`)      REFERENCES 
 ALTER TABLE `cancellations`      ADD FOREIGN KEY (`booking_id`)      REFERENCES `bookings` (`id`);
 ALTER TABLE `cancellations`      ADD FOREIGN KEY (`cancelled_by_id`) REFERENCES `users` (`id`);
 ALTER TABLE `workout_plans`      ADD FOREIGN KEY (`enrollment_id`)   REFERENCES `enrollments` (`id`);
-ALTER TABLE `workouts`           ADD FOREIGN KEY (`plan_id`)         REFERENCES `workout_plans` (`id`);
+ALTER TABLE `workouts`           ADD FOREIGN KEY (`plan_id`)         REFERENCES `workout_plans` (`id`) ON DELETE CASCADE;
 ALTER TABLE `attendance`         ADD FOREIGN KEY (`booking_id`)      REFERENCES `bookings` (`id`);
 ALTER TABLE `payments`           ADD FOREIGN KEY (`wallet_id`)       REFERENCES `wallets` (`id`);
 ALTER TABLE `payments`           ADD FOREIGN KEY (`enrollment_id`)   REFERENCES `enrollments` (`id`);
