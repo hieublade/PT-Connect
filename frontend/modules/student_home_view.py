@@ -3,6 +3,7 @@ from datetime import datetime
 import streamlit as st
 from api.student_api import StudentApi
 from api.booking_api import BookingApi
+from api.dispute_api import DisputeApi
 from api.auth_api import AuthApi
 from api.client import ApiException
 from components.pt_card import render_pt_card, format_currency_vnd
@@ -55,7 +56,8 @@ class DiscoveryPTView:
                 pt_id = p.get("id")
                 st.session_state["selected_pt_id"] = pt_id
                 st.session_state["student_pt_select_box"] = pt_id
-                st.session_state["switch_to_tab_name"] = "Chi Tiết"
+                st.session_state["student_home_tabs"] = "Chi Tiết"
+                st.session_state["switch_to_tab"] = "Chi Tiết"
                 st.toast(f"Đang mở hồ sơ chi tiết của Huấn luyện viên {p.get('fullName')}")
 
             cols_per_row = 2
@@ -91,7 +93,7 @@ class ConfirmPurchaseCourseView:
                 rem_s = existing_active_enroll.get("remainingSessions", 0)
                 tot_s = existing_active_enroll.get("totalSessions", c_sessions)
                 st.warning(
-                    f"⚠️ **Bạn đang theo học khóa này:** Hợp đồng hiện tại còn **{rem_s}/{tot_s} buổi** chưa hoàn thành. "
+                    f"**Bạn đang theo học khóa này:** Hợp đồng hiện tại còn **{rem_s}/{tot_s} buổi** chưa hoàn thành. "
                     f"Theo quy định, bạn chỉ có thể đăng ký tiếp khóa học này sau khi đã tập xong toàn bộ {tot_s}/{tot_s} buổi."
                 )
                 st.button("Đang Theo Học (Không Thể Mua Trùng)", key=f"btn_confirm_buy_{c_id}", disabled=True)
@@ -239,9 +241,9 @@ class PTDetailView:
                         pt_email = pt_profile.get("email")
                         contacts = []
                         if pt_phone:
-                            contacts.append(f"📞 **SĐT / Zalo:** `{pt_phone}`")
+                            contacts.append(f"**SĐT / Zalo:** `{pt_phone}`")
                         if pt_email:
-                            contacts.append(f"✉️ **Email:** `{pt_email}`")
+                            contacts.append(f"**Email:** `{pt_email}`")
                         if contacts:
                             st.markdown(" • ".join(contacts))
                         if pt_profile.get("locationPricingNote"):
@@ -426,6 +428,17 @@ class BookingPackageView:
                         st.markdown(f"- **Huấn luyện viên:** `{chosen_enroll.get('ptName')}`")
                         st.markdown(f"- **Địa điểm tập:** `{chosen_enroll.get('trainingLocation')}`")
                         st.markdown(f"- **Số buổi tập còn lại sau ca này:** `{chosen_enroll.get('remainingSessions') - 1} buổi`")
+
+                        st.warning(
+                            f"**CHÍNH SÁCH HẠN DÙNG GÓI TẬP:** Hợp đồng có hạn dùng đến ngày **{chosen_enroll.get('endDate')}**. "
+                            "Nếu học viên không hoàn thành đủ số buổi trước ngày hết hạn, các buổi tập chưa dùng sẽ tự động hết hiệu lực "
+                            "và số tiền còn lại tự động giải ngân cho Hệ Thống (thủ tục sp_expire_enrollments). Cả PT và học viên đều không được bảo lưu sau thời hạn này."
+                        )
+
+                        st.info(
+                            "**QUY TẮC CHỐNG GIỮ LỊCH ẢO:** Mỗi học viên chỉ được phép có tối đa 2 ca chờ duyệt (PENDING) cùng lúc. "
+                            "Hệ thống sẽ tự động hủy đơn và giải phóng slot nếu quá 4 tiếng HLV không phê duyệt (thủ tục sp_auto_cancel_stale_bookings)."
+                        )
 
                         if st.button("Xác Nhận Đặt Lịch Ca Tập", type="primary", use_container_width=True):
                             with st.spinner("Đang thực hiện kiểm tra slot và trừ 1 buổi tập..."):
@@ -696,6 +709,12 @@ class WalletView:
                     """,
                     unsafe_allow_html=True
                 )
+                penalty_debt = float(self.parent.wallet_data.get("penaltyDebt", 0.0))
+                if penalty_debt > 0:
+                    st.error(
+                        f"**Khoản nợ phạt chưa thanh toán:** Bạn đang nợ **{format_currency_vnd(penalty_debt)}** tiền phạt vi phạm hủy lịch. "
+                        "Số dư khả dụng sẽ giữ ở mức 0 đ cho đến khi thanh toán xong khoản nợ phạt này."
+                    )
                 st.caption("*Lưu ý: Tiền trong ví chỉ dùng trong môi trường giả lập nền tảng PT Connect.*")
 
         with col_w_topup:
@@ -798,6 +817,195 @@ class ProfileView:
                 st.markdown(f"**Trạng thái tài khoản:** `{self.parent.status}`")
 
 
+class MyDisputeView:
+    """Quản lý và gửi khiếu nại tranh chấp ca tập / hợp đồng."""
+
+    def __init__(self, parent: "StudentHomeView"):
+        self.parent = parent
+
+    def render(self):
+        st.subheader("Giải Quyết Tranh Chấp & Khiếu Nại")
+        st.info(
+            "**Quy định khiếu nại & trọng tài đối kháng 48 giờ:**\n\n"
+            "- **Thời hạn khiếu nại ca bị hủy:** Ca tập bị hủy chỉ được gửi khiếu nại trong vòng **2 ngày (48 giờ)** kể từ thời điểm bị hủy. Quá 48 giờ hệ thống sẽ từ chối tiếp nhận.\n"
+            "- **Số lần khiếu nại:** Mỗi ca tập chỉ được gửi khiếu nại **tối đa 1 lần duy nhất**, không được gửi lại lần 2.\n"
+            "- **Quyền phản biện của bên bị khiếu nại:** Khi có khiếu nại phát sinh, bên bị khiếu nại có thời hạn **48 giờ** để nộp văn bản giải trình và bằng chứng đối chứng trước khi Quản trị viên đưa ra phán quyết."
+        )
+
+        tab_new, tab_list = st.tabs(["Gửi Khiếu Nại Mới", "Lịch Sử Khiếu Nại Của Tôi"])
+
+        with tab_new:
+            st.markdown("#### Tạo Phiếu Khiếu Nại Mới")
+            my_bookings = []
+            try:
+                my_bookings = BookingApi.get_my_bookings()
+            except Exception:
+                my_bookings = []
+
+            if not my_bookings:
+                st.warning("Bạn chưa có ca tập nào để gửi khiếu nại.")
+            else:
+                bk_options = {
+                    b["id"]: f"Ca #{b['id']} - HLV: {b.get('ptName', 'HLV')} | {format_booking_datetime(b.get('startTime'))} ({b.get('status')})"
+                    for b in my_bookings
+                }
+                chosen_bk_id = st.selectbox(
+                    "Chọn ca tập cần khiếu nại:",
+                    options=list(bk_options.keys()),
+                    format_func=lambda x: bk_options.get(x, str(x)),
+                    key="student_dispute_chosen_bk"
+                )
+
+                dispute_type_options = {
+                    "WRONG_ABSENT": "Bị điểm danh vắng mặt nhầm",
+                    "PT_NO_SHOW": "HLV không đến điểm hẹn / không thông báo",
+                    "STUDENT_NO_SHOW": "Học viên vắng mặt nhưng có lý do chính đáng",
+                    "ATTITUDE_QUALITY": "Thái độ phục vụ / Chất lượng giảng dạy kém",
+                    "CONTRACT_TERMINATION": "Khiếu nại chấm dứt hợp đồng & hoàn tiền các buổi còn lại",
+                    "OTHER": "Lý do khác"
+                }
+                chosen_type = st.selectbox(
+                    "Loại tranh chấp khiếu nại:",
+                    options=list(dispute_type_options.keys()),
+                    format_func=lambda k: dispute_type_options[k],
+                    key="student_dispute_type_select"
+                )
+
+                reason_text = st.text_area(
+                    "Mô tả chi tiết sự việc & yêu cầu giải quyết:",
+                    placeholder="Trình bày rõ diễn biến thực tế, mốc thời gian và yêu cầu hoàn buổi/hủy hợp đồng...",
+                    key="student_dispute_reason_input"
+                )
+
+                uploaded_img = st.file_uploader(
+                    "Tải lên hình ảnh bằng chứng đối chứng (ảnh check-in, tin nhắn trao đổi, biên lai):",
+                    type=["png", "jpg", "jpeg", "webp"],
+                    key="student_dispute_file_uploader"
+                )
+
+                if st.button("Xác Nhận Gửi Khiếu Nại Lên Admin", type="primary", use_container_width=True):
+                    if not reason_text or len(reason_text.strip()) < 5:
+                        st.warning("Vui lòng nhập lý do khiếu nại ít nhất 5 ký tự!")
+                    else:
+                        try:
+                            ev_url = None
+                            if uploaded_img:
+                                ev_url = DisputeApi.upload_evidence(uploaded_img.read(), uploaded_img.name)
+                            DisputeApi.create_dispute(
+                                booking_id=chosen_bk_id,
+                                dispute_type=chosen_type,
+                                reason=reason_text.strip(),
+                                evidence_url=ev_url
+                            )
+                            st.success("Đã gửi khiếu nại thành công! Bên bị khiếu nại có 48 giờ để phản biện trước khi Admin đưa ra phán quyết.")
+                            st.rerun()
+                        except ApiException as e:
+                            st.error(f"Lỗi [{e.status_code}]: {e.message}")
+                        except Exception as ex:
+                            st.error(f"Lỗi: {str(ex)}")
+
+        with tab_list:
+            st.markdown("#### Danh Sách Hồ Sơ Khiếu Nại Của Tôi")
+            my_disps = []
+            try:
+                my_disps = DisputeApi.list_disputes()
+            except Exception:
+                my_disps = []
+
+            if not my_disps:
+                st.info("Bạn chưa có hồ sơ khiếu nại nào.")
+            else:
+                for disp in my_disps:
+                    d_id = disp.get("id")
+                    d_status = disp.get("status")
+                    d_type = disp.get("disputeType")
+                    d_reason = disp.get("reason")
+                    d_bk_id = disp.get("bookingId")
+                    d_sender = disp.get("senderName") or "Người gửi"
+                    d_sender_role = disp.get("senderRole")
+                    d_sender_id = disp.get("senderId")
+                    d_evidence = disp.get("evidenceUrl")
+                    d_counter_arg = disp.get("counterArgument")
+                    d_counter_ev = disp.get("counterEvidenceUrl")
+                    d_notes = disp.get("adminNotes")
+                    d_deadline = disp.get("deadlineAt")
+                    d_pt_name = disp.get("ptName") or "Huấn luyện viên"
+                    d_student_name = disp.get("studentName") or "Học viên"
+
+                    curr_user_id = st.session_state.get("user", {}).get("id")
+                    is_sender = (curr_user_id is not None and d_sender_id is not None and int(curr_user_id) == int(d_sender_id))
+
+                    if d_sender_role == "STUDENT":
+                        complainant_text = f"{d_sender} (Học viên)"
+                        defendant_text = f"{d_pt_name} (PT)"
+                    else:
+                        complainant_text = f"{d_sender} (PT)"
+                        defendant_text = f"{d_student_name} (Học viên)"
+
+                    status_color = "#e65100" if d_status in ("PENDING", "EVIDENCE_REQUESTED") else ("#2e7d32" if d_status == "RESOLVED_REFUND" else "#c62828")
+
+                    with st.container(border=True):
+                        c_h1, c_h2 = st.columns([3, 1])
+                        with c_h1:
+                            st.markdown(f"#### Khiếu Nại #{d_id} • Ca tập #{d_bk_id}")
+                        with c_h2:
+                            st.markdown(f"<div style='text-align: right; color: {status_color}; font-weight: 700;'>{d_status}</div>", unsafe_allow_html=True)
+
+                        cp1, cp2 = st.columns(2)
+                        with cp1:
+                            st.markdown(f"**Bên khiếu nại (Nguyên đơn):** `{complainant_text}`")
+                        with cp2:
+                            st.markdown(f"**Bên bị khiếu nại (Bị đơn):** `{defendant_text}`")
+
+                        st.markdown(f"**Loại tranh chấp:** `{d_type}`")
+                        st.markdown(f"**Nội dung phản ánh:** {d_reason}")
+                        if d_evidence:
+                            st.markdown(f"**Ảnh bằng chứng:** [Xem ảnh]({d_evidence})")
+
+                        st.markdown("---")
+
+                        if is_sender:
+                            st.info(
+                                f"**Vai trò của bạn:** BÊN GỬI KHIẾU NẠI (Nguyên đơn)\n\n"
+                                f"Hệ thống đang chờ đối phương ({defendant_text}) nộp văn bản phản biện trong thời hạn 48 giờ "
+                                f"(Hạn chót: {format_booking_datetime(d_deadline) if d_deadline else 'N/A'})."
+                            )
+                        else:
+                            st.warning(
+                                f"**Vai trò của bạn:** BẠN LÀ BÊN BỊ KHIẾU NẠI (Bị đơn)\n\n"
+                                f"Bạn có thời hạn 48 giờ để gửi văn bản giải trình và ảnh bằng chứng đối chứng trước khi Quản trị viên đưa ra phán quyết. "
+                                f"Thời hạn phản biện kết thúc lúc: **{format_booking_datetime(d_deadline) if d_deadline else 'N/A'}**."
+                            )
+
+                        if d_counter_arg:
+                            st.success(f"**Văn bản phản biện đã nộp:** {d_counter_arg}")
+                            if d_counter_ev:
+                                st.markdown(f"**Ảnh bằng chứng đối chứng:** [Xem ảnh đối chứng]({d_counter_ev})")
+
+                        if d_notes:
+                            st.info(f"**Phán quyết & Kết luận từ Admin:** {d_notes}")
+
+                        # Form nộp phản biện nếu Student là BÊN BỊ KHIẾU NẠI và chưa nộp
+                        if not is_sender and d_status in ("PENDING", "EVIDENCE_REQUESTED") and not d_counter_arg:
+                            st.markdown("##### Nộp Bằng Chứng & Phản Biện Cho Ca Tập Này")
+                            st.caption("Trình bày giải trình sự việc và đính kèm hình ảnh để Quản trị viên xem xét đối chứng.")
+                            st_arg = st.text_area("Văn bản giải trình phản biện (*):", key=f"st_c_arg_{d_id}", placeholder="Trình bày chi tiết lý do, diễn biến thực tế...")
+                            st_img = st.file_uploader("Tải lên ảnh bằng chứng đối chứng:", type=["png", "jpg", "jpeg", "webp"], key=f"st_c_img_{d_id}")
+                            if st.button("Xác Nhận Nộp Phản Biện Cho Admin", key=f"btn_st_sub_{d_id}", type="primary"):
+                                if not st_arg or len(st_arg.strip()) < 5:
+                                    st.warning("Vui lòng nhập lý do phản biện ít nhất 5 ký tự!")
+                                else:
+                                    try:
+                                        img_url = None
+                                        if st_img:
+                                            img_url = DisputeApi.upload_evidence(st_img.read(), st_img.name)
+                                        DisputeApi.submit_counter(d_id, st_arg.strip(), img_url)
+                                        st.success("Đã nộp phản biện thành công!")
+                                        st.rerun()
+                                    except Exception as ex:
+                                        st.error(f"Lỗi: {str(ex)}")
+
+
 # =============================================================================
 # LỚP BIÊN CHÍNH: StudentHomeView
 # =============================================================================
@@ -827,6 +1035,7 @@ class StudentHomeView:
         self.booking_view = BookingPackageView(self)
         self.schedule_view = MyScheduleView(self)
         self.course_view = MyCourseView(self)
+        self.dispute_view = MyDisputeView(self)
         self.wallet_view = WalletView(self)
         self.profile_view = ProfileView(self)
 
@@ -849,7 +1058,7 @@ class StudentHomeView:
             <div style="background: linear-gradient(135deg, #1976d2 0%, #0d47a1 100%); padding: 1.5rem 2rem; border-radius: 12px; color: white; margin-bottom: 1.5rem; box-shadow: 0 4px 15px rgba(25, 118, 210, 0.25);">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
                     <div style="display: flex; align-items: center; gap: 1rem;">
-                        {"<img src='" + self.avatar_url + "' style='width: 68px; height: 68px; border-radius: 50%; object-fit: cover; border: 3px solid white;' />" if self.avatar_url else "<div style='width: 68px; height: 68px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 700; color: white;'>USER</div>"}
+                        {"<img src='" + self.avatar_url + "' style='width: 68px; height: 68px; border-radius: 50%; object-fit: cover; border: none;' />" if self.avatar_url else "<div style='width: 68px; height: 68px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 700; color: white;'>USER</div>"}
                         <div>
                             <h2 style="margin: 0; color: white; font-weight: 700;">Chào mừng bạn, {self.full_name}!</h2>
                             <p style="margin: 0.4rem 0 0 0; opacity: 0.92; font-size: 1.05rem;">
@@ -878,64 +1087,31 @@ class StudentHomeView:
 
         st.markdown("---")
 
-        # Phân chia các Tab chức năng theo Milestone 6 & Milestone 8
-        tab_explore, tab_detail, tab_booking, tab_my_schedule, tab_courses, tab_wallet, tab_profile = st.tabs([
+        # Phân chia các Tab chức năng theo giao diện tabs gốc
+        tab_titles = [
             "Khám Phá PT",
             "Chi Tiết",
             "Đặt Lịch",
             "Lịch Của Tôi",
             f"Khóa Của Tôi ({len(self.my_enrollments)})",
+            "Giải Quyết Tranh Chấp",
             "Ví Tiền",
             "Hồ Sơ"
-        ])
+        ]
 
-        target_tab_to_switch = st.session_state.pop("switch_to_tab_name", None)
-        if target_tab_to_switch:
-            import streamlit.components.v1 as components
-            components.html(
-                f"""
-                <script>
-                (function() {{
-                    const myIframe = window.frameElement;
-                    if (myIframe) {{
-                        myIframe.style.display = 'none';
-                        if (myIframe.parentElement) {{
-                            myIframe.parentElement.style.display = 'none';
-                        }}
-                    }}
+        if "switch_to_tab" in st.session_state:
+            target_tab = st.session_state.pop("switch_to_tab")
+            if target_tab in tab_titles:
+                st.session_state["student_home_tabs"] = target_tab
 
-                    function clickTargetTab() {{
-                        try {{
-                            const parentDoc = window.parent.document;
-                            if (!parentDoc) return false;
-                            const tabs = Array.from(parentDoc.querySelectorAll('button[data-baseweb="tab"], div[data-testid="stTabs"] button'));
-                            if (!tabs || tabs.length === 0) return false;
-                            let targetTab = tabs.find(t => (t.innerText || t.textContent || "").includes("{target_tab_to_switch}"));
-                            if (targetTab) {{
-                                targetTab.click();
-                                return true;
-                            }}
-                        }} catch (e) {{
-                            console.error(e);
-                        }}
-                        return false;
-                    }}
+        if "student_home_tabs" not in st.session_state or st.session_state["student_home_tabs"] not in tab_titles:
+            st.session_state["student_home_tabs"] = tab_titles[0]
 
-                    if (!clickTargetTab()) {{
-                        let attempts = 0;
-                        const intervalId = setInterval(function() {{
-                            attempts++;
-                            if (clickTargetTab() || attempts > 20) {{
-                                clearInterval(intervalId);
-                            }}
-                        }}, 50);
-                    }}
-                }})();
-                </script>
-                """,
-                height=0,
-                width=0
-            )
+        tab_explore, tab_detail, tab_booking, tab_my_schedule, tab_courses, tab_dispute, tab_wallet, tab_profile = st.tabs(
+            tab_titles,
+            key="student_home_tabs",
+            on_change="rerun"
+        )
 
         with tab_explore:
             self.discovery_view.render()
@@ -951,6 +1127,9 @@ class StudentHomeView:
 
         with tab_courses:
             self.course_view.render()
+
+        with tab_dispute:
+            self.dispute_view.render()
 
         with tab_wallet:
             self.wallet_view.render()

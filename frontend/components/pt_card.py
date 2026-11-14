@@ -81,11 +81,22 @@ def render_pt_card(
 
         with c_btn:
             btn_key = f"btn_select_pt_{pt_id}"
-            if st.button("Xem Chi Tiết", key=btn_key, use_container_width=True, type="primary"):
+
+            def _on_pt_card_click(target_id=pt_id, target_pt=pt):
+                st.session_state["selected_pt_id"] = target_id
+                st.session_state["student_pt_select_box"] = target_id
+                st.session_state["student_home_tabs"] = "Chi Tiết"
+                st.session_state["switch_to_tab"] = "Chi Tiết"
                 if on_select:
-                    on_select(pt)
-                else:
-                    st.session_state["selected_pt_id"] = pt_id
-                    st.session_state["student_pt_select_box"] = pt_id
-                    st.session_state["switch_to_tab_name"] = "Chi Tiết"
-                st.rerun()
+                    try:
+                        on_select(target_pt)
+                    except Exception:
+                        pass
+
+            st.button(
+                "Xem Chi Tiết",
+                key=btn_key,
+                use_container_width=True,
+                type="primary",
+                on_click=_on_pt_card_click
+            )

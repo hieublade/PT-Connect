@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy import FetchedValue, ForeignKey, Integer, Numeric, String
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, column_property, mapped_column, relationship
 
 from app.core.exceptions import InsufficientBalanceException
 from app.db.base import Base
@@ -59,9 +59,12 @@ class Wallet(Base):
             raise InsufficientBalanceException("Số dư khả dụng không đủ")
         self.balance = remaining_balance
 
-    def debit_penalty(self, amount: Decimal) -> None:
+    def debit_penalty(self, amount: Decimal) -> Decimal:
         self._check_usable(amount)
-        self.balance = self.balance - amount
+        usable_balance = max(self.balance - self.locked_balance, Decimal("0.00"))
+        applied = min(amount, usable_balance)
+        self.balance = self.balance - applied
+        return applied
 
     def _check_usable(self, amount: Decimal | None) -> None:
         if self.status != WalletStatus.ACTIVE:
@@ -76,3 +79,21 @@ class IllegalStateException(RuntimeError):
 
 class IllegalArgumentException(ValueError):
     pass
+
+
+class WalletAuditLog(Base):
+    __tablename__ = "wallet_audit_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    wallet_id: Mapped[int] = mapped_column(ForeignKey("wallets.id"), nullable=False)
+    old_balance: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    new_balance: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    old_locked_balance: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    new_locked_balance: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    changed_amount: Mapped[Decimal] = column_property(new_balance - old_balance)
+    changed_locked_amount: Mapped[Decimal] = column_property(new_locked_balance - old_locked_balance)
+    action_type: Mapped[str] = mapped_column(String(30), nullable=False)
+    reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(server_default=FetchedValue())
+
+    wallet: Mapped["Wallet"] = relationship("Wallet")

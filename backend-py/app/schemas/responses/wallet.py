@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from app.models.enums import PaymentMethod, PaymentStatus, PaymentType, WalletStatus
 from app.models.payment import Payment
 from app.models.wallet import Wallet
@@ -41,22 +43,32 @@ class WalletResponse(CamelModel):
     user_id: int | None = None
     balance: Money
     locked_balance: Money
+    available_balance: Money = Decimal("0.00")
+    penalty_debt: Money = Decimal("0.00")
     currency: str = "VND"
     status: WalletStatus
     updated_at: LocalDateTime | None = None
     transactions: list[PaymentResponse] = []
 
     @classmethod
-    def from_entity(cls, wallet: Wallet | None, transactions: list[PaymentResponse] | None = None) -> "WalletResponse | None":
+    def from_entity(
+        cls,
+        wallet: Wallet | None,
+        transactions: list[PaymentResponse] | None = None,
+        penalty_debt: Decimal = Decimal("0.00"),
+    ) -> "WalletResponse | None":
         if wallet is None:
             return None
 
         u_id = wallet.user.id if wallet.user else None
+        avail = max(Decimal("0.00"), wallet.balance - wallet.locked_balance)
         return cls(
             id=wallet.id,
             user_id=u_id,
             balance=wallet.balance,
             locked_balance=wallet.locked_balance,
+            available_balance=avail,
+            penalty_debt=penalty_debt,
             currency=wallet.currency,
             status=wallet.status,
             updated_at=wallet.updated_at,

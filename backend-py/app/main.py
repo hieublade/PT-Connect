@@ -4,6 +4,7 @@ from pathlib import Path
 import re
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 import pymysql
 
 from app.api.v1.router import api_v1_router
@@ -153,4 +154,6 @@ app.add_middleware(
 )
 
 register_exception_handlers(app)
+Path("static/uploads").mkdir(parents=True, exist_ok=True)
+app.mount("/static", StaticFiles(directory="static"), name="static")
 app.include_router(api_v1_router)

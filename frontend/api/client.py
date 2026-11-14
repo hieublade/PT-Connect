@@ -126,6 +126,30 @@ class ApiClient:
         except requests.Timeout:
             raise ApiException("Quá thời gian kết nối đến máy chủ Backend (Timeout 10s).", status_code=504)
 
+    def post_files(self, endpoint: str, files: Dict[str, Any], data: Optional[Dict[str, Any]] = None, headers: Optional[Dict[str, str]] = None) -> Any:
+        """Tải lên tệp đa phương tiện (Multipart Form-Data) kèm token."""
+        url = f"{self.base_url}/{endpoint.lstrip('/')}"
+        custom_h = {}
+        token = None
+        try:
+            token = st.session_state.get("token")
+        except Exception:
+            pass
+        if token:
+            custom_h["Authorization"] = f"Bearer {token}"
+        if headers:
+            custom_h.update(headers)
+        try:
+            res = requests.post(url, files=files, data=data, headers=custom_h, timeout=15)
+            return self._handle_response(res)
+        except requests.ConnectionError:
+            raise ApiException(
+                "Không thể kết nối đến Backend API (Port 8080). Vui lòng kiểm tra dịch vụ backend đã chạy chưa.",
+                status_code=503
+            )
+        except requests.Timeout:
+            raise ApiException("Quá thời gian tải lên máy chủ Backend (Timeout 15s).", status_code=504)
+
     def put(self, endpoint: str, json: Optional[Dict[str, Any]] = None, params: Optional[Dict[str, Any]] = None, headers: Optional[Dict[str, str]] = None) -> Any:
         url = f"{self.base_url}/{endpoint.lstrip('/')}"
         try:

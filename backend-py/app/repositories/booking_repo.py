@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session, selectinload
 from app.models.availability_slot import AvailabilitySlot
 from app.models.booking import Booking
 from app.models.cancellation import Cancellation
-from app.models.enums import BookingStatus
+from app.models.enums import BookingStatus, SlotStatus
 from app.models.pt_profile import PTProfile
 
 
@@ -96,6 +96,39 @@ class BookingRepository:
             .first()
             is not None
         )
+
+    def count_pending_by_student(self, student_id: int) -> int:
+        return (
+            self.db.query(func.count(Booking.id))
+            .filter(
+                Booking.student_id == student_id,
+                Booking.status == BookingStatus.PENDING,
+            )
+            .scalar()
+            or 0
+        )
+
+    def auto_cancel_stale_bookings(self) -> int:
+        """Tự động hủy các ca PENDING quá 4 tiếng và giải phóng slot (chống găm giữ slot)."""
+        from datetime import datetime, timedelta
+        stale_threshold = datetime.utcnow() - timedelta(hours=4)
+        stale_bookings = (
+            self.db.query(Booking)
+            .filter(
+                Booking.status == BookingStatus.PENDING,
+                Booking.created_at <= stale_threshold,
+            )
+            .all()
+        )
+        count = 0
+        for b in stale_bookings:
+            b.status = BookingStatus.CANCELLED
+            if b.slot:
+                b.slot.status = SlotStatus.AVAILABLE
+            count += 1
+        if count > 0:
+            self.db.flush()
+        return count
 
     def count_open_bookings_for_enrollment(self, enrollment_id: int, exclude_booking_id: int | None = None) -> int:
         query = self.db.query(func.count(Booking.id)).filter(

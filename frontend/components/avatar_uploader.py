@@ -66,7 +66,7 @@ def render_avatar_management(user: Dict[str, Any], user_role: str = "STUDENT") -
                 default_text = "PT" if user_role == "PT" else "USER"
                 st.markdown(
                     f"""
-                    <div style="width: 130px; height: 130px; border-radius: 50%; background: #e3f2fd; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 700; color: #1976d2; border: 3px solid #1976d2; margin: 0 auto;">
+                    <div style="width: 130px; height: 130px; border-radius: 50%; background: #e3f2fd; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 700; color: #1976d2; border: none; margin: 0 auto;">
                         {default_text}
                     </div>
                     <div style="font-size: 0.85rem; color: #888; text-align: center; margin-top: 8px;">Chưa cài đặt avatar</div>

@@ -50,6 +50,17 @@ class BookingService:
         if not student:
             raise ResourceNotFoundException(f"Không tìm thấy học viên với email: {student_email}")
 
+        # Tự động hủy các ca PENDING quá 4 tiếng (chống chiếm giữ slot)
+        self.booking_repo.auto_cancel_stale_bookings()
+
+        # Kiểm tra hạn mức chống găm giữ slot ảo: Tối đa 2 ca PENDING cùng lúc
+        pending_count = self.booking_repo.count_pending_by_student(student.id)
+        if pending_count >= 2:
+            raise BadRequestException(
+                "Chính sách chống giữ lịch ảo: Bạn chỉ được phép có tối đa 2 ca tập đang chờ HLV duyệt (PENDING) cùng lúc. "
+                "Vui lòng chờ HLV duyệt hoặc hủy ca chờ cũ trước khi đặt tiếp."
+            )
+
         # 1. Pessimistic lock on slot
         slot = self.slot_repo.get_by_id_with_lock(request.slot_id)
         if not slot:
@@ -323,12 +334,15 @@ class BookingService:
             booking.slot.release()
             self.slot_repo.save(booking.slot)
 
-        # 3. Restore session if applicable
-        if result.restore_session and booking.booking_type == BookingType.PACKAGE and booking.enrollment:
-            booking.enrollment.restore_session()
-            self.enrollment_repo.save(booking.enrollment)
+        # 3. Restore session if applicable (Lock enrollment theo thứ tự toàn cục)
+        if booking.enrollment_id:
+            # Khóa dòng enrollment trước khi cập nhật số buổi
+            locked_enrollment = self.enrollment_repo.get_by_id_with_lock(booking.enrollment_id)
+            if result.restore_session and booking.booking_type == BookingType.PACKAGE and locked_enrollment:
+                locked_enrollment.restore_session()
+                self.enrollment_repo.save(locked_enrollment)
 
-        # 4. Handle wallet effects
+        # 4. Handle wallet effects (xử lý phạt PT trước, tránh sinh tiền đền bù ảo)
         self._handle_wallet_effects(booking, cancelled_by_role, result)
 
         # 5. Record cancellation row
@@ -341,6 +355,7 @@ class BookingService:
             refund_amount=result.refund_amount,
             compensation_amount=result.compensation_amount,
             penalty_amount=result.penalty_amount,
+            penalty_shortfall=result.penalty_shortfall,
             evidence_url=evidence_url,
             status=CancellationStatus.PROCESSED,
         )
@@ -365,17 +380,25 @@ class BookingService:
                     result.compensation_amount,
                 )
         elif cancelled_by_role.upper() == "PT":
-            if result.compensation_amount > Decimal(0) and booking.student:
-                self.wallet_service.process_booking_compensation(
-                    booking.student.id,
-                    booking.enrollment,
-                    result.compensation_amount,
-                )
+            # PT penalty must be processed FIRST to back student compensation
+            penalty_applied = Decimal("0.00")
             if result.penalty_amount > Decimal(0) and booking.pt and booking.pt.pt:
-                self.wallet_service.process_booking_penalty(
+                _, penalty_applied = self.wallet_service.process_booking_penalty(
                     booking.pt.pt.id,
                     booking.enrollment,
                     result.penalty_amount,
+                )
+            result.penalty_shortfall = result.penalty_amount - penalty_applied
+            result.penalty_amount = penalty_applied
+
+            # Học viên nhận tiền đền bù được bảo chứng từ tiền phạt thực thu của PT
+            comp_to_give = min(result.compensation_amount, penalty_applied)
+            result.compensation_amount = comp_to_give
+            if comp_to_give > Decimal(0) and booking.student:
+                self.wallet_service.process_booking_compensation(
+                    booking.student.id,
+                    booking.enrollment,
+                    comp_to_give,
                 )
 
     def preview_cancel_booking(self, user_email: str, booking_id: int) -> CancelPreviewResponse:

@@ -16,7 +16,9 @@ services:
       - mysql_py_data:/var/lib/mysql
       - ./database/init.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
       - ./database/trigger.sql:/docker-entrypoint-initdb.d/02_trigger.sql:ro
-      - ./database/seed_demo.sql:/docker-entrypoint-initdb.d/03_seed_demo.sql:ro
+      - ./database/procedure.sql:/docker-entrypoint-initdb.d/03_procedure.sql:ro
+      - ./database/views.sql:/docker-entrypoint-initdb.d/04_views.sql:ro
+      - ./database/seed_demo.sql:/docker-entrypoint-initdb.d/05_seed_demo.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
       interval: 5s

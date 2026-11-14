@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
 import streamlit as st
 from api.booking_api import BookingApi
+from api.dispute_api import DisputeApi
 from api.client import ApiException
 
 
@@ -268,7 +269,7 @@ def render_booking_card(
                         f"""
                         <div style="background: #f1f8e9; border: 1px solid #c5e1a5; padding: 10px 14px; border-radius: 8px;">
                             <div style="font-weight: 700; color: #33691e;">Đánh giá từ Học viên: {rating_val}/5 sao</div>
-                            <div style="color: #424242; margin-top: 4px; font-style: italic;">"{comment_text}"</div>
+                            <div style="color: #424242; margin-top: 4px; font-style: italic;">{comment_text}</div>
                         </div>
                         """,
                         unsafe_allow_html=True
@@ -340,7 +341,7 @@ def render_booking_card(
                         f"""
                         <div style="background: #fffde7; border: 1px solid #fff59d; padding: 10px 14px; border-radius: 8px;">
                             <div style="font-weight: 700; color: #f57f17;">Đánh giá của bạn: {rating_val}/5 sao</div>
-                            <div style="color: #424242; margin-top: 4px; font-style: italic;">"{comment_text}"</div>
+                            <div style="color: #424242; margin-top: 4px; font-style: italic;">{comment_text}</div>
                         </div>
                         """,
                         unsafe_allow_html=True
@@ -357,6 +358,127 @@ def render_booking_card(
                             try:
                                 BookingApi.create_review(booking_id, rating_choice, review_comment.strip() if review_comment else None)
                                 st.success("Đã gửi đánh giá thành công! Điểm trung bình HLV đã được tự động cập nhật.")
+                                st.rerun()
+                            except ApiException as e:
+                                st.error(f"Lỗi [{e.status_code}]: {e.message}")
+                            except Exception as ex:
+                                st.error(f"Lỗi: {str(ex)}")
+
+        # =====================================================================
+        # MỤC KHIẾU NẠI & TRANH CHẤP TRỌNG TÀI (Milestone 8 Upgrade)
+        # =====================================================================
+        current_user = st.session_state.get("user", {})
+        curr_user_id = current_user.get("id")
+
+        booking_disputes = []
+        try:
+            all_disps = DisputeApi.list_disputes()
+            booking_disputes = [d for d in all_disps if d.get("bookingId") == booking_id]
+        except Exception:
+            booking_disputes = []
+
+        if booking_disputes:
+            st.markdown("---")
+            for disp in booking_disputes:
+                d_id = disp.get("id")
+                d_status = disp.get("status")
+                d_type = disp.get("disputeType")
+                d_reason = disp.get("reason")
+                d_sender_role = disp.get("senderRole")
+                d_sender_name = disp.get("senderName") or "Người gửi"
+                d_evidence = disp.get("evidenceUrl")
+                d_counter_arg = disp.get("counterArgument")
+                d_counter_ev = disp.get("counterEvidenceUrl")
+                d_notes = disp.get("adminNotes")
+                d_deadline = disp.get("deadlineAt")
+                d_sender_id = disp.get("senderId")
+
+                status_color = "#e65100" if d_status in ("PENDING", "EVIDENCE_REQUESTED") else ("#2e7d32" if d_status == "RESOLVED_REFUND" else "#c62828")
+                status_label = {
+                    "PENDING": "Đang chờ đối phương phản biện (Thời hạn 48h)",
+                    "EVIDENCE_REQUESTED": "Admin yêu cầu bổ sung bằng chứng (Thời hạn 48h)",
+                    "RESOLVED_REFUND": "Admin đã chấp thuận khiếu nại & hoàn trả buổi tập",
+                    "REJECTED": "Admin đã bác bỏ khiếu nại"
+                }.get(d_status, d_status)
+
+                st.markdown(
+                    f"""
+                    <div style="background: #fff8e1; border-left: 4px solid {status_color}; padding: 12px; border-radius: 6px; margin: 8px 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <strong style="color: {status_color}; font-size: 0.95rem;">KHIẾU NẠI #{d_id}: {status_label}</strong>
+                            <span style="font-size: 0.8rem; color: #666;">Hạn phản biện: {format_booking_datetime(d_deadline)}</span>
+                        </div>
+                        <div style="margin-top: 6px; font-size: 0.9rem; color: #333;">
+                            <strong>Loại:</strong> {d_type} • <strong>Bên khiếu nại:</strong> {d_sender_name} ({d_sender_role})
+                        </div>
+                        <div style="margin-top: 4px; font-size: 0.9rem; color: #444;">
+                            <strong>Lý do:</strong> {d_reason}
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+                if d_evidence:
+                    st.caption(f"Ảnh bằng chứng ban đầu: [Xem ảnh]({d_evidence})")
+
+                if d_counter_arg:
+                    st.info(f"**Phản biện từ đối phương:** {d_counter_arg}")
+                    if d_counter_ev:
+                        st.caption(f"Ảnh bằng chứng phản biện: [Xem ảnh]({d_counter_ev})")
+
+                if d_notes:
+                    st.success(f"**Kết luận & Lý do phán quyết từ Admin:** {d_notes}")
+
+                # Nếu là đối phương (chưa gửi phản biện) và khiếu nại đang mở -> cho phép gửi phản biện + ảnh
+                if d_status in ("PENDING", "EVIDENCE_REQUESTED") and curr_user_id and curr_user_id != d_sender_id and not d_counter_arg:
+                    with st.popover(f"Nộp Bằng Chứng & Phản Biện Cho Ca #{booking_id}", use_container_width=True):
+                        st.markdown(f"**Nộp văn bản phản biện cho Khiếu nại #{d_id}:**")
+                        st.caption("Quy định trọng tài: Bạn có 48 giờ để đưa ra phản biện. Sau thời hạn này Quản trị viên sẽ ra phán quyết cuối cùng.")
+                        c_arg = st.text_area("Lý do phản biện:", key=f"c_arg_in_{d_id}", placeholder="Nêu rõ diễn biến thực tế...")
+                        c_img = st.file_uploader("Tải lên ảnh bằng chứng đối chứng:", type=["png", "jpg", "jpeg", "webp"], key=f"c_img_in_{d_id}")
+                        if st.button("Gửi Phản Biện Lên Admin", key=f"btn_sub_counter_{d_id}", type="primary"):
+                            if not c_arg or len(c_arg.strip()) < 5:
+                                st.warning("Vui lòng nhập lý do phản biện ít nhất 5 ký tự!")
+                            else:
+                                try:
+                                    c_url = None
+                                    if c_img:
+                                        c_url = DisputeApi.upload_evidence(c_img.read(), c_img.name)
+                                    DisputeApi.submit_counter(d_id, c_arg.strip(), c_url)
+                                    st.success("Đã gửi văn bản phản biện thành công!")
+                                    st.rerun()
+                                except Exception as ex:
+                                    st.error(f"Lỗi: {str(ex)}")
+
+        else:
+            if status in ("COMPLETED", "CANCELLED", "CONFIRMED"):
+                with st.popover("Gửi Khiếu Nại Lên Ban Quản Trị", use_container_width=True):
+                    st.markdown(f"**Khiếu nại ca tập #{booking_id}:**")
+                    st.caption("Hệ thống trọng tài bảo vệ quyền lợi cả hai bên. Admin sẽ đợi 48h để đối phương phản biện trước khi phân xử.")
+
+                    d_type_options = {
+                        "WRONG_ABSENT": "Bị điểm danh vắng mặt nhầm",
+                        "PT_NO_SHOW": "HLV không đến điểm hẹn / không thông báo",
+                        "STUDENT_NO_SHOW": "Học viên vắng mặt nhưng khiếu nại sai",
+                        "ATTITUDE_QUALITY": "Thái độ phục vụ / Chất lượng buổi tập kém",
+                        "CONTRACT_TERMINATION": "Khiếu nại hủy toàn bộ hợp đồng & hoàn tiền các buổi còn lại",
+                        "OTHER": "Lý do khác"
+                    }
+                    ch_type = st.selectbox("Loại tranh chấp:", list(d_type_options.keys()), format_func=lambda k: d_type_options[k], key=f"new_d_type_{booking_id}")
+                    ch_reason = st.text_area("Mô tả chi tiết sự việc:", placeholder="Trình bày rõ diễn biến, mốc thời gian và yêu cầu giải quyết...", key=f"new_d_reason_{booking_id}")
+                    ch_evidence = st.file_uploader("Tải lên ảnh bằng chứng (check-in, tin nhắn, đối chứng):", type=["png", "jpg", "jpeg", "webp"], key=f"new_d_file_{booking_id}")
+
+                    if st.button("Xác Nhận Gửi Khiếu Nại", key=f"btn_send_d_{booking_id}", type="primary", use_container_width=True):
+                        if not ch_reason or len(ch_reason.strip()) < 5:
+                            st.warning("Vui lòng nhập mô tả sự việc ít nhất 5 ký tự!")
+                        else:
+                            try:
+                                ev_url = None
+                                if ch_evidence:
+                                    ev_url = DisputeApi.upload_evidence(ch_evidence.read(), ch_evidence.name)
+                                DisputeApi.create_dispute(booking_id, ch_type, ch_reason.strip(), ev_url)
+                                st.success("Đã gửi khiếu nại thành công! Đối phương có 48 giờ để nộp phản biện.")
                                 st.rerun()
                             except ApiException as e:
                                 st.error(f"Lỗi [{e.status_code}]: {e.message}")

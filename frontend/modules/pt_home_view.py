@@ -7,7 +7,8 @@ from api.booking_api import BookingApi
 from api.auth_api import AuthApi
 from components.course_card import render_course_card, format_currency_vnd
 from components.slot_card import render_slot_card
-from components.booking_table import render_booking_table
+from components.booking_table import render_booking_table, format_booking_datetime
+from api.dispute_api import DisputeApi
 from components.avatar_uploader import render_avatar_management, normalize_avatar_url
 
 
@@ -578,6 +579,9 @@ class PTHomeView:
             pass
 
         wallet_balance = float(wallet_data.get("balance", 0) or 0)
+        locked_balance = float(wallet_data.get("lockedBalance", 0) or 0)
+        available_balance = float(wallet_data.get("availableBalance", max(0.0, wallet_balance - locked_balance)))
+        penalty_debt = float(wallet_data.get("penaltyDebt", 0) or 0)
 
         with c1:
             st.metric(label="Ca tập chờ duyệt", value=f"{len(pending_bookings)} ca", delta="Cần xử lý" if pending_bookings else None)
@@ -589,32 +593,33 @@ class PTHomeView:
         with c4:
             st.metric(label="Đánh giá", value=f"{avg_rating:.1f}/5.0", delta=f"{total_rev} lượt review")
         with c5:
-            if wallet_balance < 0:
-                st.metric(
-                    label="Số dư ví (Ghi nợ)",
-                    value=format_currency_vnd(wallet_balance),
-                    delta="Đang nợ phạt",
-                    delta_color="inverse",
-                    help="Số dư âm do bị phạt khi hủy ca tập sát giờ (< 24h). Khoản này sẽ được cấn trừ tự động."
-                )
-            elif wallet_balance > 0:
-                st.metric(
-                    label="Số dư ví PT",
-                    value=format_currency_vnd(wallet_balance),
-                    delta="Khả dụng",
-                    help="Số dư khả dụng trong ví điện tử của PT"
-                )
-            else:
+            if penalty_debt > 0:
                 st.metric(
                     label="Số dư ví PT",
                     value="0 ₫",
-                    help="Số dư trong ví điện tử của PT"
+                    delta=f"-{format_currency_vnd(penalty_debt)} nợ phạt",
+                    delta_color="inverse",
+                    help="Số dư ví bằng 0đ theo ràng buộc CHECK (balance >= 0) và tài khoản đang ghi nợ tiền phạt"
+                )
+            else:
+                st.metric(
+                    label="Số dư khả dụng",
+                    value=format_currency_vnd(available_balance),
+                    delta=f"Ký quỹ: {format_currency_vnd(locked_balance)}",
+                    help="Số dư ví khả dụng để rút tiền sau khi trừ khoản ký quỹ cam kết hợp đồng (locked_balance)"
                 )
 
-        if wallet_balance < 0:
-            st.warning(
-                f"Tài khoản hiện đang ghi nợ **{format_currency_vnd(abs(wallet_balance))}** tiền phạt vi phạm do hủy ca tập sát giờ (< 24h). "
-                f"Khoản nợ này sẽ được cấn trừ tự động vào ví khi có giao dịch tiếp theo."
+        if penalty_debt > 0:
+            st.error(
+                f"**CẢNH BÁO NỢ PHẠT:** Bạn đang nợ **{format_currency_vnd(penalty_debt)}** tiền phạt do vi phạm hủy ca tập sát giờ. "
+                "Số dư ví được giữ ở mức **0 ₫** (tuân thủ ràng buộc CHECK không âm ví). "
+                "Khoản phạt này sẽ được tự động cấn trừ khi học viên hoàn thành ca tập tiếp theo hoặc khi bạn nạp thêm tiền."
+            )
+
+        if locked_balance > 0:
+            st.info(
+                f"**Ký quỹ cam kết hợp đồng:** Đang giữ an toàn **{format_currency_vnd(locked_balance)}** "
+                f"(chiếm tỷ lệ % giá trị các hợp đồng học viên đang hoạt động) để bảo đảm khả năng thanh toán bồi thường nếu có phát sinh hủy ca."
             )
 
         # Hiển thị lịch sử biến động ví và tiền phạt nếu có
@@ -689,7 +694,7 @@ class PTHomeView:
             <div style="background: linear-gradient(135deg, #e65100 0%, #f57c00 100%); padding: 1.5rem 2rem; border-radius: 12px; color: white; margin-bottom: 1.5rem; box-shadow: 0 4px 15px rgba(230, 81, 0, 0.25);">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
                     <div style="display: flex; align-items: center; gap: 1rem;">
-                        {"<img src='" + self.avatar_url + "' style='width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 3px solid white;' />" if self.avatar_url else "<div style='width: 64px; height: 64px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 700; color: white;'>PT</div>"}
+                        {"<img src='" + self.avatar_url + "' style='width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: none;' />" if self.avatar_url else "<div style='width: 64px; height: 64px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 700; color: white;'>PT</div>"}
                         <div>
                             <h2 style="margin: 0; color: white; font-weight: 700;">Bảng Điều Khiển Huấn Luyện Viên (PT)</h2>
                             <p style="margin: 0.4rem 0 0 0; opacity: 0.95; font-size: 1.05rem;">
@@ -732,12 +737,13 @@ class PTHomeView:
             st.success("Hồ sơ của bạn đã được xác minh thành công (`VERIFIED`). Sẵn sàng nhận học viên!")
 
         # Phân chia các Tab chức năng
-        tab_overview, tab_bookings, tab_slots, tab_courses, tab_workout_plans, tab_profile = st.tabs([
+        tab_overview, tab_bookings, tab_slots, tab_courses, tab_workout_plans, tab_disputes, tab_profile = st.tabs([
             "Tổng Quan",
             "Duyệt lịch",
             "Khung Giờ",
             "Quản Lý Khóa",
             "Giáo Án",
+            "Giải Quyết Tranh Chấp",
             "Hồ Sơ"
         ])
 
@@ -756,6 +762,191 @@ class PTHomeView:
         with tab_workout_plans:
             self.workout_plan_view.render()
 
+        with tab_disputes:
+            self.render_dispute_tab()
+
         with tab_profile:
             self.profile_view.render()
+
+    def render_dispute_tab(self):
+        st.subheader("Giải Quyết Tranh Chấp & Khiếu Nại")
+        st.info(
+            "**Quy định khiếu nại & trọng tài đối kháng 48 giờ:**\n\n"
+            "- **Thời hạn khiếu nại ca bị hủy:** Ca tập bị hủy chỉ được gửi khiếu nại trong vòng **2 ngày (48 giờ)** kể từ thời điểm bị hủy. Quá 48 giờ hệ thống sẽ từ chối tiếp nhận.\n"
+            "- **Số lần khiếu nại:** Mỗi ca tập chỉ được gửi khiếu nại **tối đa 1 lần duy nhất**, không được gửi lại lần 2.\n"
+            "- **Quyền phản biện của bên bị khiếu nại:** Khi có khiếu nại phát sinh, bên bị khiếu nại có thời hạn **48 giờ** để nộp văn bản giải trình phản biện và bằng chứng đối chứng (ảnh check-in phòng tập, tin nhắn trao đổi) để Ban Quản trị xem xét công bằng trước khi ra phán quyết."
+        )
+
+        sub_tab_create, sub_tab_list = st.tabs(["Gửi Khiếu Nại Mới", "Lịch Sử Tranh Chấp & Phản Biện"])
+
+        with sub_tab_create:
+            st.markdown("#### Tạo Phiếu Khiếu Nại Mới Cho Ca Tập")
+            pt_bookings = []
+            try:
+                pt_bookings = BookingApi.get_pt_bookings()
+            except Exception:
+                pt_bookings = []
+
+            if not pt_bookings:
+                st.warning("Bạn chưa có ca tập nào để gửi khiếu nại.")
+            else:
+                bk_options = {
+                    b["id"]: f"Ca #{b['id']} - Học viên: {b.get('studentName', 'Học viên')} | {format_booking_datetime(b.get('startTime'))} ({b.get('status')})"
+                    for b in pt_bookings
+                }
+                chosen_bk_id = st.selectbox(
+                    "Chọn ca tập cần khiếu nại:",
+                    options=list(bk_options.keys()),
+                    format_func=lambda x: bk_options.get(x, str(x)),
+                    key="pt_dispute_chosen_bk"
+                )
+
+                dispute_type_options = {
+                    "STUDENT_NO_SHOW": "Học viên vắng mặt không báo trước (No-show)",
+                    "ATTITUDE_QUALITY": "Học viên vi phạm nội quy / Thái độ không chuẩn mực",
+                    "CONTRACT_TERMINATION": "Yêu cầu chấm dứt hợp đồng sớm",
+                    "OTHER": "Lý do khác"
+                }
+                chosen_type = st.selectbox(
+                    "Loại tranh chấp khiếu nại:",
+                    options=list(dispute_type_options.keys()),
+                    format_func=lambda k: dispute_type_options[k],
+                    key="pt_dispute_type_select"
+                )
+
+                reason_text = st.text_area(
+                    "Mô tả chi tiết sự việc & yêu cầu Ban Quản trị giải quyết:",
+                    placeholder="Trình bày rõ sự việc diễn ra, mốc thời gian, học viên vi phạm điểm nào...",
+                    key="pt_dispute_reason_input"
+                )
+
+                uploaded_img = st.file_uploader(
+                    "Tải lên hình ảnh bằng chứng đối chứng (ảnh chụp màn hình tin nhắn, ảnh phòng tập):",
+                    type=["png", "jpg", "jpeg", "webp"],
+                    key="pt_dispute_file_uploader"
+                )
+
+                if st.button("Xác Nhận Gửi Khiếu Nại Lên Admin", type="primary", use_container_width=True, key="btn_pt_create_disp"):
+                    if not reason_text or len(reason_text.strip()) < 5:
+                        st.warning("Vui lòng nhập lý do khiếu nại ít nhất 5 ký tự!")
+                    else:
+                        try:
+                            ev_url = None
+                            if uploaded_img:
+                                ev_url = DisputeApi.upload_evidence(uploaded_img.read(), uploaded_img.name)
+                            DisputeApi.create_dispute(
+                                booking_id=chosen_bk_id,
+                                dispute_type=chosen_type,
+                                reason=reason_text.strip(),
+                                evidence_url=ev_url
+                            )
+                            st.success("Đã gửi khiếu nại thành công! Bên bị khiếu nại có 48 giờ để phản biện trước khi Admin đưa ra phán quyết.")
+                            st.rerun()
+                        except ApiException as e:
+                            st.error(f"Lỗi [{e.status_code}]: {e.message}")
+                        except Exception as ex:
+                            st.error(f"Lỗi: {str(ex)}")
+
+        with sub_tab_list:
+            st.markdown("#### Danh Sách Hồ Sơ Tranh Chấp Liên Quan")
+            pt_disputes = []
+            try:
+                pt_disputes = DisputeApi.list_disputes()
+            except Exception:
+                pt_disputes = []
+
+            if not pt_disputes:
+                st.info("Hiện không có khiếu nại tranh chấp nào liên quan đến các ca tập của bạn.")
+            else:
+                for disp in pt_disputes:
+                    d_id = disp.get("id")
+                    d_status = disp.get("status")
+                    d_type = disp.get("disputeType")
+                    d_reason = disp.get("reason")
+                    d_bk_id = disp.get("bookingId")
+                    d_sender = disp.get("senderName") or "Người gửi"
+                    d_sender_role = disp.get("senderRole")
+                    d_sender_id = disp.get("senderId")
+                    d_evidence = disp.get("evidenceUrl")
+                    d_counter_arg = disp.get("counterArgument")
+                    d_counter_ev = disp.get("counterEvidenceUrl")
+                    d_notes = disp.get("adminNotes")
+                    d_deadline = disp.get("deadlineAt")
+                    d_student_name = disp.get("studentName") or "Học viên"
+                    d_pt_name = disp.get("ptName") or "Huấn luyện viên"
+
+                    curr_user_id = st.session_state.get("user", {}).get("id")
+                    is_sender = (curr_user_id is not None and d_sender_id is not None and int(curr_user_id) == int(d_sender_id))
+
+                    if d_sender_role == "PT":
+                        complainant_text = f"{d_sender} (PT)"
+                        defendant_text = f"{d_student_name} (Học viên)"
+                    else:
+                        complainant_text = f"{d_sender} (Học viên)"
+                        defendant_text = f"{d_pt_name} (PT)"
+
+                    status_color = "#e65100" if d_status in ("PENDING", "EVIDENCE_REQUESTED") else ("#2e7d32" if d_status == "RESOLVED_REFUND" else "#c62828")
+
+                    with st.container(border=True):
+                        c_h1, c_h2 = st.columns([3, 1])
+                        with c_h1:
+                            st.markdown(f"#### Khiếu Nại #{d_id} • Ca tập #{d_bk_id}")
+                        with c_h2:
+                            st.markdown(f"<div style='text-align: right; color: {status_color}; font-weight: 700;'>{d_status}</div>", unsafe_allow_html=True)
+
+                        cp1, cp2 = st.columns(2)
+                        with cp1:
+                            st.markdown(f"**Bên khiếu nại (Nguyên đơn):** `{complainant_text}`")
+                        with cp2:
+                            st.markdown(f"**Bên bị khiếu nại (Bị đơn):** `{defendant_text}`")
+
+                        st.markdown(f"**Loại tranh chấp:** `{d_type}`")
+                        st.markdown(f"**Nội dung phản ánh:** {d_reason}")
+                        if d_evidence:
+                            st.markdown(f"**Ảnh bằng chứng:** [Xem ảnh bằng chứng]({d_evidence})")
+
+                        st.markdown("---")
+
+                        # Phân định quyền phản biện & trạng thái người dùng
+                        if is_sender:
+                            st.info(
+                                f"**Vai trò của bạn:** BÊN GỬI KHIẾU NẠI (Nguyên đơn)\n\n"
+                                f"Hệ thống đang chờ đối phương ({defendant_text}) nộp văn bản phản biện trong thời hạn 48 giờ "
+                                f"(Hạn chót: {format_booking_datetime(d_deadline) if d_deadline else 'N/A'}). "
+                                f"Sau khi hết hạn hoặc khi nhận được phản biện, Quản trị viên sẽ tiến hành xem xét phán quyết."
+                            )
+                        else:
+                            st.warning(
+                                f"**Vai trò của bạn:** BẠN LÀ BÊN BỊ KHIẾU NẠI (Bị đơn)\n\n"
+                                f"Bạn có thời hạn 48 giờ để gửi văn bản giải trình và ảnh bằng chứng đối chứng trước khi Quản trị viên đưa ra phán quyết. "
+                                f"Thời hạn phản biện kết thúc lúc: **{format_booking_datetime(d_deadline) if d_deadline else 'N/A'}**."
+                            )
+
+                        if d_counter_arg:
+                            st.success(f"**Văn bản phản biện đã nộp:** {d_counter_arg}")
+                            if d_counter_ev:
+                                st.markdown(f"**Ảnh bằng chứng đối chứng:** [Xem ảnh đối chứng]({d_counter_ev})")
+
+                        if d_notes:
+                            st.info(f"**Kết luận & Phán quyết từ Quản trị viên:** {d_notes}")
+
+                        # Biểu mẫu nộp phản biện trực tiếp nếu PT là BÊN BỊ KHIẾU NẠI và chưa nộp
+                        if not is_sender and d_status in ("PENDING", "EVIDENCE_REQUESTED") and not d_counter_arg:
+                            st.markdown("##### Nộp Bằng Chứng & Phản Biện Cho Ca Tập Này")
+                            st.caption("Trình bày giải trình sự việc và đính kèm hình ảnh (ảnh check-in phòng tập, tin nhắn thỏa thuận) để Ban Quản trị xem xét.")
+                            pt_arg = st.text_area("Văn bản giải trình phản biện (*):", key=f"pt_c_arg_{d_id}", placeholder="Trình bày rõ sự việc thực tế, thời gian, lý do...")
+                            pt_img = st.file_uploader("Tải lên ảnh bằng chứng đối chứng:", type=["png", "jpg", "jpeg", "webp"], key=f"pt_c_img_{d_id}")
+                            if st.button("Xác Nhận Nộp Phản Biện Cho Admin", key=f"btn_pt_sub_{d_id}", type="primary"):
+                                if not pt_arg or len(pt_arg.strip()) < 5:
+                                    st.warning("Vui lòng nhập lý do phản biện ít nhất 5 ký tự!")
+                                else:
+                                    try:
+                                        img_url = None
+                                        if pt_img:
+                                            img_url = DisputeApi.upload_evidence(pt_img.read(), pt_img.name)
+                                        DisputeApi.submit_counter(d_id, pt_arg.strip(), img_url)
+                                        st.success("Đã nộp phản biện thành công! Quản trị viên sẽ xem xét đối chứng.")
+                                        st.rerun()
+                                    except Exception as ex:
+                                        st.error(f"Lỗi: {str(ex)}")
 

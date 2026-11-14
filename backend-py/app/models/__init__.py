@@ -2,6 +2,7 @@ from app.models.attendance import Attendance
 from app.models.availability_slot import AvailabilitySlot
 from app.models.booking import Booking
 from app.models.cancellation import Cancellation
+from app.models.dispute import BookingDispute
 from app.models.course import Course
 from app.models.enrollment import Enrollment
 from app.models.enums import (
@@ -9,6 +10,8 @@ from app.models.enums import (
     BookingStatus,
     BookingType,
     CancellationStatus,
+    DisputeType,
+    DisputeStatus,
     CourseStatus,
     EnrollmentStatus,
     PaymentMethod,
@@ -27,7 +30,7 @@ from app.models.pt_location import PTLocation
 from app.models.pt_profile import PTProfile
 from app.models.review import Review
 from app.models.user import PT, Admin, Student, User
-from app.models.wallet import Wallet
+from app.models.wallet import Wallet, WalletAuditLog
 from app.models.workout import Workout
 from app.models.workout_plan import WorkoutPlan
 
@@ -43,6 +46,8 @@ __all__ = [
     "BookingType",
     "BookingStatus",
     "CancellationStatus",
+    "DisputeType",
+    "DisputeStatus",
     "AttendanceStatus",
     "VerificationMethod",
     "PaymentType",
@@ -61,6 +66,7 @@ __all__ = [
     "Enrollment",
     "Payment",
     "Cancellation",
+    "BookingDispute",
     "Attendance",
     "Review",
     "WorkoutPlan",

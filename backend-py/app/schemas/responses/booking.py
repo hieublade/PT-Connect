@@ -1,4 +1,6 @@
 
+from decimal import Decimal
+
 from app.models.booking import Booking
 from app.models.cancellation import Cancellation
 from app.models.enums import BookingStatus, BookingType
@@ -13,6 +15,7 @@ class CancelPreviewResponse(CamelModel):
     refund_amount: Money
     compensation_amount: Money
     penalty_amount: Money
+    penalty_shortfall: Money = Decimal("0.00")
     explanation: str
 
 
@@ -54,6 +57,10 @@ class BookingResponse(CamelModel):
     cancellation_reason: str | None = None
     cancelled_by_role: str | None = None
     cancelled_at: LocalDateTime | None = None
+    refund_amount: Money | None = None
+    compensation_amount: Money | None = None
+    penalty_amount: Money | None = None
+    penalty_shortfall: Money | None = None
 
     created_at: LocalDateTime | None = None
     updated_at: LocalDateTime | None = None
@@ -113,10 +120,18 @@ class BookingResponse(CamelModel):
         canc_reason = None
         canc_role = None
         canc_at = None
+        canc_refund = None
+        canc_comp = None
+        canc_pen = None
+        canc_shortfall = None
         if canc is not None:
             canc_reason = canc.reason
             canc_role = canc.cancelled_by_role_value
             canc_at = canc.cancelled_at
+            canc_refund = canc.refund_amount
+            canc_comp = canc.compensation_amount
+            canc_pen = canc.penalty_amount
+            canc_shortfall = getattr(canc, "penalty_shortfall", None)
 
         return cls(
             id=booking.id,
@@ -144,6 +159,10 @@ class BookingResponse(CamelModel):
             cancellation_reason=canc_reason,
             cancelled_by_role=canc_role,
             cancelled_at=canc_at,
+            refund_amount=canc_refund,
+            compensation_amount=canc_comp,
+            penalty_amount=canc_pen,
+            penalty_shortfall=canc_shortfall,
             created_at=booking.created_at,
             updated_at=booking.updated_at,
         )

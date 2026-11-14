@@ -7,6 +7,7 @@ from app.schemas.base import CamelModel, LocalDate, LocalDateTime
 class WorkoutResponse(CamelModel):
     id: int
     plan_id: int | None = None
+    exercise_order: int = 1
     exercise_name: str
     target_muscle: str | None = None
     sets: int
@@ -22,6 +23,7 @@ class WorkoutResponse(CamelModel):
         return cls(
             id=w.id,
             plan_id=w.plan_id or (w.plan.id if getattr(w, "plan", None) else None),
+            exercise_order=getattr(w, "exercise_order", 1),
             exercise_name=w.exercise_name,
             target_muscle=w.target_muscle,
             sets=w.sets,

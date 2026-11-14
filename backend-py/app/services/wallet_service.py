@@ -3,9 +3,11 @@ import secrets
 from datetime import datetime
 from decimal import Decimal
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import BadRequestException, ResourceNotFoundException
+from app.models.cancellation import Cancellation
 from app.models.enrollment import Enrollment
 from app.models.enums import PaymentMethod, PaymentStatus, PaymentType, WalletStatus
 from app.models.payment import Payment
@@ -40,7 +42,19 @@ class WalletService:
 
         payments = self.payment_repo.find_by_wallet_id(wallet.id)
         transactions = [PaymentResponse.from_entity(p) for p in payments if p]
-        return WalletResponse.from_entity(wallet, transactions)
+
+        # Tính tổng khoản nợ tiền phạt chưa thanh toán (penalty_shortfall)
+        penalty_debt = (
+            self.db.query(func.coalesce(func.sum(Cancellation.penalty_shortfall), Decimal("0.00")))
+            .filter(
+                Cancellation.cancelled_by_id == user.id,
+                Cancellation.penalty_shortfall > Decimal("0.00"),
+            )
+            .scalar()
+            or Decimal("0.00")
+        )
+
+        return WalletResponse.from_entity(wallet, transactions, penalty_debt=penalty_debt)
 
     def topup(self, user_email: str, request: TopupRequest) -> PaymentResponse:
         if request.amount is None or request.amount <= Decimal(0):
@@ -155,27 +169,31 @@ class WalletService:
         user_id: int,
         enrollment: Enrollment | None,
         amount: Decimal,
-    ) -> Payment | None:
+    ) -> tuple[Payment | None, Decimal]:
+        """Trừ tiền phạt từ ví user. Trả về (Payment | None, applied_amount)."""
         if amount is None or amount <= Decimal(0):
-            return None
+            return None, Decimal("0.00")
 
         wallet = self.wallet_repo.get_by_user_id(user_id)
         if not wallet:
             logger.warning("Không tìm thấy ví của user ID %s để phạt ca tập", user_id)
-            return None
+            return None, Decimal("0.00")
 
-        wallet.debit_penalty(amount)
+        applied_amount = wallet.debit_penalty(amount)
         self.wallet_repo.save(wallet)
+
+        if applied_amount <= Decimal(0):
+            logger.warning("Ví user ID %s không đủ số dư khả dụng để trừ phạt (yêu cầu: %s)", user_id, amount)
+            return None, Decimal("0.00")
 
         date_prefix = datetime.now().strftime("%Y%m%d")
         short_id = secrets.token_hex(4).upper()
         txn_ref = f"TXN_PENALTY_{date_prefix}_{short_id}"
 
-        # In Java, penalty payment has payment_type = REFUND
         payment = Payment(
             wallet_id=wallet.id,
             enrollment_id=enrollment.id if enrollment else None,
-            amount=amount,
+            amount=applied_amount,
             payment_type=PaymentType.REFUND,
             payment_method=PaymentMethod.WALLET,
             status=PaymentStatus.SUCCESS,
@@ -183,5 +201,5 @@ class WalletService:
         )
         saved = self.payment_repo.save(payment)
         self.db.flush()
-        logger.info("Đã trừ phạt %s từ ví user ID %s, txnRef: %s", amount, user_id, txn_ref)
-        return saved
+        logger.info("Đã trừ phạt %s từ ví user ID %s, txnRef: %s", applied_amount, user_id, txn_ref)
+        return saved, applied_amount

@@ -42,12 +42,18 @@ class AdminStatisticsService:
         b, cancel = row
         cancelled_by = None
         reason = None
+        penalty_amount = None
+        penalty_shortfall = None
         if cancel is not None:
             cancelled_by = cancel.cancelled_by_role_value if cancel.cancelled_by_role else "STUDENT"
             reason = cancel.reason
+            penalty_amount = cancel.penalty_amount
+            penalty_shortfall = getattr(cancel, "penalty_shortfall", None)
         elif b.status == BookingStatus.CANCELLED:
             cancelled_by = "STUDENT"
-        return AdminBookingAnalyticsResponse.from_entity(b, cancelled_by, reason)
+        return AdminBookingAnalyticsResponse.from_entity(
+            b, cancelled_by, reason, penalty_amount, penalty_shortfall
+        )
 
     def get_booking_analytics(self) -> list[AdminBookingAnalyticsResponse]:
         rows = self.booking_repo.find_bookings_with_cancellation()

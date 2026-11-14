@@ -72,19 +72,23 @@ class AuthApi:
 # ===================================================================
 
 def save_auth_session(auth_data: Dict[str, Any]) -> None:
-    """Lưu token và thông tin user vào st.session_state."""
+    """Lưu token và thông tin user vào st.session_state và st.query_params."""
     token = auth_data.get("token")
     user = auth_data.get("user")
     st.session_state["token"] = token
     st.session_state["user"] = user
     st.session_state["logged_in"] = True
+    if token:
+        st.query_params["session_token"] = token
 
 
 def clear_auth_session() -> None:
-    """Đăng xuất, xóa token và thông tin phiên làm việc khỏi st.session_state."""
+    """Đăng xuất, xóa token và thông tin phiên làm việc khỏi st.session_state và URL query."""
     st.session_state.pop("token", None)
     st.session_state.pop("user", None)
     st.session_state["logged_in"] = False
+    if "session_token" in st.query_params:
+        del st.query_params["session_token"]
 
 
 def get_current_user() -> Optional[Dict[str, Any]]:
@@ -93,5 +97,22 @@ def get_current_user() -> Optional[Dict[str, Any]]:
 
 
 def is_authenticated() -> bool:
-    """Kiểm tra xem người dùng hiện tại đã đăng nhập hợp lệ hay chưa."""
-    return bool(st.session_state.get("logged_in") and st.session_state.get("token"))
+    """Kiểm tra xem người dùng hiện tại đã đăng nhập hợp lệ hay chưa (hỗ trợ khôi phục khi F5)."""
+    if st.session_state.get("logged_in") and st.session_state.get("token") and st.session_state.get("user"):
+        return True
+
+    # Khôi phục phiên làm việc khi người dùng F5 tải lại trang từ st.query_params
+    token = st.query_params.get("session_token")
+    if token:
+        st.session_state["token"] = token
+        try:
+            user = AuthApi.get_me()
+            if user:
+                st.session_state["user"] = user
+                st.session_state["logged_in"] = True
+                return True
+        except Exception:
+            # Token hết hạn hoặc không hợp lệ
+            clear_auth_session()
+
+    return False

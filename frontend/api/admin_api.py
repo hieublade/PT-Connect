@@ -50,3 +50,33 @@ class AdminApi:
         """Lấy toàn bộ dữ liệu thanh toán cho phân tích doanh thu Pandas."""
         res = api_client.get("/api/v1/admin/payments")
         return res if isinstance(res, list) else []
+
+    @staticmethod
+    def get_audit_logs(limit: int = 50) -> List[Dict[str, Any]]:
+        """Lấy danh sách sổ cái kiểm toán tự động do MySQL Trigger ghi nhận."""
+        res = api_client.get(f"/api/v1/admin/audit-logs?limit={limit}")
+        return res if isinstance(res, list) else []
+
+    @staticmethod
+    def get_reconciliation() -> List[Dict[str, Any]]:
+        """Lấy dữ liệu đối soát số dư ví từ MySQL View."""
+        res = api_client.get("/api/v1/admin/reconciliation")
+        return res if isinstance(res, list) else []
+
+    @staticmethod
+    def get_admin_wallet() -> Dict[str, Any]:
+        """Lấy thông tin ví doanh thu sàn và lịch sử của Admin."""
+        res = api_client.get("/api/v1/admin/wallet")
+        return res if isinstance(res, dict) else {}
+
+    @staticmethod
+    def withdraw_admin_wallet(amount: float, bank_name: str, account_number: str, account_holder: str, note: Optional[str] = None) -> Dict[str, Any]:
+        """Admin rút tiền doanh thu sàn về ngân hàng (không bị ràng buộc số dư tối thiểu)."""
+        payload = {
+            "amount": amount,
+            "bankName": bank_name,
+            "accountNumber": account_number,
+            "accountHolder": account_holder,
+            "note": note or "Rút tiền doanh thu hệ thống"
+        }
+        return api_client.post("/api/v1/admin/wallet/withdraw", json=payload)

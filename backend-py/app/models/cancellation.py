@@ -44,6 +44,7 @@ class Cancellation(Base):
     refund_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False, default=Decimal("0.00"))
     compensation_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False, default=Decimal("0.00"))
     penalty_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False, default=Decimal("0.00"))
+    penalty_shortfall: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False, default=Decimal("0.00"))
     evidence_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     status: Mapped[CancellationStatus] = mapped_column(
         SQLEnum(CancellationStatus, values_callable=lambda x: [e.value for e in x]),
@@ -63,6 +64,7 @@ class Cancellation(Base):
         kw.setdefault("refund_amount", Decimal("0.00"))
         kw.setdefault("compensation_amount", Decimal("0.00"))
         kw.setdefault("penalty_amount", Decimal("0.00"))
+        kw.setdefault("penalty_shortfall", Decimal("0.00"))
         kw.setdefault("status", CancellationStatus.PROCESSED)
         super().__init__(**kw)
 

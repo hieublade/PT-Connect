@@ -74,8 +74,14 @@ class WorkoutPlanService:
         if not plan.is_owned_by_pt(pt_profile.id):
             raise UnauthorizedException("Bạn không phải là Huấn luyện viên của giáo án này")
 
+        # Tự động tính exercise_order nếu không truyền vào
+        order = request.exercise_order
+        if not order or order <= 0:
+            order = len(plan.workouts) + 1 if plan.workouts else 1
+
         workout = Workout(
             plan_id=plan.id,
+            exercise_order=order,
             exercise_name=request.exercise_name,
             target_muscle=request.target_muscle,
             sets=request.sets,

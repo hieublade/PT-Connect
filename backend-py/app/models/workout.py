@@ -15,6 +15,7 @@ class Workout(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     plan_id: Mapped[int] = mapped_column(ForeignKey("workout_plans.id"), nullable=False)
+    exercise_order: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     exercise_name: Mapped[str] = mapped_column(String(150), nullable=False)
     target_muscle: Mapped[str | None] = mapped_column(String(100), nullable=True)
     sets: Mapped[int] = mapped_column(Integer, nullable=False, default=3)

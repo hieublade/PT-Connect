@@ -22,6 +22,7 @@ class CreateWorkoutPlanRequest(CamelModel):
 
 
 class CreateWorkoutRequest(CamelModel):
+    exercise_order: int | None = None
     exercise_name: str
     target_muscle: str | None = None
     sets: int

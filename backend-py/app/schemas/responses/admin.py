@@ -79,6 +79,8 @@ class AdminBookingAnalyticsResponse(CamelModel):
     created_at: LocalDateTime | None = None
     cancelled_by: str | None = None
     cancellation_reason: str | None = None
+    penalty_amount: Money | None = None
+    penalty_shortfall: Money | None = None
 
     @classmethod
     def from_entity(
@@ -86,6 +88,8 @@ class AdminBookingAnalyticsResponse(CamelModel):
         b: Any,
         cancelled_by: str | None = None,
         cancellation_reason: str | None = None,
+        penalty_amount: Any = None,
+        penalty_shortfall: Any = None,
     ) -> "AdminBookingAnalyticsResponse | None":
         if b is None:
             return None
@@ -115,6 +119,8 @@ class AdminBookingAnalyticsResponse(CamelModel):
             created_at=b.created_at,
             cancelled_by=cancelled_by,
             cancellation_reason=cancellation_reason,
+            penalty_amount=penalty_amount,
+            penalty_shortfall=penalty_shortfall,
         )
 
 

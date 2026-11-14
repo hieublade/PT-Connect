@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from app.models.attendance import Attendance
     from app.models.availability_slot import AvailabilitySlot
     from app.models.cancellation import Cancellation
+    from app.models.dispute import BookingDispute
     from app.models.enrollment import Enrollment
     from app.models.pt_profile import PTProfile
     from app.models.review import Review
@@ -86,6 +87,9 @@ class Booking(Base):
     )
     review: Mapped["Review | None"] = relationship(
         "Review", back_populates="booking", uselist=False
+    )
+    disputes: Mapped[list["BookingDispute"]] = relationship(
+        "BookingDispute", back_populates="booking"
     )
 
     def __init__(self, **kw):

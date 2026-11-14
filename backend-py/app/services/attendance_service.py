@@ -1,5 +1,6 @@
 import logging
-from datetime import timedelta
+from datetime import datetime, timedelta
+from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
@@ -11,7 +12,18 @@ from app.core.exceptions import (
 )
 from app.models.attendance import Attendance
 from app.models.booking import Booking
-from app.models.enums import AttendanceStatus, BookingStatus, BookingType, Role, VerificationMethod
+from app.models.enums import (
+    AttendanceStatus,
+    BookingStatus,
+    BookingType,
+    PaymentMethod,
+    PaymentStatus,
+    PaymentType,
+    Role,
+    VerificationMethod,
+)
+from app.models.payment import Payment
+from app.models.wallet import Wallet
 from app.otp.store import otp_store
 from app.repositories.attendance_repo import AttendanceRepository
 from app.repositories.booking_repo import BookingRepository
@@ -236,6 +248,31 @@ class AttendanceService:
         booking.complete()
         self.booking_repo.save(booking)
         self.db.flush()
+
+        # Giải ngân buổi tập & thu phí dịch vụ nền tảng 10% vào ví Quản trị viên (Admin wallet: user_id = 1)
+        if booking.session_fee and booking.session_fee > Decimal("0.00"):
+            pt_profile = booking.pt
+            if pt_profile and pt_profile.user_id:
+                pt_wallet = self.db.query(Wallet).filter(Wallet.user_id == pt_profile.user_id).first()
+                admin_wallet = self.db.query(Wallet).filter(Wallet.user_id == 1).first()
+
+                platform_fee = (booking.session_fee * Decimal("0.10")).quantize(Decimal("0.01"))
+                pt_net_amount = booking.session_fee - platform_fee
+
+                if pt_wallet:
+                    pt_wallet.balance += pt_net_amount
+                if admin_wallet:
+                    admin_wallet.balance += platform_fee
+                    p_fee = Payment(
+                        wallet_id=admin_wallet.id,
+                        enrollment_id=booking.enrollment_id,
+                        amount=platform_fee,
+                        payment_type=PaymentType.PLATFORM_FEE,
+                        payment_method=PaymentMethod.WALLET,
+                        status=PaymentStatus.SUCCESS,
+                        transaction_ref=f"PFEE_{booking.id}_{datetime.now().strftime('%Y%m%d%H%M%S')}",
+                    )
+                    self.db.add(p_fee)
 
         otp_store.clear_otp(booking.id)
 
