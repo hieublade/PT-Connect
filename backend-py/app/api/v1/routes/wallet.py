@@ -28,7 +28,7 @@ def get_wallet(
 def topup(
     request: TopupRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(Role.STUDENT)),
+    current_user: User = Depends(require_roles(Role.STUDENT, Role.PT)),
 ):
     service = WalletService(db)
     res = service.topup(current_user.email, request)
@@ -49,4 +49,17 @@ def withdraw(
     return ok_response(
         data=res.model_dump(mode="json", by_alias=True),
         message="Rút tiền từ ví thành công",
+    )
+
+
+@router.post("/pay-penalty")
+def pay_penalty(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    service = WalletService(db)
+    res = service.pay_penalty_debt(current_user.email)
+    return ok_response(
+        data=res.model_dump(mode="json", by_alias=True),
+        message="Thanh toán khoản nợ tiền phạt thành công",
     )

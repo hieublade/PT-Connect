@@ -453,10 +453,10 @@ def render_booking_card(
                                     st.error(f"Lỗi: {str(ex)}")
 
         else:
-            if status in ("COMPLETED", "CANCELLED", "CONFIRMED"):
+            if status in ("COMPLETED", "CANCELLED"):
                 with st.popover("Gửi Khiếu Nại Lên Ban Quản Trị", use_container_width=True):
                     st.markdown(f"**Khiếu nại ca tập #{booking_id}:**")
-                    st.caption("Hệ thống trọng tài bảo vệ quyền lợi cả hai bên. Admin sẽ đợi 48h để đối phương phản biện trước khi phân xử.")
+                    st.caption("Quy định thời hạn: Khiếu nại chỉ được chấp nhận trong vòng tối đa 48 giờ (2 ngày) kể từ khi ca tập kết thúc hoặc bị hủy. Đối phương có 48h để phản biện trước khi Admin phân xử.")
 
                     d_type_options = {
                         "WRONG_ABSENT": "Bị điểm danh vắng mặt nhầm",

@@ -815,8 +815,10 @@ BEGIN
     DECLARE `v_done` INT DEFAULT 0;
     DECLARE `v_bk_id` BIGINT;
     DECLARE `v_slot_id` BIGINT;
+    DECLARE `v_bk_type` VARCHAR(20);
+    DECLARE `v_enroll_id` BIGINT;
     DECLARE `cur_stale` CURSOR FOR
-        SELECT `id`, `slot_id`
+        SELECT `id`, `slot_id`, `booking_type`, `enrollment_id`
         FROM `bookings`
         WHERE `status` = 'PENDING'
           AND `created_at` < NOW() - INTERVAL 4 HOUR;
@@ -826,13 +828,20 @@ BEGIN
 
     OPEN `cur_stale`;
     stale_loop: LOOP
-        FETCH `cur_stale` INTO `v_bk_id`, `v_slot_id`;
+        FETCH `cur_stale` INTO `v_bk_id`, `v_slot_id`, `v_bk_type`, `v_enroll_id`;
         IF `v_done` = 1 THEN
             LEAVE stale_loop;
         END IF;
 
         UPDATE `bookings` SET `status` = 'CANCELLED' WHERE `id` = `v_bk_id`;
         UPDATE `availability_slots` SET `status` = 'AVAILABLE' WHERE `id` = `v_slot_id`;
+
+        -- Hoàn trả lại 1 buổi tập vào gói học viên nếu ca bị hủy là ca theo gói (PACKAGE)
+        IF `v_bk_type` = 'PACKAGE' AND `v_enroll_id` IS NOT NULL THEN
+            UPDATE `enrollments`
+            SET `remaining_sessions` = `remaining_sessions` + 1
+            WHERE `id` = `v_enroll_id`;
+        END IF;
 
         INSERT INTO `cancellations` (
             `booking_id`, `cancelled_by_id`, `cancelled_by_role`, `reason`,

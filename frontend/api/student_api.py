@@ -58,6 +58,11 @@ class StudentApi:
         return api_client.post("/api/v1/wallet/withdraw", json=payload)
 
     @staticmethod
+    def pay_penalty() -> Dict[str, Any]:
+        """Thanh toán khoản nợ tiền phạt vi phạm hủy lịch bằng số dư ví."""
+        return api_client.post("/api/v1/wallet/pay-penalty", json={})
+
+    @staticmethod
     def purchase_course(course_id: int, training_location: str, payment_method: str = "WALLET") -> Dict[str, Any]:
         """Mua khóa học, kích hoạt Transaction trừ ví, tạo enrollment, payment và hợp đồng."""
         payload = {

@@ -703,18 +703,47 @@ class WalletView:
                     <div style="background: #e3f2fd; padding: 1.2rem; border-radius: 10px; margin: 1rem 0; border-left: 5px solid #1976d2;">
                         <span style="font-size: 0.95rem; color: #0d47a1; font-weight: 500;">Số Dư Khả Dụng:</span>
                         <div style="font-size: 1.8rem; font-weight: 800; color: #1565c0; margin-top: 4px;">
-                            {format_currency_vnd(self.parent.wallet_balance)}
+                            {format_currency_vnd(self.parent.available_balance)}
                         </div>
                     </div>
                     """,
                     unsafe_allow_html=True
                 )
+
+                # Bảng chi tiết bóc tách công thức: Số dư thực tế - Ký quỹ - Nợ phạt
+                c_st1, c_st2 = st.columns(2)
+                with c_st1:
+                    st.caption("Tổng số dư thực tế trong ví:")
+                    st.markdown(f"**{format_currency_vnd(self.parent.wallet_balance)}**")
+                with c_st2:
+                    st.caption("Ký quỹ bảo lãnh hợp đồng:")
+                    st.markdown(f"<span style='color: #e65100; font-weight: 600;'>- {format_currency_vnd(self.parent.locked_balance)}</span>", unsafe_allow_html=True)
+
+                c_st3, c_st4 = st.columns(2)
+                with c_st3:
+                    st.caption("Khoản nợ phạt chưa thanh toán:")
+                    if self.parent.penalty_debt > 0:
+                        st.markdown(f"<span style='color: #c62828; font-weight: 700;'>- {format_currency_vnd(self.parent.penalty_debt)}</span>", unsafe_allow_html=True)
+                    else:
+                        st.markdown("**0 đ** (Không có nợ)")
+                with c_st4:
+                    st.caption("Công thức tính số dư khả dụng:")
+                    st.markdown("<span style='font-size: 0.8rem; color: #555;'><code>max(0, Thực tế - Ký quỹ - Nợ phạt)</code></span>", unsafe_allow_html=True)
                 penalty_debt = float(self.parent.wallet_data.get("penaltyDebt", 0.0))
                 if penalty_debt > 0:
                     st.error(
                         f"**Khoản nợ phạt chưa thanh toán:** Bạn đang nợ **{format_currency_vnd(penalty_debt)}** tiền phạt vi phạm hủy lịch. "
                         "Số dư khả dụng sẽ giữ ở mức 0 đ cho đến khi thanh toán xong khoản nợ phạt này."
                     )
+                    if st.button("Thanh Toán Khoản Nợ Phạt Bằng Số Dư Ví Ngay", type="primary", key="btn_student_pay_penalty", use_container_width=True):
+                        try:
+                            StudentApi.pay_penalty()
+                            st.success("Đã thanh toán thành công khoản nợ phạt! Số dư khả dụng của bạn đã được mở khóa.")
+                            st.rerun()
+                        except ApiException as e:
+                            st.error(f"Lỗi [{e.status_code}]: {e.message}")
+                        except Exception as ex:
+                            st.error(f"Lỗi: {str(ex)}")
                 st.caption("*Lưu ý: Tiền trong ví chỉ dùng trong môi trường giả lập nền tảng PT Connect.*")
 
         with col_w_topup:
@@ -771,7 +800,7 @@ class WalletView:
                                 st.error(f"Lỗi: {str(ex)}")
 
                 with tab_withdraw:
-                    avail_bal = float(self.parent.wallet_data.get("availableBalance", 0) or 0)
+                    avail_bal = float(self.parent.available_balance)
                     if avail_bal < 50000.0:
                         st.info("Số dư khả dụng hiện tại dưới 50,000 đ, chưa đủ điều kiện rút tiền.")
                     else:
@@ -875,7 +904,7 @@ class MyDisputeView:
         st.subheader("Giải Quyết Tranh Chấp & Khiếu Nại")
         st.info(
             "**Quy định khiếu nại & trọng tài đối kháng 48 giờ:**\n\n"
-            "- **Thời hạn khiếu nại ca bị hủy:** Ca tập bị hủy chỉ được gửi khiếu nại trong vòng **2 ngày (48 giờ)** kể từ thời điểm bị hủy. Quá 48 giờ hệ thống sẽ từ chối tiếp nhận.\n"
+            "- **Thời hạn khiếu nại ca tập:** Chỉ chấp nhận gửi khiếu nại trong vòng **2 ngày (48 giờ)** kể từ thời điểm ca tập kết thúc (với ca đã hoàn thành) hoặc kể từ thời điểm bị hủy (với ca bị hủy). Quá 48 giờ hệ thống sẽ tự động từ chối tiếp nhận.\n"
             "- **Số lần khiếu nại:** Mỗi ca tập chỉ được gửi khiếu nại **tối đa 1 lần duy nhất**, không được gửi lại lần 2.\n"
             "- **Quyền phản biện của bên bị khiếu nại:** Khi có khiếu nại phát sinh, bên bị khiếu nại có thời hạn **48 giờ** để nộp văn bản giải trình và bằng chứng đối chứng trước khi Quản trị viên đưa ra phán quyết."
         )
@@ -890,12 +919,18 @@ class MyDisputeView:
             except Exception:
                 my_bookings = []
 
-            if not my_bookings:
-                st.warning("Bạn chưa có ca tập nào để gửi khiếu nại.")
+            # Chỉ cho phép chọn các ca đã Hoàn thành hoặc đã Hủy (COMPLETED, CANCELLED)
+            valid_dispute_bookings = [
+                b for b in my_bookings
+                if b.get("status") in ("COMPLETED", "CANCELLED")
+            ]
+
+            if not valid_dispute_bookings:
+                st.warning("Bạn hiện không có ca tập nào đủ điều kiện khiếu nại (Chỉ áp dụng cho ca Đã hoàn thành COMPLETED hoặc Đã hủy CANCELLED).")
             else:
                 bk_options = {
                     b["id"]: f"Ca #{b['id']} - HLV: {b.get('ptName', 'HLV')} | {format_booking_datetime(b.get('startTime'))} ({b.get('status')})"
-                    for b in my_bookings
+                    for b in valid_dispute_bookings
                 }
                 chosen_bk_id = st.selectbox(
                     "Chọn ca tập cần khiếu nại:",
@@ -1013,17 +1048,39 @@ class MyDisputeView:
                         st.markdown("---")
 
                         if is_sender:
-                            st.info(
-                                f"**Vai trò của bạn:** BÊN GỬI KHIẾU NẠI (Nguyên đơn)\n\n"
-                                f"Hệ thống đang chờ đối phương ({defendant_text}) nộp văn bản phản biện trong thời hạn 48 giờ "
-                                f"(Hạn chót: {format_booking_datetime(d_deadline) if d_deadline else 'N/A'})."
-                            )
+                            if d_status in ("RESOLVED_REFUND", "REJECTED"):
+                                st.info(
+                                    f"**Vai trò của bạn:** BÊN GỬI KHIẾU NẠI (Nguyên đơn)\n\n"
+                                    f"Khiếu nại này đã được Quản trị viên phân xử và đóng hồ sơ."
+                                )
+                            elif d_counter_arg:
+                                st.info(
+                                    f"**Vai trò của bạn:** BÊN GỬI KHIẾU NẠI (Nguyên đơn)\n\n"
+                                    f"Đối phương ({defendant_text}) đã nộp văn bản phản biện. Hồ sơ đang được Quản trị viên thụ lý phân xử."
+                                )
+                            else:
+                                st.info(
+                                    f"**Vai trò của bạn:** BÊN GỬI KHIẾU NẠI (Nguyên đơn)\n\n"
+                                    f"Hệ thống đang chờ đối phương ({defendant_text}) nộp văn bản phản biện trong thời hạn 48 giờ "
+                                    f"(Hạn chót: {format_booking_datetime(d_deadline) if d_deadline else 'N/A'})."
+                                )
                         else:
-                            st.warning(
-                                f"**Vai trò của bạn:** BẠN LÀ BÊN BỊ KHIẾU NẠI (Bị đơn)\n\n"
-                                f"Bạn có thời hạn 48 giờ để gửi văn bản giải trình và ảnh bằng chứng đối chứng trước khi Quản trị viên đưa ra phán quyết. "
-                                f"Thời hạn phản biện kết thúc lúc: **{format_booking_datetime(d_deadline) if d_deadline else 'N/A'}**."
-                            )
+                            if d_status in ("RESOLVED_REFUND", "REJECTED"):
+                                st.info(
+                                    f"**Vai trò của bạn:** BÊN BỊ KHIẾU NẠI (Bị đơn)\n\n"
+                                    f"Khiếu nại này đã được Quản trị viên phân xử và đóng hồ sơ."
+                                )
+                            elif d_counter_arg:
+                                st.info(
+                                    f"**Vai trò của bạn:** BÊN BỊ KHIẾU NẠI (Bị đơn)\n\n"
+                                    f"Bạn đã hoàn tất nộp văn bản phản biện. Hồ sơ đang được Quản trị viên thụ lý phân xử."
+                                )
+                            else:
+                                st.warning(
+                                    f"**Vai trò của bạn:** BẠN LÀ BÊN BỊ KHIẾU NẠI (Bị đơn)\n\n"
+                                    f"Bạn có thời hạn 48 giờ để gửi văn bản giải trình và ảnh bằng chứng đối chứng trước khi Quản trị viên đưa ra phán quyết. "
+                                    f"Thời hạn phản biện kết thúc lúc: **{format_booking_datetime(d_deadline) if d_deadline else 'N/A'}**."
+                                )
 
                         if d_counter_arg:
                             st.success(f"**Văn bản phản biện đã nộp:** {d_counter_arg}")
@@ -1074,7 +1131,15 @@ class StudentHomeView:
         self.my_enrollments: List[Dict[str, Any]] = []
         self._load_preliminary_data()
 
-        self.wallet_balance = self.wallet_data.get("balance", 0)
+        self.wallet_balance = float(self.wallet_data.get("balance", 0) or 0)
+        self.locked_balance = float(self.wallet_data.get("lockedBalance", 0) or 0)
+        self.penalty_debt = float(self.wallet_data.get("penaltyDebt", 0) or 0)
+        self.available_balance = float(
+            self.wallet_data.get(
+                "availableBalance",
+                max(0.0, self.wallet_balance - self.locked_balance - self.penalty_debt)
+            )
+        )
         self.total_remaining_sessions = sum(e.get("remainingSessions", 0) for e in self.my_enrollments)
 
         # Khởi tạo các sub-views
@@ -1116,7 +1181,7 @@ class StudentHomeView:
                     </div>
                     <div style="text-align: right; background: rgba(255, 255, 255, 0.15); padding: 8px 16px; border-radius: 10px; margin-top: 8px;">
                         <div style="font-size: 0.85rem; opacity: 0.9;">Số dư ví khả dụng</div>
-                        <div style="font-size: 1.3rem; font-weight: 700;">{format_currency_vnd(self.wallet_balance)}</div>
+                        <div style="font-size: 1.3rem; font-weight: 700;">{format_currency_vnd(self.available_balance)}</div>
                     </div>
                 </div>
             </div>
@@ -1127,7 +1192,16 @@ class StudentHomeView:
         # Thẻ thống kê tổng quan
         c1, c2, c3 = st.columns(3)
         with c1:
-            st.metric(label="Số dư Ví mô phỏng", value=format_currency_vnd(self.wallet_balance), help="Ví điện tử thanh toán khóa học nội bộ")
+            if self.penalty_debt > 0:
+                st.metric(
+                    label="Số dư ví khả dụng",
+                    value=format_currency_vnd(self.available_balance),
+                    delta=f"-{format_currency_vnd(self.penalty_debt)} nợ phạt",
+                    delta_color="inverse",
+                    help=f"Số dư thực tế: {format_currency_vnd(self.wallet_balance)}, bị giữ lại {format_currency_vnd(self.penalty_debt)} tiền phạt vi phạm"
+                )
+            else:
+                st.metric(label="Số dư ví khả dụng", value=format_currency_vnd(self.available_balance), help="Ví điện tử thanh toán khóa học nội bộ")
         with c2:
             st.metric(label="Gói tập đã đăng ký", value=f"{len(self.my_enrollments)} khóa")
         with c3:

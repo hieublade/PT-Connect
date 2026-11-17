@@ -88,6 +88,10 @@ class WalletService:
         self.db.commit()
         self.db.refresh(saved)
         logger.info("Nạp tiền ví thành công cho user: %s, số tiền: %s, txnRef: %s", user_email, request.amount, txn_ref)
+
+        # Tự động cấn trừ nợ phạt nếu user đang nợ tiền phạt vi phạm hủy ca
+        self.auto_settle_penalty_debt(user.id)
+
         return PaymentResponse.from_entity(saved)
 
     def withdraw(self, user_email: str, request: UserWithdrawRequest) -> PaymentResponse:
@@ -102,8 +106,25 @@ class WalletService:
         if wallet.status != WalletStatus.ACTIVE:
             raise BadRequestException("Ví của bạn đang bị khóa, không thể thực hiện rút tiền")
 
-        available_balance = wallet.balance - wallet.locked_balance
+        # Tính tổng khoản nợ tiền phạt chưa thanh toán (penalty_shortfall)
+        penalty_debt = (
+            self.db.query(func.coalesce(func.sum(Cancellation.penalty_shortfall), Decimal("0.00")))
+            .filter(
+                Cancellation.cancelled_by_id == user.id,
+                Cancellation.penalty_shortfall > Decimal("0.00"),
+            )
+            .scalar()
+            or Decimal("0.00")
+        )
+
+        available_balance = max(Decimal("0.00"), wallet.balance - wallet.locked_balance - penalty_debt)
         if request.amount > available_balance:
+            if penalty_debt > Decimal("0.00"):
+                raise BadRequestException(
+                    f"Bạn đang có khoản nợ phạt {penalty_debt:,.0f} đ chưa thanh toán. "
+                    f"Số dư khả dụng để rút sau khi giữ lại ký quỹ và nợ phạt là {available_balance:,.0f} đ. "
+                    f"Không đủ để rút {request.amount:,.0f} đ."
+                )
             raise BadRequestException(
                 f"Số dư khả dụng ({available_balance:,.0f} đ) không đủ để rút số tiền {request.amount:,.0f} đ"
             )
@@ -135,6 +156,113 @@ class WalletService:
             request.account_number,
             txn_ref,
         )
+        return PaymentResponse.from_entity(saved)
+
+    def auto_settle_penalty_debt(self, user_id: int) -> Decimal:
+        """Tự động cấn trừ các khoản nợ phạt (penalty_shortfall) bằng số dư ví khả dụng nếu có."""
+        wallet = self.wallet_repo.get_by_user_id(user_id)
+        if not wallet or wallet.balance <= Decimal("0.00"):
+            return Decimal("0.00")
+
+        # Tìm các bản ghi hủy ca còn nợ tiền phạt của user này
+        unpaid_cancels = (
+            self.db.query(Cancellation)
+            .filter(
+                Cancellation.cancelled_by_id == user_id,
+                Cancellation.penalty_shortfall > Decimal("0.00"),
+            )
+            .order_by(Cancellation.id.asc())
+            .all()
+        )
+        if not unpaid_cancels:
+            return Decimal("0.00")
+
+        total_settled = Decimal("0.00")
+        for c in unpaid_cancels:
+            # Số dư có thể dùng để trả nợ (vẫn tôn trọng locked_balance)
+            usable = max(Decimal("0.00"), wallet.balance - wallet.locked_balance)
+            if usable <= Decimal("0.00"):
+                break
+
+            deduct = min(c.penalty_shortfall, usable)
+            wallet.balance -= deduct
+            c.penalty_amount += deduct
+            c.penalty_shortfall -= deduct
+            total_settled += deduct
+            self.db.add(c)
+
+        if total_settled > Decimal("0.00"):
+            self.wallet_repo.save(wallet)
+            date_prefix = datetime.now().strftime("%Y%m%d")
+            short_id = secrets.token_hex(4).upper()
+            txn_ref = f"TXN_AUTO_DEBT_{date_prefix}_{short_id}"
+
+            payment = Payment(
+                wallet_id=wallet.id,
+                enrollment_id=None,
+                amount=total_settled,
+                payment_type=PaymentType.PENALTY,
+                payment_method=PaymentMethod.WALLET,
+                status=PaymentStatus.SUCCESS,
+                transaction_ref=txn_ref,
+            )
+            self.payment_repo.save(payment)
+            self.db.commit()
+            logger.info("Đã tự động cấn trừ nợ phạt %s đ cho user ID %s, txnRef: %s", total_settled, user_id, txn_ref)
+
+        return total_settled
+
+    def pay_penalty_debt(self, user_email: str) -> PaymentResponse:
+        """Thanh toán khoản nợ tiền phạt vi phạm hủy lịch (penalty_shortfall) bằng số dư ví."""
+        user = self._get_user_by_email(user_email)
+        wallet = self.wallet_repo.get_by_user_id(user.id)
+        if not wallet:
+            raise ResourceNotFoundException("Không tìm thấy ví của người dùng")
+
+        # Tìm tất cả các bản ghi cancellation còn nợ penalty_shortfall của user
+        unpaid_cancels = (
+            self.db.query(Cancellation)
+            .filter(
+                Cancellation.cancelled_by_id == user.id,
+                Cancellation.penalty_shortfall > Decimal("0.00"),
+            )
+            .all()
+        )
+        total_debt = sum((c.penalty_shortfall for c in unpaid_cancels), Decimal("0.00"))
+        if total_debt <= Decimal("0.00"):
+            raise BadRequestException("Bạn không có khoản nợ phạt nào cần thanh toán.")
+
+        if wallet.balance < total_debt:
+            raise BadRequestException(
+                f"Số dư ví ({wallet.balance:,.0f} đ) không đủ để thanh toán khoản nợ phạt ({total_debt:,.0f} đ). "
+                "Vui lòng nạp thêm tiền vào ví trước khi thanh toán nợ phạt."
+            )
+
+        wallet.balance -= total_debt
+        self.wallet_repo.save(wallet)
+
+        for c in unpaid_cancels:
+            c.penalty_amount += c.penalty_shortfall
+            c.penalty_shortfall = Decimal("0.00")
+            self.db.add(c)
+
+        date_prefix = datetime.now().strftime("%Y%m%d")
+        short_id = secrets.token_hex(4).upper()
+        txn_ref = f"TXN_PAY_PENALTY_{date_prefix}_{short_id}"
+
+        payment = Payment(
+            wallet_id=wallet.id,
+            enrollment_id=None,
+            amount=total_debt,
+            payment_type=PaymentType.PENALTY,
+            payment_method=PaymentMethod.WALLET,
+            status=PaymentStatus.SUCCESS,
+            transaction_ref=txn_ref,
+        )
+        saved = self.payment_repo.save(payment)
+        self.db.commit()
+        self.db.refresh(saved)
+        logger.info("Thanh toán nợ phạt thành công cho user: %s, số tiền: %s, txnRef: %s", user_email, total_debt, txn_ref)
         return PaymentResponse.from_entity(saved)
 
     def process_course_purchase(
@@ -305,6 +433,9 @@ class WalletService:
             )
             self.payment_repo.save(pt_payment)
             logger.info("Đã thanh toán thù lao %s vào ví PT user ID %s, txnRef: %s", pt_earnings, pt_user_id, txn_ref)
+
+            # Tự động cấn trừ nợ phạt nếu PT đang còn nợ khoản phạt vi phạm hủy lịch
+            self.auto_settle_penalty_debt(pt_user_id)
 
         admin_wallet = self.get_or_create_admin_wallet()
         if admin_wallet and commission > Decimal("0.00"):

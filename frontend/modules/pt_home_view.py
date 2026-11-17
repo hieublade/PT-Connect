@@ -560,28 +560,20 @@ class PTHomeView:
             self.profile_data = {}
 
     def render_overview_tab(self):
-        """Render Tab 1: Tổng quan số liệu, số dư ví và review."""
-        c1, c2, c3, c4, c5 = st.columns(5)
+        """Render Tab 1: Tổng quan số liệu và review."""
+        c1, c2, c3, c4 = st.columns(4)
         avg_rating = self.profile_data.get("averageRating", 0)
         total_rev = self.profile_data.get("totalReviews", 0)
 
-        # Lấy số lượng khóa học, slots, bookings và thông tin ví PT
         courses_list: List[Dict[str, Any]] = []
         slots_list: List[Dict[str, Any]] = []
         pending_bookings: List[Dict[str, Any]] = []
-        wallet_data: Dict[str, Any] = {}
         try:
             courses_list = PTApi.get_courses()
             slots_list = PTApi.get_slots()
             pending_bookings = BookingApi.get_pt_bookings(status="PENDING")
-            wallet_data = PTApi.get_wallet()
         except Exception:
             pass
-
-        wallet_balance = float(wallet_data.get("balance", 0) or 0)
-        locked_balance = float(wallet_data.get("lockedBalance", 0) or 0)
-        available_balance = float(wallet_data.get("availableBalance", max(0.0, wallet_balance - locked_balance)))
-        penalty_debt = float(wallet_data.get("penaltyDebt", 0) or 0)
 
         with c1:
             st.metric(label="Ca tập chờ duyệt", value=f"{len(pending_bookings)} ca", delta="Cần xử lý" if pending_bookings else None)
@@ -592,76 +584,205 @@ class PTHomeView:
             st.metric(label="Khóa học của tôi", value=f"{len(courses_list)} khóa")
         with c4:
             st.metric(label="Đánh giá", value=f"{avg_rating:.1f}/5.0", delta=f"{total_rev} lượt review")
-        with c5:
-            if penalty_debt > 0:
-                st.metric(
-                    label="Số dư ví PT",
-                    value="0 ₫",
-                    delta=f"-{format_currency_vnd(penalty_debt)} nợ phạt",
-                    delta_color="inverse",
-                    help="Số dư ví bằng 0đ theo ràng buộc CHECK (balance >= 0) và tài khoản đang ghi nợ tiền phạt"
-                )
+
+        st.markdown("---")
+        with st.container(border=True):
+            st.markdown("### Đánh Giá Gần Đây Từ Học Viên")
+            pt_id = self.profile_data.get("id")
+            pt_reviews = BookingApi.get_pt_reviews(pt_id) if pt_id else []
+            if not pt_reviews:
+                st.info("Chưa có lượt đánh giá nào từ học viên. Các buổi tập hoàn tất sẽ được học viên gửi đánh giá tại đây.")
             else:
-                st.metric(
-                    label="Số dư khả dụng",
-                    value=format_currency_vnd(available_balance),
-                    delta=f"Ký quỹ: {format_currency_vnd(locked_balance)}",
-                    help="Số dư ví khả dụng để rút tiền sau khi trừ khoản ký quỹ cam kết hợp đồng (locked_balance)"
+                for rev in pt_reviews:
+                    r_rating = rev.get("rating", 5)
+                    r_comment = rev.get("comment", "Không có nhận xét")
+                    r_student = rev.get("studentName", "Học viên")
+                    st.markdown(
+                        f"""
+                        <div style="background: #f9fbe7; border-left: 4px solid #827717; padding: 10px 14px; border-radius: 4px; margin-bottom: 8px;">
+                            <div style="display: flex; justify-content: space-between;">
+                                <strong>{r_student}</strong>
+                                <span>({r_rating}/5 sao)</span>
+                            </div>
+                            <div style="margin-top: 4px; color: #333;">{r_comment}</div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+
+    def render_wallet_tab(self):
+        """Render Tab riêng: Quản lý Ví Tiền Huấn Luyện Viên."""
+        st.subheader("Quản Lý Ví Điện Tử & Thu Nhập HLV")
+        wallet_data: Dict[str, Any] = {}
+        try:
+            wallet_data = PTApi.get_wallet()
+        except Exception:
+            pass
+
+        wallet_balance = float(wallet_data.get("balance", 0) or 0)
+        locked_balance = float(wallet_data.get("lockedBalance", 0) or 0)
+        penalty_debt = float(wallet_data.get("penaltyDebt", 0) or 0)
+        available_balance = float(wallet_data.get("availableBalance", max(0.0, wallet_balance - locked_balance - penalty_debt)))
+
+        col_w_info, col_w_action = st.columns([1, 1])
+
+        with col_w_info:
+            with st.container(border=True):
+                st.markdown("#### Thông Tin Số Dư Ví")
+                pt_name = self.profile_data.get("fullName") or st.session_state.get("user", {}).get("fullName", "Huấn luyện viên")
+                st.markdown(f"**Chủ tài khoản:** {pt_name}")
+                st.markdown(f"**Trạng thái ví:** `{wallet_data.get('status', 'ACTIVE')}`")
+
+                st.markdown(
+                    f"""
+                    <div style="background: #e3f2fd; padding: 1.2rem; border-radius: 10px; margin: 1rem 0; border-left: 5px solid #1976d2;">
+                        <span style="font-size: 0.95rem; color: #0d47a1; font-weight: 500;">Số Dư Khả Dụng (Được rút):</span>
+                        <div style="font-size: 1.8rem; font-weight: 800; color: #1565c0; margin-top: 4px;">
+                            {format_currency_vnd(available_balance)}
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
                 )
 
-        if penalty_debt > 0:
-            st.error(
-                f"**CẢNH BÁO NỢ PHẠT:** Bạn đang nợ **{format_currency_vnd(penalty_debt)}** tiền phạt do vi phạm hủy ca tập sát giờ. "
-                "Số dư ví được giữ ở mức **0 ₫** (tuân thủ ràng buộc CHECK không âm ví). "
-                "Khoản phạt này sẽ được tự động cấn trừ khi học viên hoàn thành ca tập tiếp theo hoặc khi bạn nạp thêm tiền."
-            )
+                # Bảng chi tiết bóc tách công thức: Số dư thực tế - Ký quỹ - Nợ phạt
+                c_bk1, c_bk2 = st.columns(2)
+                with c_bk1:
+                    st.caption("Tổng số dư thực tế trong ví:")
+                    st.markdown(f"**{format_currency_vnd(wallet_balance)}**")
+                with c_bk2:
+                    st.caption("Ký quỹ an toàn cam kết:")
+                    st.markdown(f"<span style='color: #e65100; font-weight: 600;'>- {format_currency_vnd(locked_balance)}</span>", unsafe_allow_html=True)
 
-        if locked_balance > 0:
-            st.info(
-                f"**Ký quỹ cam kết hợp đồng:** Đang giữ an toàn **{format_currency_vnd(locked_balance)}** "
-                f"(chiếm tỷ lệ % giá trị các hợp đồng học viên đang hoạt động) để bảo đảm khả năng thanh toán bồi thường nếu có phát sinh hủy ca."
-            )
+                c_bk3, c_bk4 = st.columns(2)
+                with c_bk3:
+                    st.caption("Khoản nợ phạt chưa thanh toán:")
+                    if penalty_debt > 0:
+                        st.markdown(f"<span style='color: #c62828; font-weight: 700;'>- {format_currency_vnd(penalty_debt)}</span>", unsafe_allow_html=True)
+                    else:
+                        st.markdown("**0 đ** (Không có nợ)")
+                with c_bk4:
+                    st.caption("Công thức tính số dư khả dụng:")
+                    st.markdown("<span style='font-size: 0.8rem; color: #555;'><code>max(0, Thực tế - Ký quỹ - Nợ phạt)</code></span>", unsafe_allow_html=True)
 
-        # Nút / Form rút tiền về ngân hàng cho PT
-        if available_balance >= 50000.0:
-            with st.expander("Rút tiền về tài khoản ngân hàng cá nhân"):
-                with st.form("form_pt_withdraw"):
-                    wd_amount = st.number_input(
-                        "Số tiền muốn rút (VNĐ, tối thiểu 50,000đ):",
-                        min_value=50000.0,
-                        max_value=float(available_balance),
-                        value=min(float(available_balance), 500000.0),
-                        step=50000.0,
+                if locked_balance > 0:
+                    st.info(
+                        f"**Ký quỹ cam kết hợp đồng:** Đang giữ an toàn **{format_currency_vnd(locked_balance)}** "
+                        f"(chiếm tỷ lệ % giá trị các hợp đồng học viên đang hoạt động) để bảo đảm khả năng thanh toán bồi thường nếu có phát sinh hủy ca."
                     )
-                    wd_col1, wd_col2 = st.columns(2)
-                    with wd_col1:
-                        wd_bank = st.selectbox("Ngân hàng thụ hưởng (*):", ["Vietcombank", "Techcombank", "MB Bank", "BIDV", "VietinBank", "ACB", "TPBank", "VPBank"])
-                        wd_stk = st.text_input("Số tài khoản (*):", placeholder="Ví dụ: 19036888888888")
-                    with wd_col2:
-                        wd_holder = st.text_input("Tên chủ tài khoản (*):", placeholder="Ví dụ: NGUYEN VAN A")
-                        wd_note = st.text_input("Ghi chú (tùy chọn):", placeholder="Rút thu nhập dạy cá nhân")
-                    btn_wd = st.form_submit_button("Xác nhận rút tiền", type="primary", use_container_width=True)
-                    if btn_wd:
-                        if not wd_stk.strip() or not wd_holder.strip():
-                            st.error("Vui lòng điền đầy đủ số tài khoản và tên chủ tài khoản thụ hưởng.")
-                        else:
+
+                if penalty_debt > 0:
+                    st.error(
+                        f"**CẢNH BÁO NỢ PHẠT:** Bạn đang nợ **{format_currency_vnd(penalty_debt)}** tiền phạt do vi phạm hủy ca tập sát giờ. "
+                        "Số dư khả dụng sẽ giữ ở mức 0 đ cho đến khi thanh toán xong khoản nợ phạt này."
+                    )
+                    if wallet_balance >= penalty_debt:
+                        if st.button("Thanh Toán Khoản Nợ Phạt Bằng Số Dư Ví Ngay", type="primary", key="btn_pt_pay_penalty", use_container_width=True):
                             try:
-                                PTApi.withdraw_wallet(
-                                    amount=float(wd_amount),
-                                    bank_name=wd_bank,
-                                    account_number=wd_stk.strip(),
-                                    account_holder_name=wd_holder.strip().upper(),
-                                    note=wd_note.strip() if wd_note else None,
-                                )
-                                st.success(f"Đã lập lệnh rút thành công {format_currency_vnd(wd_amount)} về tài khoản {wd_bank} - {wd_stk}!")
+                                PTApi.pay_penalty()
+                                st.success("Đã thanh toán thành công khoản nợ phạt! Số dư khả dụng của bạn đã được mở khóa.")
                                 st.rerun()
+                            except ApiException as e:
+                                st.error(f"Lỗi [{e.status_code}]: {e.message}")
                             except Exception as ex:
-                                st.error(f"Lỗi rút tiền: {ex}")
+                                st.error(f"Lỗi: {str(ex)}")
+
+                st.caption("*Lưu ý: Tiền trong ví chỉ dùng trong môi trường giả lập nền tảng PT Connect.*")
+
+        with col_w_action:
+            with st.container(border=True):
+                tab_wd, tab_top = st.tabs(["Rút Tiền Về Ngân Hàng", "Nạp Tiền Vào Ví"])
+
+                with tab_wd:
+                    if available_balance < 50000.0:
+                        st.info("Số dư khả dụng hiện tại dưới 50,000 đ, chưa đủ điều kiện rút tiền.")
+                    else:
+                        with st.form("form_pt_withdraw_tab"):
+                            wd_amount = st.number_input(
+                                "Số tiền muốn rút (VNĐ, tối thiểu 50,000đ):",
+                                min_value=50000.0,
+                                max_value=float(available_balance),
+                                value=min(float(available_balance), 500000.0),
+                                step=50000.0,
+                            )
+                            wd_bank = st.selectbox("Ngân hàng thụ hưởng (*):", ["Vietcombank", "Techcombank", "MB Bank", "BIDV", "VietinBank", "ACB", "TPBank", "VPBank"])
+                            wd_stk = st.text_input("Số tài khoản (*):", placeholder="Ví dụ: 19036888888888")
+                            wd_holder = st.text_input("Tên chủ tài khoản (*):", placeholder="Ví dụ: NGUYEN VAN A")
+                            wd_note = st.text_input("Ghi chú (tùy chọn):", placeholder="Rút thu nhập dạy cá nhân")
+                            btn_wd = st.form_submit_button("Xác nhận rút tiền", type="primary", use_container_width=True)
+                            if btn_wd:
+                                if not wd_stk.strip() or not wd_holder.strip():
+                                    st.error("Vui lòng điền đầy đủ số tài khoản và tên chủ tài khoản thụ hưởng.")
+                                else:
+                                    try:
+                                        PTApi.withdraw_wallet(
+                                            amount=float(wd_amount),
+                                            bank_name=wd_bank,
+                                            account_number=wd_stk.strip(),
+                                            account_holder_name=wd_holder.strip().upper(),
+                                            note=wd_note.strip() if wd_note else None,
+                                        )
+                                        st.success(f"Đã lập lệnh rút thành công {format_currency_vnd(wd_amount)} về tài khoản {wd_bank} - {wd_stk}!")
+                                        st.rerun()
+                                    except Exception as ex:
+                                        st.error(f"Lỗi rút tiền: {ex}")
+
+                with tab_top:
+                    st.markdown("**Chọn nhanh mệnh giá:**")
+                    q_cols = st.columns(4)
+                    if "pt_topup_amount_input" not in st.session_state:
+                        st.session_state["pt_topup_amount_input"] = 1000000.0
+
+                    def handle_pt_quick_amount_click(amount_val: float):
+                        st.session_state["pt_topup_amount_input"] = float(amount_val)
+
+                    quick_amounts = [500000.0, 1000000.0, 2000000.0, 5000000.0]
+                    for idx, amt in enumerate(quick_amounts):
+                        with q_cols[idx]:
+                            st.button(
+                                f"{int(amt/1000)}k" if amt < 1000000 else f"{int(amt/1000000)}Tr",
+                                key=f"pt_q_amt_{int(amt)}",
+                                on_click=handle_pt_quick_amount_click,
+                                args=(amt,),
+                                use_container_width=True
+                            )
+
+                    entered_pt_amount = st.number_input(
+                        "Hoặc nhập số tiền tùy chọn (VND):",
+                        min_value=10000.0,
+                        max_value=100000000.0,
+                        step=100000.0,
+                        key="pt_topup_amount_input"
+                    )
+
+                    method_code = st.selectbox(
+                        "Phương thức nạp mô phỏng:",
+                        options=["BANK_TRANSFER", "CREDIT_CARD", "CASH"],
+                        format_func=lambda x: {
+                            "BANK_TRANSFER": "Chuyển khoản ngân hàng (Quét mã VNPAY QR / MoMo / VietQR)",
+                            "CREDIT_CARD": "Thẻ tín dụng / Ghi nợ quốc tế (Visa, Mastercard)",
+                            "CASH": "Nạp tiền mặt tại quầy lễ tân"
+                        }.get(x, x),
+                        key="pt_topup_payment_method"
+                    )
+
+                    if st.button("Nạp Tiền Vào Ví Ngay", type="primary", use_container_width=True, key="btn_pt_topup"):
+                        with st.spinner("Đang xử lý nạp tiền vào ví HLV..."):
+                            try:
+                                topup_res = PTApi.topup_wallet(amount=entered_pt_amount, payment_method=method_code)
+                                st.success(f"Nạp thành công {format_currency_vnd(entered_pt_amount)}! Mã GD: {topup_res.get('transactionRef')}")
+                                st.rerun()
+                            except ApiException as e:
+                                st.error(f"Nạp tiền thất bại [{e.status_code}]: {e.message}")
+                            except Exception as ex:
+                                st.error(f"Lỗi: {str(ex)}")
 
         # Hiển thị lịch sử biến động ví và tiền phạt nếu có
         transactions = wallet_data.get("transactions", [])
         if transactions:
-            with st.expander("Lịch sử biến động ví & Chi tiết các khoản thu nhập / phạt"):
+            st.markdown("---")
+            with st.container(border=True):
+                st.markdown("### Lịch Sử Giao Dịch & Biến Động Số Dư Ví")
                 for txn in transactions:
                     t_type = txn.get("paymentType", "")
                     t_amt = txn.get("amount", 0)
@@ -673,6 +794,11 @@ class PTHomeView:
                         amt_display = f"+{format_currency_vnd(t_amt)}"
                         card_bg = "#e8f5e9"
                         border_color = "#2e7d32"
+                    elif t_type == "TOPUP" or "TOPUP" in str(t_ref):
+                        type_badge = "Nạp tiền vào ví"
+                        amt_display = f"+{format_currency_vnd(t_amt)}"
+                        card_bg = "#e3f2fd"
+                        border_color = "#1976d2"
                     elif t_type == "WITHDRAWAL" or "WD" in str(t_ref):
                         type_badge = "Rút tiền về tài khoản ngân hàng"
                         amt_display = f"-{format_currency_vnd(t_amt)}"
@@ -702,31 +828,6 @@ class PTHomeView:
                                 <div style="font-size: 0.8rem; color: #555;">Mã GD: <code>{t_ref}</code> | Thời gian: {t_time}</div>
                             </div>
                             <div style="font-size: 1.1rem; font-weight: 700; color: {border_color};">{amt_display}</div>
-                        </div>
-                        """,
-                        unsafe_allow_html=True
-                    )
-
-        st.markdown("---")
-        with st.container(border=True):
-            st.markdown("### Đánh Giá Gần Đây Từ Học Viên")
-            pt_id = self.profile_data.get("id")
-            pt_reviews = BookingApi.get_pt_reviews(pt_id) if pt_id else []
-            if not pt_reviews:
-                st.info("Chưa có lượt đánh giá nào từ học viên. Các buổi tập hoàn tất sẽ được học viên gửi đánh giá tại đây.")
-            else:
-                for rev in pt_reviews:
-                    r_rating = rev.get("rating", 5)
-                    r_comment = rev.get("comment", "Không có nhận xét")
-                    r_student = rev.get("studentName", "Học viên")
-                    st.markdown(
-                        f"""
-                        <div style="background: #f9fbe7; border-left: 4px solid #827717; padding: 10px 14px; border-radius: 4px; margin-bottom: 8px;">
-                            <div style="display: flex; justify-content: space-between;">
-                                <strong>{r_student}</strong>
-                                <span>({r_rating}/5 sao)</span>
-                            </div>
-                            <div style="margin-top: 4px; color: #333;">{r_comment}</div>
                         </div>
                         """,
                         unsafe_allow_html=True
@@ -783,13 +884,14 @@ class PTHomeView:
             st.success("Hồ sơ của bạn đã được xác minh thành công (`VERIFIED`). Sẵn sàng nhận học viên!")
 
         # Phân chia các Tab chức năng
-        tab_overview, tab_bookings, tab_slots, tab_courses, tab_workout_plans, tab_disputes, tab_profile = st.tabs([
+        tab_overview, tab_bookings, tab_slots, tab_courses, tab_workout_plans, tab_disputes, tab_wallet, tab_profile = st.tabs([
             "Tổng Quan",
             "Duyệt lịch",
             "Khung Giờ",
             "Quản Lý Khóa",
             "Giáo Án",
             "Giải Quyết Tranh Chấp",
+            "Ví Tiền",
             "Hồ Sơ"
         ])
 
@@ -811,6 +913,9 @@ class PTHomeView:
         with tab_disputes:
             self.render_dispute_tab()
 
+        with tab_wallet:
+            self.render_wallet_tab()
+
         with tab_profile:
             self.profile_view.render()
 
@@ -818,7 +923,7 @@ class PTHomeView:
         st.subheader("Giải Quyết Tranh Chấp & Khiếu Nại")
         st.info(
             "**Quy định khiếu nại & trọng tài đối kháng 48 giờ:**\n\n"
-            "- **Thời hạn khiếu nại ca bị hủy:** Ca tập bị hủy chỉ được gửi khiếu nại trong vòng **2 ngày (48 giờ)** kể từ thời điểm bị hủy. Quá 48 giờ hệ thống sẽ từ chối tiếp nhận.\n"
+            "- **Thời hạn khiếu nại ca tập:** Chỉ chấp nhận gửi khiếu nại trong vòng **2 ngày (48 giờ)** kể từ thời điểm ca tập kết thúc (với ca đã hoàn thành) hoặc kể từ thời điểm bị hủy (với ca bị hủy). Quá 48 giờ hệ thống sẽ tự động từ chối tiếp nhận.\n"
             "- **Số lần khiếu nại:** Mỗi ca tập chỉ được gửi khiếu nại **tối đa 1 lần duy nhất**, không được gửi lại lần 2.\n"
             "- **Quyền phản biện của bên bị khiếu nại:** Khi có khiếu nại phát sinh, bên bị khiếu nại có thời hạn **48 giờ** để nộp văn bản giải trình phản biện và bằng chứng đối chứng (ảnh check-in phòng tập, tin nhắn trao đổi) để Ban Quản trị xem xét công bằng trước khi ra phán quyết."
         )
@@ -833,12 +938,18 @@ class PTHomeView:
             except Exception:
                 pt_bookings = []
 
-            if not pt_bookings:
-                st.warning("Bạn chưa có ca tập nào để gửi khiếu nại.")
+            # Chỉ cho phép chọn các ca đã Hoàn thành hoặc đã Hủy (COMPLETED, CANCELLED)
+            valid_dispute_bookings = [
+                b for b in pt_bookings
+                if b.get("status") in ("COMPLETED", "CANCELLED")
+            ]
+
+            if not valid_dispute_bookings:
+                st.warning("Bạn hiện không có ca tập nào đủ điều kiện khiếu nại (Chỉ áp dụng cho ca Đã hoàn thành COMPLETED hoặc Đã hủy CANCELLED).")
             else:
                 bk_options = {
                     b["id"]: f"Ca #{b['id']} - Học viên: {b.get('studentName', 'Học viên')} | {format_booking_datetime(b.get('startTime'))} ({b.get('status')})"
-                    for b in pt_bookings
+                    for b in valid_dispute_bookings
                 }
                 chosen_bk_id = st.selectbox(
                     "Chọn ca tập cần khiếu nại:",
@@ -955,18 +1066,40 @@ class PTHomeView:
 
                         # Phân định quyền phản biện & trạng thái người dùng
                         if is_sender:
-                            st.info(
-                                f"**Vai trò của bạn:** BÊN GỬI KHIẾU NẠI (Nguyên đơn)\n\n"
-                                f"Hệ thống đang chờ đối phương ({defendant_text}) nộp văn bản phản biện trong thời hạn 48 giờ "
-                                f"(Hạn chót: {format_booking_datetime(d_deadline) if d_deadline else 'N/A'}). "
-                                f"Sau khi hết hạn hoặc khi nhận được phản biện, Quản trị viên sẽ tiến hành xem xét phán quyết."
-                            )
+                            if d_status in ("RESOLVED_REFUND", "REJECTED"):
+                                st.info(
+                                    f"**Vai trò của bạn:** BÊN GỬI KHIẾU NẠI (Nguyên đơn)\n\n"
+                                    f"Khiếu nại này đã được Quản trị viên phân xử và đóng hồ sơ."
+                                )
+                            elif d_counter_arg:
+                                st.info(
+                                    f"**Vai trò của bạn:** BÊN GỬI KHIẾU NẠI (Nguyên đơn)\n\n"
+                                    f"Đối phương ({defendant_text}) đã nộp văn bản phản biện. Hồ sơ đang được Quản trị viên thụ lý phân xử."
+                                )
+                            else:
+                                st.info(
+                                    f"**Vai trò của bạn:** BÊN GỬI KHIẾU NẠI (Nguyên đơn)\n\n"
+                                    f"Hệ thống đang chờ đối phương ({defendant_text}) nộp văn bản phản biện trong thời hạn 48 giờ "
+                                    f"(Hạn chót: {format_booking_datetime(d_deadline) if d_deadline else 'N/A'}). "
+                                    f"Sau khi hết hạn hoặc khi nhận được phản biện, Quản trị viên sẽ tiến hành xem xét phán quyết."
+                                )
                         else:
-                            st.warning(
-                                f"**Vai trò của bạn:** BẠN LÀ BÊN BỊ KHIẾU NẠI (Bị đơn)\n\n"
-                                f"Bạn có thời hạn 48 giờ để gửi văn bản giải trình và ảnh bằng chứng đối chứng trước khi Quản trị viên đưa ra phán quyết. "
-                                f"Thời hạn phản biện kết thúc lúc: **{format_booking_datetime(d_deadline) if d_deadline else 'N/A'}**."
-                            )
+                            if d_status in ("RESOLVED_REFUND", "REJECTED"):
+                                st.info(
+                                    f"**Vai trò của bạn:** BÊN BỊ KHIẾU NẠI (Bị đơn)\n\n"
+                                    f"Khiếu nại này đã được Quản trị viên phân xử và đóng hồ sơ."
+                                )
+                            elif d_counter_arg:
+                                st.info(
+                                    f"**Vai trò của bạn:** BÊN BỊ KHIẾU NẠI (Bị đơn)\n\n"
+                                    f"Bạn đã hoàn tất nộp văn bản phản biện. Hồ sơ đang được Quản trị viên thụ lý phân xử."
+                                )
+                            else:
+                                st.warning(
+                                    f"**Vai trò của bạn:** BẠN LÀ BÊN BỊ KHIẾU NẠI (Bị đơn)\n\n"
+                                    f"Bạn có thời hạn 48 giờ để gửi văn bản giải trình và ảnh bằng chứng đối chứng trước khi Quản trị viên đưa ra phán quyết. "
+                                    f"Thời hạn phản biện kết thúc lúc: **{format_booking_datetime(d_deadline) if d_deadline else 'N/A'}**."
+                                )
 
                         if d_counter_arg:
                             st.success(f"**Văn bản phản biện đã nộp:** {d_counter_arg}")

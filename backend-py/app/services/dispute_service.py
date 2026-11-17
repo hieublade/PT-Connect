@@ -98,15 +98,11 @@ class DisputeService:
         if not is_student and not is_pt and user.role != Role.ADMIN:
             raise ForbiddenException("Bạn không có quyền khiếu nại ca tập này")
 
-        # Ràng buộc thời gian: Không cho phép khiếu nại ca tập chưa diễn ra trong tương lai
-        is_past_or_done = (
-            booking.status in (BookingStatus.COMPLETED, BookingStatus.CANCELLED)
-            or (booking.slot and booking.slot.start_time and booking.slot.start_time <= now_local())
-        )
-        if not is_past_or_done and user.role != Role.ADMIN:
+        # Ràng buộc trạng thái nghiêm ngặt: Chỉ có ca COMPLETED và CANCELLED mới được gửi khiếu nại
+        if booking.status not in (BookingStatus.COMPLETED, BookingStatus.CANCELLED) and user.role != Role.ADMIN:
             raise BadRequestException(
-                "Không thể gửi khiếu nại cho ca tập chưa diễn ra trong tương lai. "
-                "Chỉ được quyền khiếu nại sau khi ca tập đã kết thúc, đã bị hủy hoặc khung giờ tập đã bắt đầu."
+                f"Chỉ có các ca tập đã Hoàn thành (COMPLETED) hoặc đã Bị hủy (CANCELLED) mới được phép gửi khiếu nại. "
+                f"Ca tập hiện tại đang ở trạng thái {booking.status.value} nên không thể gửi khiếu nại."
             )
 
         # 1. Ràng buộc: Mỗi ca tập chỉ được gửi khiếu nại tối đa 1 lần duy nhất, không cho gửi lại lần 2
@@ -126,7 +122,7 @@ class DisputeService:
                 cancel_time = booking.updated_at
 
             if cancel_time:
-                now = datetime.now() if cancel_time.tzinfo is None else datetime.now(cancel_time.tzinfo)
+                now = now_local()
                 if cancel_time.tzinfo is not None and now.tzinfo is None:
                     cancel_time = cancel_time.replace(tzinfo=None)
                 elif cancel_time.tzinfo is None and now.tzinfo is not None:
@@ -141,7 +137,33 @@ class DisputeService:
                         "Theo quy định, bạn chỉ được quyền gửi khiếu nại trong thời hạn tối đa 2 ngày (48 giờ) kể từ thời điểm ca tập bị hủy."
                     )
 
-        deadline = datetime.utcnow() + timedelta(hours=48)
+        # 3. Ràng buộc: Ca tập đã hoàn thành chỉ được khiếu nại trong vòng 2 ngày (48 giờ) kể từ khi ca tập kết thúc
+        if booking.status == BookingStatus.COMPLETED:
+            completed_time = None
+            if booking.attendance and booking.attendance.check_out_time:
+                completed_time = booking.attendance.check_out_time
+            elif booking.slot and booking.slot.end_time:
+                completed_time = booking.slot.end_time
+            elif booking.updated_at:
+                completed_time = booking.updated_at
+
+            if completed_time:
+                now = now_local()
+                if completed_time.tzinfo is not None and now.tzinfo is None:
+                    completed_time = completed_time.replace(tzinfo=None)
+                elif completed_time.tzinfo is None and now.tzinfo is not None:
+                    now = now.replace(tzinfo=None)
+
+                elapsed_seconds = (now - completed_time).total_seconds()
+                if elapsed_seconds > 48 * 3600:
+                    hours_elapsed = elapsed_seconds / 3600.0
+                    days_elapsed = hours_elapsed / 24.0
+                    raise BadRequestException(
+                        f"Ca tập này đã kết thúc cách đây {days_elapsed:.1f} ngày ({hours_elapsed:.1f} giờ). "
+                        "Theo quy định, bạn chỉ được quyền gửi khiếu nại trong thời hạn tối đa 2 ngày (48 giờ) kể từ thời điểm kết thúc ca tập."
+                    )
+
+        deadline = now_local() + timedelta(hours=48)
 
         dispute = BookingDispute(
             booking_id=booking_id,
@@ -151,7 +173,7 @@ class DisputeService:
             evidence_url=req.evidence_url,
             status=DisputeStatus.PENDING,
             deadline_at=deadline,
-            created_at=datetime.utcnow(),
+            created_at=now_local(),
         )
         self.dispute_repo.create(dispute)
         self.db.commit()
@@ -204,7 +226,7 @@ class DisputeService:
 
         dispute.status = DisputeStatus.EVIDENCE_REQUESTED
         dispute.admin_notes = req.admin_notes
-        dispute.deadline_at = datetime.utcnow() + timedelta(hours=48)
+        dispute.deadline_at = now_local() + timedelta(hours=48)
 
         self.dispute_repo.update(dispute)
         self.db.commit()
@@ -224,9 +246,9 @@ class DisputeService:
             raise BadRequestException("Khiếu nại này đã được phân xử trước đó")
 
         # Quy chế trọng tài 48 giờ chống phán quyết độc đoán
-        now_utc = datetime.utcnow()
+        now = now_local()
         if not dispute.counter_argument:
-            is_past_48h = dispute.deadline_at and now_utc >= dispute.deadline_at
+            is_past_48h = dispute.deadline_at and now >= dispute.deadline_at
             if not is_past_48h and not req.force_override:
                 raise BadRequestException(
                     "Theo quy chế trọng tài, cần chờ bên bị khiếu nại gửi bản phản biện đối chứng "
@@ -351,7 +373,7 @@ class DisputeService:
             raise BadRequestException(f"Hành động phân xử '{action}' không hợp lệ")
 
         dispute.admin_notes = req.admin_notes
-        dispute.resolved_at = datetime.utcnow()
+        dispute.resolved_at = now_local()
 
         self.dispute_repo.update(dispute)
         self.db.commit()

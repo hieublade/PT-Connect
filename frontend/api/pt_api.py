@@ -108,4 +108,18 @@ class PTApi:
         }
         return api_client.post("/api/v1/wallet/withdraw", json=payload)
 
+    @staticmethod
+    def pay_penalty() -> Dict[str, Any]:
+        """Thanh toán khoản nợ tiền phạt vi phạm hủy lịch bằng số dư ví."""
+        return api_client.post("/api/v1/wallet/pay-penalty", json={})
+
+    @staticmethod
+    def topup_wallet(amount: float, payment_method: str = "BANK_TRANSFER") -> Dict[str, Any]:
+        """Nạp tiền vào ví PT."""
+        payload = {
+            "amount": amount,
+            "paymentMethod": payment_method
+        }
+        return api_client.post("/api/v1/wallet/topup", json=payload)
+
 

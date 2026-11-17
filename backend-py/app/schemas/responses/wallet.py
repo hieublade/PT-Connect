@@ -61,7 +61,7 @@ class WalletResponse(CamelModel):
             return None
 
         u_id = wallet.user.id if wallet.user else None
-        avail = max(Decimal("0.00"), wallet.balance - wallet.locked_balance)
+        avail = max(Decimal("0.00"), wallet.balance - wallet.locked_balance - penalty_debt)
         return cls(
             id=wallet.id,
             user_id=u_id,

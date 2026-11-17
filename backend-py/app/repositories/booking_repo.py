@@ -1,12 +1,15 @@
-from datetime import datetime
+from datetime import datetime, timedelta
+from decimal import Decimal
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session, selectinload
 
+from app.core.clock import now_local
 from app.models.availability_slot import AvailabilitySlot
 from app.models.booking import Booking
 from app.models.cancellation import Cancellation
-from app.models.enums import BookingStatus, SlotStatus
+from app.models.enrollment import Enrollment
+from app.models.enums import BookingStatus, BookingType, CancellationStatus, SlotStatus
 from app.models.pt_profile import PTProfile
 
 
@@ -109,9 +112,8 @@ class BookingRepository:
         )
 
     def auto_cancel_stale_bookings(self) -> int:
-        """Tự động hủy các ca PENDING quá 4 tiếng và giải phóng slot (chống găm giữ slot)."""
-        from datetime import datetime, timedelta
-        stale_threshold = datetime.utcnow() - timedelta(hours=4)
+        """Tự động hủy các ca PENDING quá 4 tiếng, hoàn buổi tập cho học viên và giải phóng slot (chống găm giữ slot)."""
+        stale_threshold = now_local() - timedelta(hours=4)
         stale_bookings = (
             self.db.query(Booking)
             .filter(
@@ -125,6 +127,30 @@ class BookingRepository:
             b.status = BookingStatus.CANCELLED
             if b.slot:
                 b.slot.status = SlotStatus.AVAILABLE
+
+            # Hoàn lại 1 buổi cho gói tập học viên nếu là ca PACKAGE
+            if b.booking_type == BookingType.PACKAGE and b.enrollment_id:
+                enrollment = (
+                    self.db.query(Enrollment)
+                    .filter(Enrollment.id == b.enrollment_id)
+                    .with_for_update()
+                    .first()
+                )
+                if enrollment:
+                    enrollment.restore_session()
+
+            # Ghi nhận bản ghi hủy ca tự động bởi SYSTEM
+            cancellation = Cancellation.by_system(
+                booking_id=b.id,
+                reason="Hệ thống tự động hủy do PT không duyệt sau 4 giờ",
+                hours_before_session=Decimal("4.00"),
+                refund_amount=Decimal("0.00"),
+                compensation_amount=Decimal("0.00"),
+                penalty_amount=Decimal("0.00"),
+                penalty_shortfall=Decimal("0.00"),
+                status=CancellationStatus.PROCESSED,
+            )
+            self.db.add(cancellation)
             count += 1
         if count > 0:
             self.db.flush()

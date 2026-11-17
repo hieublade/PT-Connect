@@ -14,10 +14,44 @@ def ensure_avatar_dir():
     AVATAR_STATIC_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def normalize_avatar_url(avatar_url: str | None) -> str | None:
-    """Chuẩn hóa avatar_url về relative URL nếu là ảnh tĩnh cục bộ để tương thích cả localhost lẫn domain/ngrok."""
+def get_avatar_image_bytes(avatar_url: str | None) -> bytes | None:
+    """Tải bytes của ảnh từ URL hoặc file cục bộ để truyền trực tiếp vào st.image mà không phụ thuộc trình duyệt tải URL."""
     if not avatar_url:
         return None
+    local_p = get_local_avatar_file(avatar_url)
+    if local_p and local_p.exists():
+        try:
+            return local_p.read_bytes()
+        except Exception:
+            pass
+
+    import requests
+    from api.client import api_client
+    target_url = avatar_url
+    if avatar_url.startswith("/static/"):
+        target_url = f"{api_client.base_url}{avatar_url}"
+    elif avatar_url.startswith("/app/static/avatars/"):
+        fname = avatar_url.split("/app/static/avatars/")[-1]
+        p = AVATAR_STATIC_DIR / fname
+        if p.exists():
+            return p.read_bytes()
+
+    try:
+        res = requests.get(target_url, timeout=5)
+        if res.status_code == 200:
+            return res.content
+    except Exception:
+        pass
+    return None
+
+
+def normalize_avatar_url(avatar_url: str | None) -> str | None:
+    """Chuẩn hóa avatar_url để Streamlit hoặc client hiển thị chính xác."""
+    if not avatar_url:
+        return None
+    from api.client import api_client
+    if avatar_url.startswith("/static/"):
+        return f"{api_client.base_url}{avatar_url}"
     if "app/static/avatars/" in avatar_url:
         fname = avatar_url.split("app/static/avatars/")[-1]
         return f"/app/static/avatars/{fname}"
@@ -54,9 +88,35 @@ def render_avatar_management(user: Dict[str, Any], user_role: str = "STUDENT") -
         col_preview, col_controls = st.columns([1, 2.8])
 
         with col_preview:
+            # 1. Nếu là file tĩnh cục bộ
             local_p = get_local_avatar_file(avatar_url)
             if local_p:
                 st.image(str(local_p), width=130, caption="Ảnh đại diện hiện tại")
+            # 2. Nếu là ảnh SVG (như Dicebear API)
+            elif avatar_url and (".svg" in avatar_url or "dicebear" in avatar_url):
+                try:
+                    import requests
+                    res = requests.get(avatar_url, timeout=5)
+                    if res.status_code == 200:
+                        st.markdown(
+                            f'<div style="width: 130px; height: 130px; border-radius: 50%; overflow: hidden; margin: 0 auto;">{res.text}</div>',
+                            unsafe_allow_html=True
+                        )
+                    else:
+                        st.image(avatar_url, width=130, caption="Ảnh đại diện hiện tại")
+                except Exception:
+                    st.image(avatar_url, width=130, caption="Ảnh đại diện hiện tại")
+            # 3. Nếu là ảnh tĩnh upload từ backend (/static/...)
+            elif avatar_url and avatar_url.startswith("/static/"):
+                img_bytes = get_avatar_image_bytes(avatar_url)
+                if img_bytes:
+                    try:
+                        st.image(img_bytes, width=130, caption="Ảnh đại diện hiện tại")
+                    except Exception:
+                        st.warning("Không thể hiển thị ảnh đại diện")
+                else:
+                    st.warning("Không thể tải ảnh từ máy chủ")
+            # 4. Các URL ảnh thông thường khác (PNG, JPG từ mạng)
             elif avatar_url:
                 try:
                     st.image(avatar_url, width=130, caption="Ảnh đại diện hiện tại")

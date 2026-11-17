@@ -1,0 +1,439 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2026-11-16T06:30:00.000Z" agent="Antigravity" version="24.0.0">
+  
+  <!-- ===================================================================== -->
+  <!-- TRANG 1: SƠ ĐỒ LỚP PHA THIẾT KẾ (DESIGN CLASS DIAGRAM - 3 LAYERS)      -->
+  <!-- ===================================================================== -->
+  <diagram name="Sơ đồ lớp thiết kế (Design Class)" id="DesignClassDiagram">
+    <mxGraphModel dx="1800" dy="1400" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1400" background="#ffffff" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ================= TẦNG 1: VIEW (*Frm) ================= -->
+        <mxCell id="StudentHomeFrm" value="&lt;p style=&quot;margin:0px;padding:4px;text-align:center;&quot;&gt;&lt;b&gt;StudentHomeFrm&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;- u : User&lt;br/&gt;- btnDiscoveryPt : JButton&lt;br/&gt;- btnBookSchedule : JButton&lt;br/&gt;- btnPTDetail : JButton&lt;br/&gt;- btnMySchedule : JButton&lt;br/&gt;- btnMyCourse : JButton&lt;br/&gt;- btnWallet : JButton&lt;br/&gt;- btnProfile : JButton&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;+ StudentHomeFrm(u : User)&lt;br/&gt;+ actionPerformed(e : ActionEvent) : void&lt;/p&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=1.5;fontFamily=Consolas;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="60" y="80" width="250" height="230" as="geometry" />
+        </mxCell>
+
+        <mxCell id="DiscoveryPTFrm" value="&lt;p style=&quot;margin:0px;padding:4px;text-align:center;&quot;&gt;&lt;b&gt;DiscoveryPTFrm&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;- u : User&lt;br/&gt;- txtKeyword : JTextField&lt;br/&gt;- tblPT : JTable&lt;br/&gt;- btnRefresh : JButton&lt;br/&gt;- btnViewDetail : JButton&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;+ DiscoveryPTFrm(u : User)&lt;br/&gt;+ actionPerformed(e : ActionEvent) : void&lt;/p&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=1.5;fontFamily=Consolas;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="400" y="80" width="250" height="180" as="geometry" />
+        </mxCell>
+
+        <mxCell id="PTDetailFrm" value="&lt;p style=&quot;margin:0px;padding:4px;text-align:center;&quot;&gt;&lt;b&gt;PTDetailFrm&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;- u : User&lt;br/&gt;- ptProfile : PTProfile&lt;br/&gt;- tblCourse : JTable&lt;br/&gt;- tblAvailableSlot : JTable&lt;br/&gt;- tblReview : JTable&lt;br/&gt;- btnBook : JButton&lt;br/&gt;- btnBack : JButton&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;+ PTDetailFrm(u : User, p : PTProfile)&lt;br/&gt;+ actionPerformed(e : ActionEvent) : void&lt;/p&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=1.5;fontFamily=Consolas;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="740" y="80" width="280" height="220" as="geometry" />
+        </mxCell>
+
+        <!-- ================= TẦNG 2: CONTROL (DAO) ================= -->
+        <mxCell id="DAO" value="&lt;p style=&quot;margin:0px;padding:4px;text-align:center;&quot;&gt;&lt;b&gt;DAO&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;- con : Connection&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;+ DAO()&lt;/p&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=1.5;fontFamily=Consolas;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="600" y="360" width="160" height="75" as="geometry" />
+        </mxCell>
+
+        <mxCell id="CourseDAO" value="&lt;p style=&quot;margin:0px;padding:4px;text-align:center;&quot;&gt;&lt;b&gt;CourseDAO&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;+ CourseDAO()&lt;br/&gt;+ getActiveCourse(ptId : int) : Course[]&lt;/p&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=1.5;fontFamily=Consolas;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="40" y="480" width="260" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="PTProfileDAO" value="&lt;p style=&quot;margin:0px;padding:4px;text-align:center;&quot;&gt;&lt;b&gt;PTProfileDAO&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;+ PTProfileDAO()&lt;br/&gt;+ getPTDetail(ptId : int) : PTProfile&lt;br/&gt;+ searchPT(key : String) : PTProfile[]&lt;br/&gt;+ getActivePT() : PTProfile[]&lt;/p&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=1.5;fontFamily=Consolas;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="350" y="480" width="250" height="110" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ReviewDAO" value="&lt;p style=&quot;margin:0px;padding:4px;text-align:center;&quot;&gt;&lt;b&gt;ReviewDAO&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;+ ReviewDAO()&lt;br/&gt;+ getReview(ptId : int) : Review[]&lt;/p&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=1.5;fontFamily=Consolas;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="640" y="480" width="240" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="PTLocationDAO" value="&lt;p style=&quot;margin:0px;padding:4px;text-align:center;&quot;&gt;&lt;b&gt;PTLocationDAO&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;+ PTLocationDAO()&lt;br/&gt;+ getLocations(ptId : int) : PTLocation[]&lt;/p&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=1.5;fontFamily=Consolas;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="920" y="480" width="250" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="AvailabilitySlotDAO" value="&lt;p style=&quot;margin:0px;padding:4px;text-align:center;&quot;&gt;&lt;b&gt;AvailabilitySlotDAO&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;+ AvailabilitySlotDAO()&lt;br/&gt;+ getAvailableSlot(ptId : int) : AvailabilitySlot[]&lt;/p&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=1.5;fontFamily=Consolas;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1210" y="480" width="280" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- ================= TẦNG 3: ENTITY ================= -->
+        <mxCell id="Entity_PT" value="&lt;p style=&quot;margin:0px;padding:4px;text-align:center;&quot;&gt;&lt;b&gt;PT&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;- id : int&lt;br/&gt;- role : String = &quot;PT&quot;&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;&lt;/p&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#ffe6cc;strokeColor=#d79b00;strokeWidth=1.5;fontFamily=Consolas;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="120" y="700" width="160" height="75" as="geometry" />
+        </mxCell>
+
+        <mxCell id="Entity_PTProfile" value="&lt;p style=&quot;margin:0px;padding:4px;text-align:center;&quot;&gt;&lt;b&gt;PTProfile&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;- id : int&lt;br/&gt;- bio : String&lt;br/&gt;- experienceYears : int&lt;br/&gt;- locationPricingNote : String&lt;br/&gt;- certificateUrls : String&lt;br/&gt;- averageRating : float&lt;br/&gt;- totalReviews : int&lt;br/&gt;- verificationStatus : String&lt;br/&gt;- createdAt : Date&lt;br/&gt;- updatedAt : Date&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;&lt;/p&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#ffe6cc;strokeColor=#d79b00;strokeWidth=1.5;fontFamily=Consolas;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="380" y="670" width="240" height="230" as="geometry" />
+        </mxCell>
+
+        <mxCell id="Entity_Course" value="&lt;p style=&quot;margin:0px;padding:4px;text-align:center;&quot;&gt;&lt;b&gt;Course&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;- id : int&lt;br/&gt;- title : String&lt;br/&gt;- description : String&lt;br/&gt;- totalSessions : int&lt;br/&gt;- validityDays : int&lt;br/&gt;- basePrice : float&lt;br/&gt;- status : String&lt;br/&gt;- createdAt : Date&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;&lt;/p&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#ffe6cc;strokeColor=#d79b00;strokeWidth=1.5;fontFamily=Consolas;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="60" y="840" width="230" height="180" as="geometry" />
+        </mxCell>
+
+        <mxCell id="Entity_Review" value="&lt;p style=&quot;margin:0px;padding:4px;text-align:center;&quot;&gt;&lt;b&gt;Review&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;- id : int&lt;br/&gt;- rating : int&lt;br/&gt;- comment : String&lt;br/&gt;- createdAt : Date&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;&lt;/p&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#ffe6cc;strokeColor=#d79b00;strokeWidth=1.5;fontFamily=Consolas;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="720" y="680" width="200" height="110" as="geometry" />
+        </mxCell>
+
+        <mxCell id="Entity_PTLocation" value="&lt;p style=&quot;margin:0px;padding:4px;text-align:center;&quot;&gt;&lt;b&gt;PTLocation&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;- id : int&lt;br/&gt;- locationName : String&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;&lt;/p&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#ffe6cc;strokeColor=#d79b00;strokeWidth=1.5;fontFamily=Consolas;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="720" y="830" width="200" height="75" as="geometry" />
+        </mxCell>
+
+        <mxCell id="Entity_AvailabilitySlot" value="&lt;p style=&quot;margin:0px;padding:4px;text-align:center;&quot;&gt;&lt;b&gt;AvailabilitySlot&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;- id : int&lt;br/&gt;- startTime : Date&lt;br/&gt;- endTime : Date&lt;br/&gt;- status : String&lt;br/&gt;- createdAt : Date&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;&lt;/p&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#ffe6cc;strokeColor=#d79b00;strokeWidth=1.5;fontFamily=Consolas;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="980" y="680" width="220" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- ================= ĐƯỜNG NỐI VIEW - VIEW ================= -->
+        <mxCell id="Edge_V1_V2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#000000;strokeWidth=1.5;endArrow=none;" edge="1" parent="1" source="StudentHomeFrm" target="DiscoveryPTFrm">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="Edge_V2_V3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#000000;strokeWidth=1.5;endArrow=none;" edge="1" parent="1" source="DiscoveryPTFrm" target="PTDetailFrm">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="Edge_V3_V1_Loop" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#000000;strokeWidth=1.2;dashed=0;endArrow=none;" edge="1" parent="1" source="PTDetailFrm" target="StudentHomeFrm">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="880" y="40" />
+              <mxPoint x="180" y="40" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ================= KẾ THỪA DAO (GENERALIZATION) ================= -->
+        <mxCell id="Inherit_CourseDAO" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#000000;strokeWidth=1.5;endArrow=block;endFill=0;endSize=10;" edge="1" parent="1" source="CourseDAO" target="DAO">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="170" y="400" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="Inherit_PTProfileDAO" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#000000;strokeWidth=1.5;endArrow=block;endFill=0;endSize=10;" edge="1" parent="1" source="PTProfileDAO" target="DAO">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="475" y="415" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="Inherit_ReviewDAO" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#000000;strokeWidth=1.5;endArrow=block;endFill=0;endSize=10;" edge="1" parent="1" source="ReviewDAO" target="DAO">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="760" y="415" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="Inherit_PTLocationDAO" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#000000;strokeWidth=1.5;endArrow=block;endFill=0;endSize=10;" edge="1" parent="1" source="PTLocationDAO" target="DAO">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1045" y="400" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="Inherit_AvailabilitySlotDAO" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#000000;strokeWidth=1.5;endArrow=block;endFill=0;endSize=10;" edge="1" parent="1" source="AvailabilitySlotDAO" target="DAO">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1350" y="380" />
+              <mxPoint x="760" y="380" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ================= VIEW GỌI DAO ================= -->
+        <mxCell id="Call_Discovery_PTProfileDAO" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#000000;strokeWidth=1.2;endArrow=none;" edge="1" parent="1" source="DiscoveryPTFrm" target="PTProfileDAO">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="520" y="360" />
+              <mxPoint x="440" y="360" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="Call_PTDetail_PTProfileDAO" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#000000;strokeWidth=1.2;endArrow=none;" edge="1" parent="1" source="PTDetailFrm" target="PTProfileDAO">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="770" y="340" />
+              <mxPoint x="540" y="340" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="Call_PTDetail_CourseDAO" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#000000;strokeWidth=1.2;endArrow=none;" edge="1" parent="1" source="PTDetailFrm" target="CourseDAO">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="790" y="320" />
+              <mxPoint x="200" y="320" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="Call_PTDetail_ReviewDAO" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#000000;strokeWidth=1.2;endArrow=none;" edge="1" parent="1" source="PTDetailFrm" target="ReviewDAO">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="820" y="350" />
+              <mxPoint x="720" y="350" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="Call_PTDetail_PTLocationDAO" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#000000;strokeWidth=1.2;endArrow=none;" edge="1" parent="1" source="PTDetailFrm" target="PTLocationDAO">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="900" y="350" />
+              <mxPoint x="990" y="350" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="Call_PTDetail_AvailabilitySlotDAO" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#000000;strokeWidth=1.2;endArrow=none;" edge="1" parent="1" source="PTDetailFrm" target="AvailabilitySlotDAO">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="970" y="320" />
+              <mxPoint x="1280" y="320" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ================= QUAN HỆ ENTITY ================= -->
+        <!-- PTProfile and PT: Composition -->
+        <mxCell id="Assoc_PTProfile_PT" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#000000;strokeWidth=1.5;endArrow=none;startArrow=diamond;startFill=1;startSize=12;" edge="1" parent="1" source="Entity_PTProfile" target="Entity_PT">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Lbl_PTProfile_PT_1" value="1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;" vertex="1" connectable="0" parent="Assoc_PTProfile_PT">
+          <mxGeometry x="-0.75" y="10" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+        <mxCell id="Lbl_PTProfile_PT_2" value="1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;" vertex="1" connectable="0" parent="Assoc_PTProfile_PT">
+          <mxGeometry x="0.75" y="10" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <!-- PTProfile and Course: Composition -->
+        <mxCell id="Assoc_PTProfile_Course" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#000000;strokeWidth=1.5;endArrow=none;startArrow=diamond;startFill=1;startSize=12;" edge="1" parent="1" source="Entity_PTProfile" target="Entity_Course">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="350" y="770" />
+              <mxPoint x="350" y="900" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Lbl_PTProfile_Course_1" value="1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;" vertex="1" connectable="0" parent="Assoc_PTProfile_Course">
+          <mxGeometry x="-0.85" y="10" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+        <mxCell id="Lbl_PTProfile_Course_2" value="0..*" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;" vertex="1" connectable="0" parent="Assoc_PTProfile_Course">
+          <mxGeometry x="0.85" y="-10" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <!-- PTProfile and Review: Composition -->
+        <mxCell id="Assoc_PTProfile_Review" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#000000;strokeWidth=1.5;endArrow=none;startArrow=diamond;startFill=1;startSize=12;" edge="1" parent="1" source="Entity_PTProfile" target="Entity_Review">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Lbl_PTProfile_Review_1" value="1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;" vertex="1" connectable="0" parent="Assoc_PTProfile_Review">
+          <mxGeometry x="-0.75" y="10" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+        <mxCell id="Lbl_PTProfile_Review_2" value="0..*" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;" vertex="1" connectable="0" parent="Assoc_PTProfile_Review">
+          <mxGeometry x="0.75" y="10" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <!-- PTProfile and PTLocation: Composition -->
+        <mxCell id="Assoc_PTProfile_PTLocation" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#000000;strokeWidth=1.5;endArrow=none;startArrow=diamond;startFill=1;startSize=12;" edge="1" parent="1" source="Entity_PTProfile" target="Entity_PTLocation">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="560" y="865" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Lbl_PTProfile_PTLocation_1" value="1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;" vertex="1" connectable="0" parent="Assoc_PTProfile_PTLocation">
+          <mxGeometry x="-0.75" y="10" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+        <mxCell id="Lbl_PTProfile_PTLocation_2" value="1..*" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;" vertex="1" connectable="0" parent="Assoc_PTProfile_PTLocation">
+          <mxGeometry x="0.75" y="-10" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <!-- PTProfile and AvailabilitySlot: Association -->
+        <mxCell id="Assoc_PTProfile_Slot" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#000000;strokeWidth=1.5;endArrow=none;" edge="1" parent="1" source="Entity_PTProfile" target="Entity_AvailabilitySlot">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="500" y="930" />
+              <mxPoint x="1090" y="930" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Lbl_PTProfile_Slot_1" value="1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;" vertex="1" connectable="0" parent="Assoc_PTProfile_Slot">
+          <mxGeometry x="-0.85" y="-10" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+        <mxCell id="Lbl_PTProfile_Slot_2" value="0..*" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;" vertex="1" connectable="0" parent="Assoc_PTProfile_Slot">
+          <mxGeometry x="0.85" y="10" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <!-- ===================================================================== -->
+  <!-- TRANG 2: SƠ ĐỒ LỚP PHA PHÂN TÍCH (ANALYSIS CLASS DIAGRAM)             -->
+  <!-- ===================================================================== -->
+  <diagram name="Sơ đồ lớp phân tích (Analysis Class)" id="AnalysisClassDiagram">
+    <mxGraphModel dx="1600" dy="1200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" background="#ffffff" math="0" shadow="0">
+      <root>
+        <mxCell id="a_0" />
+        <mxCell id="a_1" parent="a_0" />
+
+        <!-- StudentHomeView -->
+        <mxCell id="a_StudentHomeView" value="&lt;p style=&quot;margin:0px;padding:4px;text-align:center;&quot;&gt;&lt;b&gt;StudentHomeView&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;-subDiscoveryPt&lt;br/&gt;-subBookSchedule&lt;br/&gt;-subPTDetail&lt;br/&gt;-subMySchedule&lt;br/&gt;-subMyCourse&lt;br/&gt;-subWallet&lt;br/&gt;-subProfile&lt;/p&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#80d4ff;strokeColor=#007acc;strokeWidth=1.5;fontFamily=Consolas;fontSize=11;" vertex="1" parent="a_1">
+          <mxGeometry x="80" y="80" width="220" height="180" as="geometry" />
+        </mxCell>
+
+        <!-- DicoveryPTView -->
+        <mxCell id="a_DiscoveryPTView" value="&lt;p style=&quot;margin:0px;padding:4px;text-align:center;&quot;&gt;&lt;b&gt;DicoveryPTView&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;-inKeyWord&lt;br/&gt;-outListPT&lt;br/&gt;-subRefresh&lt;br/&gt;-subViewDetail&lt;/p&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#80d4ff;strokeColor=#007acc;strokeWidth=1.5;fontFamily=Consolas;fontSize=11;" vertex="1" parent="a_1">
+          <mxGeometry x="380" y="110" width="180" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- PTDetailView -->
+        <mxCell id="a_PTDetailView" value="&lt;p style=&quot;margin:0px;padding:4px;text-align:center;&quot;&gt;&lt;b&gt;PTDetailView&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;-inSelectPT&lt;br/&gt;-outPTInfor&lt;br/&gt;-outListCourse&lt;br/&gt;-outListAvailableSlot&lt;br/&gt;-outListReview&lt;/p&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#80d4ff;strokeColor=#007acc;strokeWidth=1.5;fontFamily=Consolas;fontSize=11;" vertex="1" parent="a_1">
+          <mxGeometry x="640" y="80" width="240" height="160" as="geometry" />
+        </mxCell>
+
+        <!-- PT -->
+        <mxCell id="a_PT" value="&lt;p style=&quot;margin:0px;padding:4px;text-align:center;&quot;&gt;&lt;b&gt;PT&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;-role : Role = PT&lt;/p&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#80d4ff;strokeColor=#007acc;strokeWidth=1.5;fontFamily=Consolas;fontSize=11;" vertex="1" parent="a_1">
+          <mxGeometry x="170" y="370" width="130" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- PTProfile -->
+        <mxCell id="a_PTProfile" value="&lt;p style=&quot;margin:0px;padding:4px;text-align:center;&quot;&gt;&lt;b&gt;PTProfile&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;-bio&lt;br/&gt;-experienceYears&lt;br/&gt;-locationPricingNote&lt;br/&gt;-certificateUrls&lt;br/&gt;-averageRating&lt;br/&gt;-totalReviews&lt;br/&gt;-verificationStatus&lt;br/&gt;-createdAt&lt;br/&gt;-updatedAt&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;+getPTDetail()&lt;br/&gt;+searchPT()&lt;br/&gt;+getActivePT()&lt;/p&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#80d4ff;strokeColor=#007acc;strokeWidth=1.5;fontFamily=Consolas;fontSize=11;" vertex="1" parent="a_1">
+          <mxGeometry x="350" y="370" width="160" height="280" as="geometry" />
+        </mxCell>
+
+        <!-- Course -->
+        <mxCell id="a_Course" value="&lt;p style=&quot;margin:0px;padding:4px;text-align:center;&quot;&gt;&lt;b&gt;Course&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;-title&lt;br/&gt;-description&lt;br/&gt;-totalSessions&lt;br/&gt;-validityDays&lt;br/&gt;-basePrice&lt;br/&gt;-status&lt;br/&gt;-createdAt&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;+getActiveCourse()&lt;/p&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#80d4ff;strokeColor=#007acc;strokeWidth=1.5;fontFamily=Consolas;fontSize=11;" vertex="1" parent="a_1">
+          <mxGeometry x="30" y="460" width="160" height="200" as="geometry" />
+        </mxCell>
+
+        <!-- Review -->
+        <mxCell id="a_Review" value="&lt;p style=&quot;margin:0px;padding:4px;text-align:center;&quot;&gt;&lt;b&gt;Review&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;-rating&lt;br/&gt;-comment&lt;br/&gt;-createdAt&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;+getReview()&lt;/p&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#80d4ff;strokeColor=#007acc;strokeWidth=1.5;fontFamily=Consolas;fontSize=11;" vertex="1" parent="a_1">
+          <mxGeometry x="580" y="370" width="150" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- PTLocation -->
+        <mxCell id="a_PTLocation" value="&lt;p style=&quot;margin:0px;padding:4px;text-align:center;&quot;&gt;&lt;b&gt;PTLocation&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;-locationName&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;+getLocations()&lt;/p&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#80d4ff;strokeColor=#007acc;strokeWidth=1.5;fontFamily=Consolas;fontSize=11;" vertex="1" parent="a_1">
+          <mxGeometry x="680" y="570" width="150" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- AvailabilitySlot -->
+        <mxCell id="a_AvailabilitySlot" value="&lt;p style=&quot;margin:0px;padding:4px;text-align:center;&quot;&gt;&lt;b&gt;AvailabilitySlot&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;-startTime&lt;br/&gt;-endTime&lt;br/&gt;-status&lt;br/&gt;-createdAt&lt;/p&gt;&lt;hr size=&quot;1&quot;/&gt;&lt;p style=&quot;margin:0px;padding:4px;text-align:left;&quot;&gt;+getAvailableSlot()&lt;/p&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#80d4ff;strokeColor=#007acc;strokeWidth=1.5;fontFamily=Consolas;fontSize=11;" vertex="1" parent="a_1">
+          <mxGeometry x="810" y="370" width="160" height="150" as="geometry" />
+        </mxCell>
+
+        <!-- Relationships in Analysis Diagram -->
+        <!-- StudentHomeView to DicoveryPTView -->
+        <mxCell id="a_edge_V1_V2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#000000;strokeWidth=1.5;endArrow=none;" edge="1" parent="a_1" source="a_StudentHomeView" target="a_DiscoveryPTView">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- DicoveryPTView to PTDetailView -->
+        <mxCell id="a_edge_V2_V3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#000000;strokeWidth=1.5;endArrow=none;" edge="1" parent="a_1" source="a_DiscoveryPTView" target="a_PTDetailView">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- StudentHomeView to PTProfile -->
+        <mxCell id="a_edge_V1_PTProfile" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#000000;strokeWidth=1.2;endArrow=none;" edge="1" parent="a_1" source="a_StudentHomeView" target="a_PTProfile">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="310" y="220" />
+              <mxPoint x="310" y="420" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- PTDetailView to PTProfile -->
+        <mxCell id="a_edge_V3_PTProfile" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#000000;strokeWidth=1.2;endArrow=none;" edge="1" parent="a_1" source="a_PTDetailView" target="a_PTProfile">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="610" y="200" />
+              <mxPoint x="610" y="410" />
+              <mxPoint x="510" y="410" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- PTDetailView to PTLocation -->
+        <mxCell id="a_edge_V3_PTLocation" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#000000;strokeWidth=1.2;endArrow=none;" edge="1" parent="a_1" source="a_PTDetailView" target="a_PTLocation">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="755" y="300" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- PTDetailView to Course -->
+        <mxCell id="a_edge_V3_Course" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#000000;strokeWidth=1.2;endArrow=none;" edge="1" parent="a_1" source="a_PTDetailView" target="a_Course">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="660" y="320" />
+              <mxPoint x="120" y="320" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- PTProfile (1) ♦- (1) PT -->
+        <mxCell id="a_edge_PTProfile_PT" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#000000;strokeWidth=1.5;endArrow=none;startArrow=diamond;startFill=1;startSize=12;" edge="1" parent="a_1" source="a_PTProfile" target="a_PT">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_lbl_PTProfile_PT_1" value="1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;" vertex="1" connectable="0" parent="a_edge_PTProfile_PT">
+          <mxGeometry x="-0.7" y="10" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+        <mxCell id="a_lbl_PTProfile_PT_2" value="1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;" vertex="1" connectable="0" parent="a_edge_PTProfile_PT">
+          <mxGeometry x="0.7" y="10" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <!-- PTProfile (1) ♦- (0..*) Course -->
+        <mxCell id="a_edge_PTProfile_Course" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#000000;strokeWidth=1.5;endArrow=none;startArrow=diamond;startFill=1;startSize=12;" edge="1" parent="a_1" source="a_PTProfile" target="a_Course">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="320" y="540" />
+              <mxPoint x="320" y="540" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="a_lbl_PTProfile_Course_1" value="1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;" vertex="1" connectable="0" parent="a_edge_PTProfile_Course">
+          <mxGeometry x="-0.7" y="10" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+        <mxCell id="a_lbl_PTProfile_Course_2" value="0..*" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;" vertex="1" connectable="0" parent="a_edge_PTProfile_Course">
+          <mxGeometry x="0.7" y="-10" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <!-- PTProfile (1) ♦- (1) Review -->
+        <mxCell id="a_edge_PTProfile_Review" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#000000;strokeWidth=1.5;endArrow=none;startArrow=diamond;startFill=1;startSize=12;" edge="1" parent="a_1" source="a_PTProfile" target="a_Review">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a_lbl_PTProfile_Review_1" value="1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;" vertex="1" connectable="0" parent="a_edge_PTProfile_Review">
+          <mxGeometry x="-0.6" y="10" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <!-- PTProfile (1) ♦- (1..*) PTLocation -->
+        <mxCell id="a_edge_PTProfile_PTLocation" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#000000;strokeWidth=1.5;endArrow=none;startArrow=diamond;startFill=1;startSize=12;" edge="1" parent="a_1" source="a_PTProfile" target="a_PTLocation">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="530" y="600" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="a_lbl_PTProfile_PTLocation_1" value="1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;" vertex="1" connectable="0" parent="a_edge_PTProfile_PTLocation">
+          <mxGeometry x="-0.7" y="10" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+        <mxCell id="a_lbl_PTProfile_PTLocation_2" value="1..*" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;" vertex="1" connectable="0" parent="a_edge_PTProfile_PTLocation">
+          <mxGeometry x="0.7" y="-10" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <!-- PTProfile (1) - (0..*) AvailabilitySlot -->
+        <mxCell id="a_edge_PTProfile_Slot" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#000000;strokeWidth=1.5;endArrow=none;" edge="1" parent="a_1" source="a_PTProfile" target="a_AvailabilitySlot">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="480" y="670" />
+              <mxPoint x="890" y="670" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="a_lbl_PTProfile_Slot_1" value="1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;" vertex="1" connectable="0" parent="a_edge_PTProfile_Slot">
+          <mxGeometry x="-0.8" y="-10" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+        <mxCell id="a_lbl_PTProfile_Slot_2" value="0..*" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;fontStyle=1;" vertex="1" connectable="0" parent="a_edge_PTProfile_Slot">
+          <mxGeometry x="0.8" y="10" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
