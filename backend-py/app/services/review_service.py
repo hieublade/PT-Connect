@@ -1,6 +1,10 @@
+from decimal import Decimal
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import BadRequestException, ResourceNotFoundException
+from app.models.availability_slot import AvailabilitySlot
+from app.models.booking import Booking
 from app.models.enums import BookingStatus
 from app.models.review import Review
 from app.repositories.booking_repo import BookingRepository
@@ -18,6 +22,30 @@ class ReviewService:
         self.booking_repo = BookingRepository(db)
         self.user_repo = UserRepository(db)
         self.pt_profile_repo = PTProfileRepository(db)
+
+    def _recalc_pt_rating(self, pt_id: int) -> None:
+        """
+        Nghiệp vụ tính toán điểm đánh giá & tổng số review của PT.
+        Xử lý hoàn toàn trong Python (thay thế stored procedure sp_recalc_pt_rating và trigger DB).
+        """
+        row = (
+            self.db.query(
+                func.count(Review.id),
+                func.coalesce(func.avg(Review.rating), 0.0),
+            )
+            .join(Booking, Review.booking_id == Booking.id)
+            .join(AvailabilitySlot, Booking.slot_id == AvailabilitySlot.id)
+            .filter(AvailabilitySlot.pt_id == pt_id)
+            .first()
+        )
+        total_reviews = row[0] if row else 0
+        avg_val = float(row[1]) if row and row[1] is not None else 0.0
+
+        pt_profile = self.pt_profile_repo.get_by_id(pt_id)
+        if pt_profile:
+            pt_profile.total_reviews = total_reviews
+            pt_profile.average_rating = Decimal(str(round(avg_val, 2)))
+            self.pt_profile_repo.save(pt_profile)
 
     def create_review(self, student_email: str, request: CreateReviewRequest) -> ReviewResponse:
         student = self.user_repo.get_by_email(student_email)
@@ -46,6 +74,13 @@ class ReviewService:
         )
 
         saved = self.review_repo.save(review)
+        self.db.flush()
+
+        # Nghiệp vụ tự động cập nhật Rating và số lượng review của HLV trong Python
+        pt_id = booking.slot.pt_id if booking.slot else None
+        if pt_id:
+            self._recalc_pt_rating(pt_id)
+
         self.db.commit()
         # Nạp lại review kèm quan hệ để trả về created_at thật và thông tin student/pt
         saved = self.review_repo.get_by_id(saved.id)

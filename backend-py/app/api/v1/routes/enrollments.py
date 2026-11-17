@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user, get_db, require_roles
@@ -26,6 +26,8 @@ def purchase_course(
     )
 
 
+# --- Declare static/specific paths BEFORE parameterised /{id} routes ---
+
 # Declare /my before /{id} to prevent path routing conflict
 @router.get("/enrollments/my")
 def get_my_enrollments(
@@ -37,6 +39,33 @@ def get_my_enrollments(
     return ok_response(
         data=[e.model_dump(mode="json", by_alias=True) for e in enrollments],
         message="Lấy danh sách khóa học của học viên thành công",
+    )
+
+
+@router.get("/enrollments/purchase-eligibility")
+def check_purchase_eligibility(
+    courseId: int = Query(..., description="ID của khóa học cần kiểm tra"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(Role.STUDENT)),
+):
+    """
+    Kiểm tra điều kiện mua khóa học cho học viên đang đăng nhập.
+
+    Trả về:
+    - **canPurchase**: học viên có thể mua hay không
+    - **reason**: lý do từ chối (null nếu được phép)
+    - **walletBalance**: số dư ví hiện tại (VNĐ)
+    - **coursePrice**: giá khóa học (VNĐ)
+    - **shortage**: số tiền còn thiếu (0 nếu đủ tiền)
+
+    Frontend dùng endpoint này để hiển thị UX (badge đủ/thiếu tiền)
+    mà không cần tự tính toán logic nghiệp vụ.
+    """
+    service = EnrollmentService(db)
+    result = service.get_purchase_eligibility(current_user.email, courseId)
+    return ok_response(
+        data=result.model_dump(mode="json", by_alias=True),
+        message="Kiểm tra điều kiện mua khóa học thành công",
     )
 
 

@@ -1,4 +1,5 @@
 from typing import Any, Dict, List
+import pandas as pd
 import streamlit as st
 from api.admin_api import AdminApi
 from api.dispute_api import DisputeApi
@@ -191,23 +192,51 @@ class AdminStatisticsView:
 
     def render(self):
         st.subheader("Hệ Thống Phân Tích Dữ Liệu Nền Tảng")
+        st.caption("Toàn bộ số liệu phân tích được tính toán và tổng hợp trực tiếp từ Backend Python (FastAPI / SQLAlchemy).")
 
-        with st.spinner("Đang tải dữ liệu phân tích..."):
-            bookings_raw: List[Dict[str, Any]] = []
-            payments_raw: List[Dict[str, Any]] = []
+        with st.spinner("Đang tải dữ liệu phân tích từ Backend..."):
             try:
+                # 1. Trạng thái các ca đặt lịch (tổng hợp trực tiếp từ backend)
+                status_summary = AdminApi.get_booking_status_summary()
+                status_rows = [
+                    {"status": k, "count": v.get("count", 0), "percentage": v.get("percentage", 0.0)}
+                    for k, v in status_summary.get("breakdown", {}).items()
+                ]
+                df_status = pd.DataFrame(status_rows)
+
+                # 2. Xu hướng ca tập & doanh thu theo tháng
+                monthly_trends = AdminApi.get_monthly_trends()
+                df_trends = pd.DataFrame(monthly_trends)
+
+                # 3. Top HLV dẫn đầu hệ thống
+                top_pts = AdminApi.get_top_pts(limit=10)
+                df_top_pts = pd.DataFrame(top_pts)
+                if not df_top_pts.empty and "full_name" in df_top_pts.columns:
+                    df_top_pts = df_top_pts.rename(columns={"full_name": "pt_name"})
+
+                # 4. Giờ tập phổ biến & Tỷ lệ hủy theo vai trò
+                popular_hours = AdminApi.get_popular_hours()
+                df_hourly = pd.DataFrame(popular_hours)
+                if not df_hourly.empty and "hour" in df_hourly.columns:
+                    df_hourly["hour_label"] = df_hourly["hour"].apply(lambda h: f"{int(h):02d}:00 - {int(h)+1:02d}:00")
+
+                cancellation_by_role = AdminApi.get_cancellation_by_role()
+                df_cancel = pd.DataFrame(cancellation_by_role)
+
+            except Exception as e:
+                st.warning(f"Không thể kết nối API thống kê tổng hợp ({str(e)}). Chuyển sang chế độ tải dữ liệu dự phòng.")
                 bookings_raw = AdminApi.get_bookings()
                 payments_raw = AdminApi.get_payments()
-            except Exception as e:
-                st.error(f"Không thể tải dữ liệu phân tích: {str(e)}")
-
-        # Xử lý dữ liệu bằng Pandas
-        df_bookings = prepare_bookings_df(bookings_raw)
-        df_payments = prepare_payments_df(payments_raw)
+                df_bookings = prepare_bookings_df(bookings_raw)
+                df_payments = prepare_payments_df(payments_raw)
+                df_status = get_booking_status_counts(df_bookings)
+                df_trends = get_monthly_trends(df_bookings, df_payments)
+                df_top_pts = get_top_pts(df_bookings, limit=10)
+                df_hourly = get_popular_training_hours(df_bookings)
+                df_cancel = get_cancellation_analysis(df_bookings)
 
         # 1. Biểu đồ 1: Phân bố trạng thái booking
         st.markdown("### 1. Trạng Thái Các Ca Đặt Lịch (Booking Status)")
-        df_status = get_booking_status_counts(df_bookings)
         fig_status = plot_booking_status(df_status)
         st.plotly_chart(fig_status, use_container_width=True)
 
@@ -215,7 +244,6 @@ class AdminStatisticsView:
 
         # 2. Biểu đồ 2: Doanh thu bán khóa và ca đặt lịch theo tháng
         st.markdown("### 2. Xu Hướng Ca Tập & Doanh Thu Bán Khóa Theo Tháng")
-        df_trends = get_monthly_trends(df_bookings, df_payments)
         fig_trends = plot_monthly_trends(df_trends)
         st.plotly_chart(fig_trends, use_container_width=True)
 
@@ -223,7 +251,6 @@ class AdminStatisticsView:
 
         # 3. Biểu đồ 3: Top Huấn luyện viên
         st.markdown("### 3. Top Huấn Luyện Viên Dẫn Đầu Hệ Thống")
-        df_top_pts = get_top_pts(df_bookings, limit=10)
         fig_pts = plot_top_pts(df_top_pts)
         st.plotly_chart(fig_pts, use_container_width=True)
 
@@ -233,12 +260,10 @@ class AdminStatisticsView:
         st.markdown("### 4. Phân Tích Mở Rộng: Khung Giờ & Ca Tập Bị Hủy")
         col_c1, col_c2 = st.columns(2)
         with col_c1:
-            df_hourly = get_popular_training_hours(df_bookings)
             fig_hourly = plot_popular_hours(df_hourly)
             st.plotly_chart(fig_hourly, use_container_width=True)
 
         with col_c2:
-            df_cancel = get_cancellation_analysis(df_bookings)
             fig_cancel = plot_cancellation_reasons(df_cancel)
             st.plotly_chart(fig_cancel, use_container_width=True)
 

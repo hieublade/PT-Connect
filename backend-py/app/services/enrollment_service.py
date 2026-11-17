@@ -1,5 +1,6 @@
 import logging
 from datetime import timedelta
+from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
@@ -19,8 +20,10 @@ from app.repositories.enrollment_repo import EnrollmentRepository
 from app.repositories.payment_repo import PaymentRepository
 from app.repositories.pt_profile_repo import PTProfileRepository
 from app.repositories.user_repo import UserRepository
+from app.repositories.wallet_repo import WalletRepository
 from app.schemas.requests.enrollment import PurchaseCourseRequest
 from app.schemas.responses.enrollment import EnrollmentResponse
+from app.schemas.responses.enrollment import PurchaseEligibilityResponse
 from app.services.wallet_service import WalletService
 
 logger = logging.getLogger(__name__)
@@ -34,6 +37,7 @@ class EnrollmentService:
         self.user_repo = UserRepository(db)
         self.pt_profile_repo = PTProfileRepository(db)
         self.payment_repo = PaymentRepository(db)
+        self.wallet_repo = WalletRepository(db)
         self.wallet_service = WalletService(db)
 
     def purchase_course(self, student_email: str, request: PurchaseCourseRequest) -> EnrollmentResponse:
@@ -61,6 +65,18 @@ class EnrollmentService:
             raise BadRequestException(
                 f"Bạn đang có một hợp đồng cho khóa học này còn hiệu lực (còn {rem}/{tot} buổi chưa hoàn thành). "
                 "Vui lòng hoàn thành toàn bộ buổi tập trước khi đăng ký tiếp!"
+            )
+
+        # Check wallet balance >= course price (business rule enforced at backend)
+        wallet = self.wallet_repo.get_by_user_id(student.id)
+        if not wallet:
+            raise BadRequestException("Học viên chưa có ví điện tử, không thể thanh toán khóa học")
+
+        if wallet.balance < course.base_price:
+            shortage = course.base_price - wallet.balance
+            raise BadRequestException(
+                f"Số dư ví ({wallet.balance:,.0f} đ) không đủ để thanh toán khóa học "
+                f"({course.base_price:,.0f} đ). Bạn cần nạp thêm ít nhất {shortage:,.0f} đ."
             )
 
         if not request.training_location or not request.training_location.strip():
@@ -102,6 +118,65 @@ class EnrollmentService:
             logger.warning("Không thể sinh file PDF hợp đồng: %s", e)
 
         return EnrollmentResponse.from_entity(saved)
+
+    def get_purchase_eligibility(self, student_email: str, course_id: int) -> PurchaseEligibilityResponse:
+        """
+        Kiểm tra xem học viên có đủ điều kiện mua khóa học hay không.
+        Trả về đầy đủ thông tin để frontend hiển thị UX (badge đủ/thiếu tiền, lý do).
+        Không gây side-effect, chỉ đọc dữ liệu.
+        """
+        student = self.user_repo.get_by_email(student_email)
+        if not student:
+            raise ResourceNotFoundException(f"Không tìm thấy học viên với email: {student_email}")
+
+        course = self.course_repo.get_by_id(course_id)
+        if not course:
+            raise ResourceNotFoundException(f"Không tìm thấy khóa học với ID: {course_id}")
+
+        wallet = self.wallet_repo.get_by_user_id(student.id)
+        wallet_balance = wallet.balance if wallet else Decimal("0.00")
+        course_price = course.base_price
+
+        # Kiểm tra enrollment ACTIVE còn buổi trùng khóa học
+        active_enrollments = self.enrollment_repo.find_active_by_student_and_course(student.id, course.id)
+        if active_enrollments:
+            active_enr = active_enrollments[0]
+            rem = active_enr.remaining_sessions
+            tot = active_enr.total_sessions
+            shortage = max(Decimal("0.00"), course_price - wallet_balance)
+            return PurchaseEligibilityResponse(
+                can_purchase=False,
+                reason=(
+                    f"Bạn đang có hợp đồng cho khóa học này còn hiệu lực "
+                    f"(còn {rem}/{tot} buổi chưa hoàn thành). "
+                    "Vui lòng hoàn thành toàn bộ buổi tập trước khi đăng ký tiếp."
+                ),
+                wallet_balance=wallet_balance,
+                course_price=course_price,
+                shortage=shortage,
+            )
+
+        # Kiểm tra số dư ví
+        if wallet_balance < course_price:
+            shortage = course_price - wallet_balance
+            return PurchaseEligibilityResponse(
+                can_purchase=False,
+                reason=(
+                    f"Số dư ví ({wallet_balance:,.0f} đ) không đủ để thanh toán "
+                    f"({course_price:,.0f} đ). Cần nạp thêm ít nhất {shortage:,.0f} đ."
+                ),
+                wallet_balance=wallet_balance,
+                course_price=course_price,
+                shortage=shortage,
+            )
+
+        return PurchaseEligibilityResponse(
+            can_purchase=True,
+            reason=None,
+            wallet_balance=wallet_balance,
+            course_price=course_price,
+            shortage=Decimal("0.00"),
+        )
 
     def get_my_enrollments(self, student_email: str) -> list[EnrollmentResponse]:
         student = self.user_repo.get_by_email(student_email)

@@ -87,3 +87,37 @@ class AdminApi:
             "note": note or "Rút tiền doanh thu hệ thống"
         }
         return api_client.post("/api/v1/admin/wallet/withdraw", json=payload)
+
+    # -------------------------------------------------------------------------
+    # Analytics endpoints (tổng hợp sẵn ở backend, không cần Pandas ở frontend)
+    # -------------------------------------------------------------------------
+
+    @staticmethod
+    def get_booking_status_summary() -> Dict[str, Any]:
+        """Lấy tổng hợp số lượng booking theo từng trạng thái từ backend."""
+        res = api_client.get("/api/v1/admin/analytics/booking-status")
+        return res if isinstance(res, dict) else {}
+
+    @staticmethod
+    def get_monthly_trends() -> List[Dict[str, Any]]:
+        """Lấy xu hướng doanh thu và số lượng booking theo tháng từ backend."""
+        res = api_client.get("/api/v1/admin/analytics/monthly-trends")
+        return res if isinstance(res, list) else []
+
+    @staticmethod
+    def get_top_pts(limit: int = 10) -> List[Dict[str, Any]]:
+        """Lấy top Huấn luyện viên theo số ca hoàn thành từ backend."""
+        res = api_client.get("/api/v1/admin/analytics/top-pts", params={"limit": limit})
+        return res if isinstance(res, list) else []
+
+    @staticmethod
+    def get_cancellation_by_role() -> List[Dict[str, Any]]:
+        """Lấy phân tích hủy lịch phân theo vai trò (STUDENT/PT/SYSTEM) từ backend."""
+        res = api_client.get("/api/v1/admin/analytics/cancellation-by-role")
+        return res if isinstance(res, list) else []
+
+    @staticmethod
+    def get_popular_hours() -> List[Dict[str, Any]]:
+        """Lấy phân tích khung giờ tập phổ biến trong ngày từ backend."""
+        res = api_client.get("/api/v1/admin/analytics/popular-hours")
+        return res if isinstance(res, list) else []

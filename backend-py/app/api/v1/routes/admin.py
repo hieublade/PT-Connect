@@ -323,3 +323,64 @@ def withdraw_admin_wallet(
         },
         message=f"Đã rút thành công {req.amount:,.0f} đ về tài khoản ngân hàng {req.bank_name} - {req.account_number}",
     )
+
+
+# ------------------------------------------------------------------ #
+#  Analytics aggregation endpoints                                    #
+# ------------------------------------------------------------------ #
+
+
+@router.get("/analytics/booking-status")
+def get_booking_status_summary(
+    db: Session = Depends(get_db),
+    _current_user: User = Depends(require_roles(Role.ADMIN)),
+):
+    """Thống kê số booking theo status (PENDING/CONFIRMED/COMPLETED/CANCELLED) kèm percentage."""
+    service = AdminStatisticsService(db)
+    data = service.get_booking_status_summary()
+    return ok_response(data=data, message="Lấy thống kê trạng thái đặt lịch thành công")
+
+
+@router.get("/analytics/monthly-trends")
+def get_monthly_revenue_trends(
+    db: Session = Depends(get_db),
+    _current_user: User = Depends(require_roles(Role.ADMIN)),
+):
+    """Doanh thu và số booking theo tháng (YYYY-MM)."""
+    service = AdminStatisticsService(db)
+    data = service.get_monthly_revenue_trends()
+    return ok_response(data=data, message="Lấy xu hướng doanh thu theo tháng thành công")
+
+
+@router.get("/analytics/top-pts")
+def get_top_pts_by_completion(
+    limit: int = Query(10, ge=1, le=50),
+    db: Session = Depends(get_db),
+    _current_user: User = Depends(require_roles(Role.ADMIN)),
+):
+    """Top PT theo số ca COMPLETED, kèm total_count và completion_rate."""
+    service = AdminStatisticsService(db)
+    data = service.get_top_pts_by_completion(limit=limit)
+    return ok_response(data=data, message="Lấy danh sách PT hàng đầu theo ca hoàn thành thành công")
+
+
+@router.get("/analytics/cancellation-by-role")
+def get_cancellation_by_role(
+    db: Session = Depends(get_db),
+    _current_user: User = Depends(require_roles(Role.ADMIN)),
+):
+    """Đếm hủy lịch theo vai trò người hủy (STUDENT/PT/SYSTEM/ADMIN)."""
+    service = AdminStatisticsService(db)
+    data = service.get_cancellation_by_role()
+    return ok_response(data=data, message="Lấy thống kê hủy lịch theo vai trò thành công")
+
+
+@router.get("/analytics/popular-hours")
+def get_popular_training_hours(
+    db: Session = Depends(get_db),
+    _current_user: User = Depends(require_roles(Role.ADMIN)),
+):
+    """Đếm booking theo giờ bắt đầu buổi tập (0–23)."""
+    service = AdminStatisticsService(db)
+    data = service.get_popular_training_hours()
+    return ok_response(data=data, message="Lấy thống kê giờ tập phổ biến thành công")

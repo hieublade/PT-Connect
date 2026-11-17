@@ -89,3 +89,8 @@ class StudentApi:
         res = api_client.get(f"/api/v1/enrollments/{enrollment_id}/workout-plans")
         return res if isinstance(res, list) else []
 
+    @staticmethod
+    def get_purchase_eligibility(course_id: int) -> Dict[str, Any]:
+        """Kiểm tra điều kiện mua khóa học (số dư ví, trùng enrollment) qua backend."""
+        return api_client.get("/api/v1/enrollments/purchase-eligibility", params={"courseId": course_id})
+

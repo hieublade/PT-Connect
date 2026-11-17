@@ -1,6 +1,30 @@
+from decimal import Decimal
+
 from app.models.enrollment import Enrollment
 from app.models.enums import EnrollmentStatus
 from app.schemas.base import CamelModel, LocalDate, LocalDateTime, Money
+
+
+class PurchaseEligibilityResponse(CamelModel):
+    """
+    Kết quả kiểm tra điều kiện mua khóa học.
+    Frontend dùng để hiển thị badge đủ/thiếu tiền mà không cần tự tính toán.
+    """
+
+    can_purchase: bool
+    """True nếu học viên đủ điều kiện mua, False nếu không đủ."""
+
+    reason: str | None = None
+    """Lý do không thể mua (None nếu can_purchase=True)."""
+
+    wallet_balance: Decimal
+    """Số dư ví hiện tại của học viên (VNĐ)."""
+
+    course_price: Decimal
+    """Giá gốc của khóa học (VNĐ)."""
+
+    shortage: Decimal
+    """Số tiền còn thiếu = max(0, coursePrice - walletBalance). 0 nếu đủ tiền."""
 
 
 class EnrollmentResponse(CamelModel):

@@ -1,5 +1,8 @@
 """Xử lý và thống kê dữ liệu bằng Pandas cho PT Connect (Milestone 8)."""
 
+# NOTE: Các hàm này được giữ lại để tương thích với data từ backend.
+# Backend đã có các endpoint analytics tổng hợp tại /api/v1/admin/analytics/*
+
 from typing import Any, Dict, List
 import pandas as pd
 

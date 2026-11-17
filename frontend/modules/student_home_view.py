@@ -80,34 +80,34 @@ class ConfirmPurchaseCourseView:
     @staticmethod
     def render(course: Dict[str, Any], pt_profile: Dict[str, Any], wallet_balance: float, my_enrollments: List[Dict[str, Any]]):
         c_id = course.get("id")
-        c_sessions = course.get("totalSessions", 0)
         c_price = course.get("basePrice", 0)
 
         with st.expander("Mua Gói Tập Này", expanded=False):
-            existing_active_enroll = next(
-                (e for e in my_enrollments if e.get("courseId") == c_id and e.get("status") == "ACTIVE" and e.get("remainingSessions", 0) > 0),
-                None
-            )
+            # Gọi backend để kiểm tra điều kiện mua (số dư, trùng enrollment)
+            # Backend xử lý toàn bộ business logic, frontend chỉ hiển thị kết quả
+            eligibility: Dict[str, Any] = {}
+            try:
+                eligibility = StudentApi.get_purchase_eligibility(c_id)
+            except ApiException as e:
+                st.error(f"Không thể kiểm tra điều kiện mua [{e.status_code}]: {e.message}")
+                return
+            except Exception as ex:
+                st.error(f"Lỗi hệ thống khi kiểm tra điều kiện mua: {str(ex)}")
+                return
 
-            if existing_active_enroll:
-                rem_s = existing_active_enroll.get("remainingSessions", 0)
-                tot_s = existing_active_enroll.get("totalSessions", c_sessions)
-                st.warning(
-                    f"**Bạn đang theo học khóa này:** Hợp đồng hiện tại còn **{rem_s}/{tot_s} buổi** chưa hoàn thành. "
-                    f"Theo quy định, bạn chỉ có thể đăng ký tiếp khóa học này sau khi đã tập xong toàn bộ {tot_s}/{tot_s} buổi."
-                )
-                st.button("Đang Theo Học (Không Thể Mua Trùng)", key=f"btn_confirm_buy_{c_id}", disabled=True)
+            can_purchase: bool = eligibility.get("canPurchase", False)
+            reason: str = eligibility.get("reason", "")
+            shortage: float = float(eligibility.get("shortage", 0) or 0)
+            balance_from_backend: float = float(eligibility.get("walletBalance", wallet_balance) or wallet_balance)
+
+            st.markdown(f"**Học phí thanh toán:** `{format_currency_vnd(c_price)}`")
+            st.markdown(f"**Số dư ví hiện tại:** `{format_currency_vnd(balance_from_backend)}`")
+
+            if not can_purchase:
+                st.error(reason if reason else "Bạn không đủ điều kiện mua khóa học này.")
+                st.button("Không Thể Mua", key=f"btn_confirm_buy_{c_id}", disabled=True)
             else:
-                st.markdown(f"**Học phí thanh toán:** `{format_currency_vnd(c_price)}`")
-                st.markdown(f"**Số dư ví hiện tại:** `{format_currency_vnd(wallet_balance)}`")
-
-                has_enough_money = (float(wallet_balance) >= float(c_price))
-
-                if not has_enough_money:
-                    shortage = float(c_price) - float(wallet_balance)
-                    st.error(f"Số dư ví không đủ! Cần thêm `{format_currency_vnd(shortage)}`. Vui lòng chuyển sang tab Ví Tiền để nạp thêm.")
-                else:
-                    st.success("Bạn đủ số dư ví để thanh toán gói tập này.")
+                st.success(f"Bạn đủ điều kiện thanh toán gói tập này. Số dư ví: `{format_currency_vnd(balance_from_backend)}`")
 
                 loc_suggestions = [loc.strip() for loc in pt_profile.get("availableLocations", "").split(";") if loc.strip()]
                 loc_options = loc_suggestions + ["Địa điểm khác (tự nhập)"]
@@ -127,7 +127,7 @@ class ConfirmPurchaseCourseView:
                 else:
                     training_location = chosen_loc_type
 
-                if st.button("Xác Nhận Thanh Toán & Ký Hợp Đồng", key=f"btn_confirm_buy_{c_id}", type="primary", disabled=not has_enough_money):
+                if st.button("Xác Nhận Thanh Toán & Ký Hợp Đồng", key=f"btn_confirm_buy_{c_id}", type="primary"):
                     if not training_location or not training_location.strip():
                         st.error("Vui lòng chọn hoặc nhập địa điểm tập luyện cố định.")
                     else:

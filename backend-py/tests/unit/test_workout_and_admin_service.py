@@ -127,3 +127,26 @@ def test_workout_plan_and_admin_statistics(db_session):
     payments_page = admin_stats_service.get_payment_analytics_page(page=0, size=10)
     assert payments_page.total_elements >= 1
     assert payments_page.number == 0
+
+    # 10. Purchase Eligibility (Business logic pushed from frontend to backend)
+    eligibility = enrollment_service.get_purchase_eligibility("student_plan@example.com", course.id)
+    # Already enrolled and remaining_sessions > 0
+    assert eligibility.can_purchase is False
+    assert "còn hiệu lực" in eligibility.reason
+
+    # 11. Admin Aggregation Analytics (Python SQLAlchemy - No Pandas)
+    status_summary = admin_stats_service.get_booking_status_summary()
+    assert "total" in status_summary
+    assert "breakdown" in status_summary
+
+    monthly_trends = admin_stats_service.get_monthly_revenue_trends()
+    assert isinstance(monthly_trends, list)
+
+    top_pts = admin_stats_service.get_top_pts_by_completion(limit=5)
+    assert isinstance(top_pts, list)
+
+    cancellation_roles = admin_stats_service.get_cancellation_by_role()
+    assert isinstance(cancellation_roles, list)
+
+    popular_hours = admin_stats_service.get_popular_training_hours()
+    assert len(popular_hours) == 24
