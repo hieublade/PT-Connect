@@ -21,6 +21,7 @@ from analytics.charts import (
     plot_cancellation_reasons,
     plot_popular_hours,
 )
+from components.policy_view import render_policy_tab
 
 
 # =============================================================================
@@ -690,12 +691,13 @@ class AdminDashboardView:
             open_disputes_count = 0
 
         # Các phân hệ chức năng Admin
-        tab_pending, tab_users, tab_disputes, tab_analytics, tab_wallet = st.tabs([
+        tab_pending, tab_users, tab_disputes, tab_analytics, tab_wallet, tab_policy = st.tabs([
             f"Phê Duyệt ({len(self.pending_pts)})",
             "Quản Lý Người Dùng",
             f"Giải Quyết Tranh Chấp ({open_disputes_count})",
             "Thống Kê",
-            "Ví Doanh Thu Sàn"
+            "Ví Doanh Thu Sàn",
+            "Chính Sách"
         ])
 
         with tab_pending:
@@ -712,4 +714,7 @@ class AdminDashboardView:
 
         with tab_wallet:
             self.wallet_mgmt_view.render()
+
+        with tab_policy:
+            render_policy_tab()
 

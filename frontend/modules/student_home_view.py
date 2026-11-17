@@ -9,6 +9,7 @@ from api.client import ApiException
 from components.pt_card import render_pt_card, format_currency_vnd
 from components.booking_table import render_booking_table, format_booking_datetime
 from components.avatar_uploader import render_avatar_management, normalize_avatar_url
+from components.policy_view import render_policy_tab
 
 
 # =============================================================================
@@ -1218,7 +1219,8 @@ class StudentHomeView:
             f"Khóa Của Tôi ({len(self.my_enrollments)})",
             "Giải Quyết Tranh Chấp",
             "Ví Tiền",
-            "Hồ Sơ"
+            "Hồ Sơ",
+            "Chính Sách"
         ]
 
         if "switch_to_tab" in st.session_state:
@@ -1229,7 +1231,7 @@ class StudentHomeView:
         if "student_home_tabs" not in st.session_state or st.session_state["student_home_tabs"] not in tab_titles:
             st.session_state["student_home_tabs"] = tab_titles[0]
 
-        tab_explore, tab_detail, tab_booking, tab_my_schedule, tab_courses, tab_dispute, tab_wallet, tab_profile = st.tabs(
+        tab_explore, tab_detail, tab_booking, tab_my_schedule, tab_courses, tab_dispute, tab_wallet, tab_profile, tab_policy = st.tabs(
             tab_titles,
             key="student_home_tabs",
             on_change="rerun"
@@ -1258,4 +1260,7 @@ class StudentHomeView:
 
         with tab_profile:
             self.profile_view.render()
+
+        with tab_policy:
+            render_policy_tab()
 

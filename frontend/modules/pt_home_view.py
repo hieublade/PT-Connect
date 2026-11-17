@@ -10,6 +10,7 @@ from components.slot_card import render_slot_card
 from components.booking_table import render_booking_table, format_booking_datetime
 from api.dispute_api import DisputeApi
 from components.avatar_uploader import render_avatar_management, normalize_avatar_url
+from components.policy_view import render_policy_tab
 
 
 # =============================================================================
@@ -884,7 +885,7 @@ class PTHomeView:
             st.success("Hồ sơ của bạn đã được xác minh thành công (`VERIFIED`). Sẵn sàng nhận học viên!")
 
         # Phân chia các Tab chức năng
-        tab_overview, tab_bookings, tab_slots, tab_courses, tab_workout_plans, tab_disputes, tab_wallet, tab_profile = st.tabs([
+        tab_overview, tab_bookings, tab_slots, tab_courses, tab_workout_plans, tab_disputes, tab_wallet, tab_profile, tab_policy = st.tabs([
             "Tổng Quan",
             "Duyệt lịch",
             "Khung Giờ",
@@ -892,7 +893,8 @@ class PTHomeView:
             "Giáo Án",
             "Giải Quyết Tranh Chấp",
             "Ví Tiền",
-            "Hồ Sơ"
+            "Hồ Sơ",
+            "Chính Sách"
         ])
 
         with tab_overview:
@@ -918,6 +920,9 @@ class PTHomeView:
 
         with tab_profile:
             self.profile_view.render()
+
+        with tab_policy:
+            render_policy_tab()
 
     def render_dispute_tab(self):
         st.subheader("Giải Quyết Tranh Chấp & Khiếu Nại")

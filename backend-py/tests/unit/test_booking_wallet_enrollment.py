@@ -2,6 +2,7 @@ from datetime import timedelta
 from decimal import Decimal
 
 from app.models.enums import AttendanceStatus, BookingStatus, BookingType, Role
+from app.repositories.pt_profile_repo import PTProfileRepository
 from app.schemas.requests.attendance import StudentCheckInRequest
 from app.schemas.requests.auth import RegisterRequest
 from app.schemas.requests.booking import CreateBookingRequest
@@ -158,3 +159,9 @@ def test_wallet_enrollment_booking_attendance_review_flow(db_session):
     )
     assert review.id is not None
     assert review.rating == 5
+
+    # 12. Verify PT rating and total reviews are updated directly by Python
+    pt_repo = PTProfileRepository(db_session)
+    pt_prof = pt_repo.get_by_id(pt_profile_id)
+    assert pt_prof.total_reviews == 1
+    assert pt_prof.average_rating == Decimal("5.00")
