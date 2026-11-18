@@ -112,7 +112,7 @@ export const UserProfileCard: React.FC<UserProfileCardProps> = ({ user, onUserUp
       const updatedUser = (await api.put('/users/profile', {
         fullName: fullName.trim(),
         phone: phone.trim(),
-        avatarUrl: avatarUrl.trim() || undefined,
+        avatarUrl: avatarUrl.trim().startsWith('blob:') ? undefined : (avatarUrl.trim() || undefined),
       })) as unknown as User;
 
       // Đồng bộ state và bộ nhớ lưu trữ

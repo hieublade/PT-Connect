@@ -9,6 +9,7 @@ import { SlotCard } from '../components/SlotCard';
 import { BookingTable } from '../components/BookingTable';
 import { AvatarUploader } from '../components/AvatarUploader';
 import { UserProfileCard } from '../components/UserProfileCard';
+import { PolicyModal } from '../components/PolicyModal';
 import {
   CheckCircle,
   AlertCircle,
@@ -65,6 +66,7 @@ const TIME_OPTIONS = [
 
 export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated }) => {
   const [activeTab, setActiveTab] = useState<number>(0);
+  const [showPolicyModal, setShowPolicyModal] = useState<boolean>(false);
 
   // Giao diện Sáng / Tối (Theme Mode)
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -900,6 +902,20 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
                 {(wallet?.balance || 0).toLocaleString('vi-VN')} ₫
               </span>
             </div>
+
+            {/* Policy & Rules Button */}
+            <button
+              onClick={() => setShowPolicyModal(true)}
+              className={`px-3 py-1.5 rounded-xl border flex items-center gap-1.5 text-xs font-bold transition-all cursor-pointer shadow-xs ${
+                isDark
+                  ? 'bg-slate-900/90 border-slate-700 text-rose-300 hover:bg-slate-800 hover:text-rose-200'
+                  : 'bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100 hover:text-rose-800'
+              }`}
+              title="Xem Quy tắc & Điều khoản hoạt động"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-rose-500" />
+              <span className="hidden sm:inline">Quy Tắc & Điều Khoản</span>
+            </button>
 
             {/* Nút chuyển đổi giao diện Sáng / Tối (Dark / Light Theme Toggle) */}
             <button
@@ -3620,6 +3636,14 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
           <span>{toastMsg}</span>
         </div>
       )}
+
+      {/* Modal Quy Tắc & Điều Khoản Hoạt Động */}
+      <PolicyModal
+        isOpen={showPolicyModal}
+        onClose={() => setShowPolicyModal(false)}
+        defaultRole="PT"
+        isDark={isDark}
+      />
     </div>
   );
 };

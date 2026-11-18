@@ -11,6 +11,7 @@ import { SlotCard } from '../components/SlotCard';
 import { BookingTable } from '../components/BookingTable';
 import { AvatarUploader } from '../components/AvatarUploader';
 import { UserProfileCard } from '../components/UserProfileCard';
+import { PolicyModal } from '../components/PolicyModal';
 import {
   Search,
   Compass,
@@ -107,6 +108,7 @@ export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout, onUser
   const [wallet, setWallet] = useState<Wallet | null>(null);
 
   const [searchName, setSearchName] = useState<string>('');
+  const [showPolicyModal, setShowPolicyModal] = useState<boolean>(false);
   
   // Multi-method Filtering & Sorting States
   const [filterKeyword, setFilterKeyword] = useState<string>('');
@@ -947,6 +949,20 @@ export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout, onUser
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Policy & Rules Button */}
+            <button
+              onClick={() => setShowPolicyModal(true)}
+              className={`px-3 py-1.5 rounded-xl border flex items-center gap-1.5 text-xs font-bold transition-all cursor-pointer shadow-xs ${
+                isDark
+                  ? 'bg-slate-900/90 border-slate-700 text-rose-300 hover:bg-slate-800 hover:text-rose-200'
+                  : 'bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100 hover:text-rose-800'
+              }`}
+              title="Xem Quy tắc & Điều khoản hoạt động"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-rose-500" />
+              <span className="hidden sm:inline">Quy Tắc & Điều Khoản</span>
+            </button>
+
             {/* Theme Toggle Button */}
             <button
               onClick={toggleTheme}
@@ -3524,6 +3540,14 @@ export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout, onUser
           </div>
         </div>
       )}
+
+      {/* Modal Quy Tắc & Điều Khoản Hoạt Động */}
+      <PolicyModal
+        isOpen={showPolicyModal}
+        onClose={() => setShowPolicyModal(false)}
+        defaultRole="STUDENT"
+        isDark={isDark}
+      />
     </div>
   );
 };

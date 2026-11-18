@@ -1,8 +1,9 @@
 import api from '../lib/axios';
 import React, { useState } from 'react';
 import { Booking } from '../types/api';
-import { CheckCircle, XCircle, Key, Calendar, Filter, AlertTriangle, X, ShieldAlert, Send, Upload, CheckCircle2 } from 'lucide-react';
+import { CheckCircle, XCircle, Key, Calendar, Filter, AlertTriangle, X, ShieldAlert, Send, Upload, CheckCircle2, BookOpen } from 'lucide-react';
 import { compressImageToDataUrl, MultiImageUploader, SelectedEvidenceFile, uploadMultipleEvidenceFiles } from '../lib/evidence';
+import { PolicyModal } from './PolicyModal';
 
 interface BookingTableProps {
   bookings: Booking[];
@@ -35,6 +36,7 @@ export const BookingTable: React.FC<BookingTableProps> = ({
   const [cancelReason, setCancelReason] = useState<string>('Trùng lịch bận đột xuất');
   const [cancelPreview, setCancelPreview] = useState<any | null>(null);
   const [cancelPreviewLoading, setCancelPreviewLoading] = useState<boolean>(false);
+  const [showPolicyModal, setShowPolicyModal] = useState<boolean>(false);
 
   // Dispute / Khiếu nại Modal State
   const [disputeModalBooking, setDisputeModalBooking] = useState<Booking | null>(null);
@@ -206,8 +208,19 @@ export const BookingTable: React.FC<BookingTableProps> = ({
             <option value="CANCELLED">Đã hủy (CANCELLED)</option>
           </select>
         </div>
-        <div className="text-xs text-slate-500">
-          Hiển thị <b>{filteredBookings.length}</b> ca tập
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setShowPolicyModal(true)}
+            className="text-xs text-rose-600 hover:text-rose-700 dark:text-rose-400 font-bold inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 transition cursor-pointer"
+            title="Xem quy định hủy lịch & chế tài xử phạt"
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>Quy định hủy lịch & chế tài</span>
+          </button>
+          <div className="text-xs text-slate-500">
+            Hiển thị <b>{filteredBookings.length}</b> ca tập
+          </div>
         </div>
       </div>
 
@@ -613,6 +626,18 @@ export const BookingTable: React.FC<BookingTableProps> = ({
                       : "• Ca tập đã được PT duyệt nếu hủy sẽ áp dụng đền bù cho Huấn luyện viên."}
                   </p>
                 )}
+
+                <div className="pt-1 flex items-center justify-between border-t border-amber-200/60 mt-1">
+                  <span className="text-[10px] text-amber-700">Mốc kiểm soát: &ge; 24h vs &lt; 24h</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowPolicyModal(true)}
+                    className="text-[11px] font-bold text-rose-600 hover:text-rose-700 underline inline-flex items-center gap-1 cursor-pointer"
+                  >
+                    <BookOpen className="w-3 h-3" />
+                    Xem chi tiết toàn bộ bảng quy tắc & chính sách
+                  </button>
+                </div>
               </div>
             )}
 
@@ -670,6 +695,13 @@ export const BookingTable: React.FC<BookingTableProps> = ({
           </div>
         </div>
       )}
+
+      {/* Modal Bảng Quy Tắc & Chính Sách */}
+      <PolicyModal
+        isOpen={showPolicyModal}
+        onClose={() => setShowPolicyModal(false)}
+        defaultRole={isPtView ? 'PT' : 'STUDENT'}
+      />
     </div>
   );
 };

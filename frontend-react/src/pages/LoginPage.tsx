@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import api from '../lib/axios';
 import { User } from '../types/api';
-import { Dumbbell, ShieldCheck, UserCheck, AlertCircle, Lock } from 'lucide-react';
+import { Dumbbell, ShieldCheck, UserCheck, AlertCircle, Lock, BookOpen } from 'lucide-react';
+import { PolicyModal } from '../components/PolicyModal';
 
 interface LoginPageProps {
   onLoginSuccess: (user: User, token: string) => void;
@@ -9,6 +10,7 @@ interface LoginPageProps {
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const [activeTab, setActiveTab] = useState<'LOGIN' | 'REGISTER'>('LOGIN');
+  const [showPolicyModal, setShowPolicyModal] = useState(false);
 
   // Login form
   const [email, setEmail] = useState('');
@@ -413,8 +415,27 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               </div>
             </form>
           )}
+
+          {/* Footer Policy Link */}
+          <div className="mt-5 pt-4 border-t border-slate-100 text-center">
+            <button
+              type="button"
+              onClick={() => setShowPolicyModal(true)}
+              className="text-xs text-slate-500 hover:text-rose-600 transition inline-flex items-center gap-1.5 cursor-pointer underline font-medium"
+            >
+              <ShieldCheck className="w-4 h-4 text-rose-500" />
+              <span>Xem Quy Chuẩn Hoạt Động & Quy Tắc Hủy Lịch Sát Giờ</span>
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Policy Modal */}
+      <PolicyModal
+        isOpen={showPolicyModal}
+        onClose={() => setShowPolicyModal(false)}
+        defaultRole="ALL"
+      />
     </div>
   );
 };

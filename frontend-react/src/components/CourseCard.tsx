@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Course } from '../types/api';
-import { Calendar, Clock, DollarSign } from 'lucide-react';
+import { Calendar, Clock, DollarSign, Eye, Sparkles } from 'lucide-react';
+import { CoursePreviewModal } from './CoursePreviewModal';
 
 interface CourseCardProps {
   course: Course;
@@ -20,6 +21,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
   isPtView = false,
 }) => {
   const isActive = course.status === 'ACTIVE';
+  const [showPreviewModal, setShowPreviewModal] = useState<boolean>(false);
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm hover:shadow-md transition-all">
@@ -71,10 +73,19 @@ export const CourseCard: React.FC<CourseCardProps> = ({
       <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
         {isPtView ? (
           <>
+            <button
+              type="button"
+              onClick={() => setShowPreviewModal(true)}
+              className="px-3 py-1.5 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg text-xs font-semibold flex items-center gap-1 cursor-pointer transition"
+              title="Xem trước lộ trình & nội dung demo như học viên"
+            >
+              <Eye className="w-3.5 h-3.5 text-blue-500" />
+              <span>Xem Demo</span>
+            </button>
             {onEdit && (
               <button
                 onClick={() => onEdit(course)}
-                className="px-3 py-1.5 border border-slate-300 text-slate-700 hover:bg-slate-50 rounded-lg text-xs font-medium"
+                className="px-3 py-1.5 border border-slate-300 text-slate-700 hover:bg-slate-50 rounded-lg text-xs font-medium cursor-pointer"
               >
                 Chỉnh sửa
               </button>
@@ -82,7 +93,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
             {onToggleStatus && (
               <button
                 onClick={() => onToggleStatus(course)}
-                className={`px-3 py-1.5 border rounded-lg text-xs font-medium ${
+                className={`px-3 py-1.5 border rounded-lg text-xs font-medium cursor-pointer ${
                   isActive
                     ? 'border-amber-300 text-amber-700 hover:bg-amber-50'
                     : 'border-emerald-300 text-emerald-700 hover:bg-emerald-50'
@@ -94,21 +105,42 @@ export const CourseCard: React.FC<CourseCardProps> = ({
             {onDelete && (
               <button
                 onClick={() => onDelete(course)}
-                className="px-3 py-1.5 border border-red-300 text-red-600 hover:bg-red-50 rounded-lg text-xs font-medium"
+                className="px-3 py-1.5 border border-red-300 text-red-600 hover:bg-red-50 rounded-lg text-xs font-medium cursor-pointer"
               >
                 Xóa
               </button>
             )}
           </>
         ) : (
-          <button
-            onClick={() => onEnroll?.(course)}
-            className="w-full py-2 bg-[#FF4B4B] hover:bg-[#E03E3E] text-white text-sm font-semibold rounded-lg shadow-sm transition-all"
-          >
-            Đăng ký khóa học
-          </button>
+          <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setShowPreviewModal(true)}
+              className="w-full py-2.5 px-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs font-bold rounded-xl border border-slate-300 dark:border-slate-700 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs hover:border-slate-400"
+            >
+              <Eye className="w-3.5 h-3.5 text-blue-500" />
+              <span>Xem Lộ Trình & Demo</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onEnroll?.(course)}
+              className="w-full py-2.5 px-3 bg-[#FF4B4B] hover:bg-[#E03E3E] text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.98]"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-200" />
+              <span>Đăng ký khóa học</span>
+            </button>
+          </div>
         )}
       </div>
+
+      {/* Course Preview & Syllabus Demo Modal */}
+      <CoursePreviewModal
+        course={course}
+        isOpen={showPreviewModal}
+        onClose={() => setShowPreviewModal(false)}
+        onEnroll={onEnroll}
+        isPtView={isPtView}
+      />
     </div>
   );
 };

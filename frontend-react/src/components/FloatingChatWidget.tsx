@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import api from '../lib/axios';
 import { User, ChatMessage, ChatConversation } from '../types/api';
+import { getAvatarUrl, getInitialAvatar } from '../lib/avatar';
 
 interface FloatingChatWidgetProps {
   currentUser: User;
@@ -276,15 +277,19 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({ currentU
                   </button>
                   <div className="relative flex-shrink-0">
                     <img 
-                      src={selectedPartner.partnerAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${selectedPartner.partnerEmail}`} 
+                      src={getAvatarUrl(selectedPartner.partnerName, selectedPartner.partnerAvatar, selectedPartner.partnerRole)} 
                       alt="" 
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = getInitialAvatar(selectedPartner.partnerName, selectedPartner.partnerRole);
+                      }}
                       className="w-9 h-9 rounded-full object-cover border border-orange-500/50 bg-slate-800"
                     />
                     <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-slate-950" />
                   </div>
                   <div className="min-w-0">
                     <div className="text-sm font-bold text-white truncate flex items-center gap-1.5">
-                      <span>{selectedPartner.partnerName}</span>
+                      <span>{/^\d+$/.test(selectedPartner.partnerName.trim()) ? `${selectedPartner.partnerRole === 'PT' ? 'HLV #' : 'Học Viên #'}${selectedPartner.partnerName}` : selectedPartner.partnerName}</span>
                       <span className="text-[10px] px-1.5 py-0.2 bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded font-semibold">
                         {selectedPartner.partnerRole === 'PT' ? 'HLV' : 'Học Viên'}
                       </span>
@@ -387,18 +392,33 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({ currentU
                         >
                           <div className="relative flex-shrink-0">
                             <img 
-                              src={conv.partnerAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${conv.partnerEmail}`}
+                              src={getAvatarUrl(conv.partnerName, conv.partnerAvatar, conv.partnerRole)}
                               alt=""
-                              className="w-12 h-12 rounded-full object-cover border border-slate-200 group-hover:border-orange-400 transition-colors"
+                              onError={(e) => {
+                                e.currentTarget.onerror = null;
+                                e.currentTarget.src = getInitialAvatar(conv.partnerName, conv.partnerRole);
+                              }}
+                              className="w-12 h-12 rounded-full object-cover border border-slate-200 group-hover:border-orange-400 transition-colors bg-slate-100"
                             />
                             <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-white" />
                           </div>
 
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between mb-0.5">
-                              <h4 className="text-sm font-bold text-slate-800 truncate group-hover:text-orange-600 transition-colors">
-                                {conv.partnerName}
-                              </h4>
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <h4 className="text-sm font-bold text-slate-800 truncate group-hover:text-orange-600 transition-colors">
+                                  {/^\d+$/.test(conv.partnerName.trim()) 
+                                    ? `${conv.partnerRole === 'PT' ? 'HLV #' : 'Học Viên #'}${conv.partnerName}` 
+                                    : conv.partnerName}
+                                </h4>
+                                <span className={`text-[10px] px-1.5 py-0.2 rounded font-semibold shrink-0 ${
+                                  conv.partnerRole === 'PT'
+                                    ? 'bg-orange-100 text-orange-700 border border-orange-200'
+                                    : 'bg-blue-100 text-blue-700 border border-blue-200'
+                                }`}>
+                                  {conv.partnerRole === 'PT' ? 'HLV' : 'Học Viên'}
+                                </span>
+                              </div>
                               {conv.lastMessageTime && (
                                 <span className="text-[10px] text-slate-400 flex-shrink-0 ml-1">
                                   {formatMessageTime(conv.lastMessageTime)}
@@ -471,9 +491,13 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({ currentU
                             <div className="flex items-end gap-1.5 max-w-[82%]">
                               {!isMe && (
                                 <img 
-                                  src={msg.senderAvatar || selectedPartner.partnerAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${msg.senderName}`}
+                                  src={getAvatarUrl(msg.senderName, msg.senderAvatar || selectedPartner.partnerAvatar, selectedPartner.partnerRole)}
                                   alt=""
-                                  className="w-6 h-6 rounded-full object-cover mb-1 border border-slate-200 flex-shrink-0"
+                                  onError={(e) => {
+                                    e.currentTarget.onerror = null;
+                                    e.currentTarget.src = getInitialAvatar(msg.senderName || selectedPartner.partnerName, selectedPartner.partnerRole);
+                                  }}
+                                  className="w-6 h-6 rounded-full object-cover mb-1 border border-slate-200 flex-shrink-0 bg-slate-100"
                                 />
                               )}
                               <div
