@@ -76,7 +76,11 @@ public class UserServiceImpl implements IUserService {
         }
 
         if (request.getAvatarUrl() != null) {
-            user.setAvatarUrl(request.getAvatarUrl().trim().isEmpty() ? null : request.getAvatarUrl().trim());
+            String av = request.getAvatarUrl().trim();
+            // Tránh lưu blob URL (vốn chỉ tồn tại tạm thời trong bộ nhớ RAM trình duyệt của máy upload)
+            if (!av.startsWith("blob:")) {
+                user.setAvatarUrl(av.isEmpty() ? null : av);
+            }
         }
 
         User savedUser = userRepository.save(user);

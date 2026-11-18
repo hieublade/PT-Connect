@@ -61,15 +61,28 @@ public class PTProfile {
         this.availableLocations = locationsStr;
         if (this.locations == null) {
             this.locations = new ArrayList<>();
-        } else {
-            this.locations.clear();
         }
 
-        if (locationsStr != null && !locationsStr.isBlank()) {
-            Arrays.stream(locationsStr.split(";"))
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .forEach(this::addLocation);
+        List<String> targetNames = (locationsStr == null || locationsStr.isBlank())
+                ? List.of()
+                : Arrays.stream(locationsStr.split(";"))
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty())
+                        .distinct()
+                        .toList();
+
+        // 1. Loại bỏ những địa điểm không còn nằm trong danh sách mới
+        this.locations.removeIf(loc -> !targetNames.contains(loc.getLocationName()));
+
+        // 2. Thêm những địa điểm mới chưa tồn tại để tránh lỗi trùng khóa ngoại (Duplicate key uq_pt_location) trong Hibernate flush
+        List<String> existingNames = this.locations.stream()
+                .map(PTLocation::getLocationName)
+                .toList();
+
+        for (String name : targetNames) {
+            if (!existingNames.contains(name)) {
+                this.addLocation(name);
+            }
         }
     }
 

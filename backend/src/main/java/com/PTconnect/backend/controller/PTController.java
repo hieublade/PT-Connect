@@ -54,6 +54,15 @@ public class PTController {
         return ResponseEntity.ok(ApiResponse.success("Cập nhật hồ sơ Huấn luyện viên thành công", response));
     }
 
+    @PostMapping(value = "/profile/certificate/upload", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<PTProfileResponse>> uploadCertificate(
+            Authentication auth,
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        String email = SecurityUtils.getCurrentUserEmail(auth);
+        PTProfileResponse response = profileService.uploadCertificate(email, file);
+        return ResponseEntity.ok(ApiResponse.success("Tải tệp chứng chỉ lên thành công", response));
+    }
+
     // -------------------------------------------------------------
     // 2. PT Courses
     // -------------------------------------------------------------

@@ -14,6 +14,7 @@ import com.PTconnect.backend.entity.enums.Role;
 import com.PTconnect.backend.entity.enums.SlotStatus;
 import com.PTconnect.backend.entity.enums.UserStatus;
 import com.PTconnect.backend.entity.enums.VerificationStatus;
+import com.PTconnect.backend.exception.BadRequestException;
 import com.PTconnect.backend.exception.ResourceNotFoundException;
 import com.PTconnect.backend.exception.UnauthorizedException;
 import com.PTconnect.backend.repository.AvailabilitySlotRepository;
@@ -24,8 +25,14 @@ import com.PTconnect.backend.service.IPTProfileService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -174,12 +181,55 @@ public class PTProfileServiceImpl implements IPTProfileService {
             profile.setLocationPricingNote(request.getLocationPricingNote().trim());
         }
 
-        if (request.getCleanCertificateUrl() != null) {
+        if (request.getCertificateUrl() != null) {
+            String clean = request.getCleanCertificateUrl();
+            profile.setCertificateUrl(clean != null && !clean.isBlank() ? clean : null);
+        } else if (request.getCleanCertificateUrl() != null) {
             profile.setCertificateUrl(request.getCleanCertificateUrl());
         }
 
         PTProfile saved = ptProfileRepository.save(profile);
         return PTProfileResponse.fromEntity(saved);
+    }
+
+    @Override
+    @Transactional
+    public PTProfileResponse uploadCertificate(String userEmail, MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new BadRequestException("Tập tin chứng chỉ không được để trống!");
+        }
+
+        if (file.getSize() > 10 * 1024 * 1024) {
+            throw new BadRequestException("Dung lượng tập tin chứng chỉ không được vượt quá 10MB!");
+        }
+
+        PTProfile profile = getPTProfileEntity(userEmail);
+
+        try {
+            Path uploadDir = Paths.get("uploads", "certificates");
+            if (!Files.exists(uploadDir)) {
+                Files.createDirectories(uploadDir);
+            }
+
+            String originalFilename = file.getOriginalFilename();
+            String extension = ".jpg";
+            if (originalFilename != null && originalFilename.lastIndexOf('.') > 0) {
+                extension = originalFilename.substring(originalFilename.lastIndexOf('.')).toLowerCase();
+            }
+
+            String uniqueFilename = "cert_pt_" + profile.getId() + "_" + System.currentTimeMillis() + extension;
+            Path destinationPath = uploadDir.resolve(uniqueFilename);
+
+            Files.copy(file.getInputStream(), destinationPath, StandardCopyOption.REPLACE_EXISTING);
+
+            String relativeUrl = "/uploads/certificates/" + uniqueFilename;
+            profile.setCertificateUrl(relativeUrl);
+            PTProfile saved = ptProfileRepository.save(profile);
+
+            return PTProfileResponse.fromEntity(saved);
+        } catch (IOException e) {
+            throw new BadRequestException("Lỗi lưu trữ tập tin chứng chỉ: " + e.getMessage());
+        }
     }
 }
 

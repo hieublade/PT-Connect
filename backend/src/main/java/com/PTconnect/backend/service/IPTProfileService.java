@@ -25,5 +25,7 @@ public interface IPTProfileService {
 
     PTProfileResponse updateProfile(String userEmail, UpdatePTProfileRequest request);
 
+    PTProfileResponse uploadCertificate(String userEmail, org.springframework.web.multipart.MultipartFile file);
+
     PTProfile getPTProfileEntity(String userEmail);
 }

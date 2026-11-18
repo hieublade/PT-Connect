@@ -2,6 +2,12 @@
 > **Dự án:** Nền tảng kết nối Huấn luyện viên cá nhân (PT) và Học viên (PT-Connect)  
 > **Mục tiêu tài liệu:** Tổng hợp toàn diện, chi tiết 100% các quy tắc nghiệp vụ (Business Rules), quy chế sàn, điều kiện kiểm tra, công thức tính toán tài chính và luồng xử lý của hệ thống. Tài liệu được thiết kế thuần nghiệp vụ, không chứa mã code kỹ thuật.
 
+### 🧭 TÀI LIỆU NGHIỆP VỤ CHUYÊN SÂU THEO VAI TRÒ (ROLES)
+Hệ thống đã được phân tách thành 3 tài liệu nghiệp vụ chi tiết chuyên sâu cho từng chủ thể:
+1. 🏃 **[student.md](student.md)**: Chi tiết toàn bộ hành trình, quy trình nạp/rút ví, mua gói, ký hợp đồng điện tử PDF, đặt lịch, hủy lịch đối soát 24h, điểm danh OTP, đánh giá sao, theo dõi giáo án và khiếu nại của **Học viên**.
+2. 🏋️ **[pt.md](pt.md)**: Chi tiết quy trình thẩm định hồ sơ, quản lý khóa học/slot rảnh, duyệt ca, đối soát hủy ca, điểm danh OTP & báo vắng (No-Show), biên soạn giáo án, nhận 90% thù lao và phản biện trọng tài 48h của **Huấn luyện viên**.
+3. 🛡️ **[admin.md](admin.md)**: Chi tiết quy trình thẩm định cấp phép PT, quản lý người dùng, khóa tài khoản, 5 phán quyết trọng tài tự động, giám sát dòng tiền, trích thu 10% hoa hồng nền tảng và phân tích tỷ lệ hủy ca của **Quản trị viên**.
+
 ---
 
 ## MỤC LỤC TỔNG QUAN
@@ -305,7 +311,7 @@ Chính sách hủy lịch của PT-Connect được thiết kế chặt chẽ nh
 
 ## 8. NGHIỆP VỤ ĐIỂM DANH XÁC THỰC HAI CHIỀU QUA MÃ OTP & BÁO VẮNG
 
-Hệ thống loại bỏ hoàn toàn cơ chế điểm danh một chiều dễ gian lận (như PT tự bấm hoàn thành mà không dạy), thay bằng **Quy trình xác thực chéo hai phía thông qua mã OTP bảo mật tại phòng tập**.
+Hệ thống loại bỏ hoàn toàn cơ chế điểm danh một chiều dễ gian lận (như PT tự bấm hoàn thành mà không dạy), thay bằng **Quy trình xác thực chéo hai phía thông qua mã OTP bảo mật linh hoạt (tại phòng tập hoặc tự tập tại nhà qua Chatbox hệ thống)**. Quyền tạo mã OTP thuộc về Học viên, triệt tiêu hoàn toàn khả năng PT tự ý ăn chặn tiền buổi tập.
 
 ### 8.1. Điều kiện & Giới hạn thời gian mở điểm danh
 * Ca tập bắt buộc phải đang ở trạng thái đã được xác nhận (**`CONFIRMED`**).
@@ -315,17 +321,19 @@ Hệ thống loại bỏ hoàn toàn cơ chế điểm danh một chiều dễ g
 
 ### 8.2. Quy trình sinh & Xác thực mã OTP chéo
 1. **Bước 1: Mở phiên điểm danh & Sinh mã OTP ngẫu nhiên**:
-   * Một trong hai bên (thường là Học viên khi đã có mặt tại phòng tập) nhấn nút **"Mở điểm danh / Nhận mã OTP"**.
+   * Hệ thống trao độc quyền tạo mã OTP cho Học viên: Khi đến giờ tập, Học viên nhấn nút **"Mở điểm danh / Nhận mã OTP"**.
    * Hệ thống tự động sinh một mã OTP bí mật gồm **6 chữ số ngẫu nhiên** (ví dụ: `849201`), có thời hạn hiệu lực chính xác trong **30 phút**.
-   * Mã OTP hiển thị nổi bật trên màn hình của người mở điểm danh.
+   * Mã OTP hiển thị nổi bật trên màn hình của học viên.
 2. **Bước 2: Phân loại Đúng giờ hay Đến muộn**:
    * Nếu thời điểm mở điểm danh sau mốc bắt đầu ca tập quá 15 phút ($now > startTime + 15\text{ phút}$): Ghi nhận trạng thái điểm danh là **`LATE`** (Đến muộn).
    * Nếu thời điểm mở điểm danh đúng giờ ($now \le startTime + 15\text{ phút}$): Ghi nhận trạng thái điểm danh là **`PRESENT`** (Đúng giờ).
-3. **Bước 3: Nhập mã đối soát chéo**:
-   * Người mở điểm danh đọc hoặc cho đối tác (PT) xem mã số OTP.
+3. **Bước 3: Nhập mã đối soát chéo (Linh hoạt hình thức)**:
+   * **Nếu tập trực tiếp tại phòng gym hoặc tại nhà**: Học viên đọc hoặc cho PT xem mã OTP hiển thị trên màn hình.
+   * **Nếu tự tập tại nhà có PT kèm online/từ xa theo giáo án**: Sau khi hoàn thành bài tập đúng yêu cầu dưới sự đôn đốc của PT, học viên có thể gửi mã OTP cho PT qua **Chatbox 1-1 nội bộ của sàn**.
    * PT mở màn hình duyệt ca tập, nhấn nút **"Xác nhận OTP"**, nhập chuỗi 6 số và gửi lên hệ thống.
    * Nếu mã nhập sai hoặc đã quá 30 phút hiệu lực: Hệ thống lập tức từ chối và cảnh báo lỗi.
    * Nếu mã chính xác: Hệ thống đồng thời xác nhận cả hai phía: `studentConfirmed = true` và `ptConfirmed = true`, lưu vết thời gian xác nhận (`checkInTime = now`).
+   * **Giá trị chống gian lận**: Do PT không thể tự sinh mã OTP, nếu PT không thực hiện hướng dẫn ca tập, học viên giữ lại mã OTP thì PT tuyệt đối không thể lấy được thù lao buổi dạy.
 
 ### 8.3. Tự động Giải ngân & Hoàn tất Hợp đồng khi Hoàn thành ca
 Ngay khi mã OTP được xác thực thành công:
