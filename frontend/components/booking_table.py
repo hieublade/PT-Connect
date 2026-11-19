@@ -4,6 +4,7 @@ import streamlit as st
 from api.booking_api import BookingApi
 from api.dispute_api import DisputeApi
 from api.client import ApiException
+from components.media_helper import render_evidence_viewer
 
 
 def format_booking_datetime(dt_str: Optional[str]) -> str:
@@ -421,12 +422,12 @@ def render_booking_card(
                 )
 
                 if d_evidence:
-                    st.caption(f"Ảnh bằng chứng ban đầu: [Xem ảnh]({d_evidence})")
+                    render_evidence_viewer(d_evidence, caption="Ảnh bằng chứng ban đầu", width=380)
 
                 if d_counter_arg:
                     st.info(f"**Phản biện từ đối phương:** {d_counter_arg}")
                     if d_counter_ev:
-                        st.caption(f"Ảnh bằng chứng phản biện: [Xem ảnh]({d_counter_ev})")
+                        render_evidence_viewer(d_counter_ev, caption="Ảnh bằng chứng phản biện", width=380)
 
                 if d_notes:
                     st.success(f"**Kết luận & Lý do phán quyết từ Admin:** {d_notes}")

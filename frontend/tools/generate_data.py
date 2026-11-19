@@ -69,7 +69,7 @@ def main():
     print(f"Bắt đầu sinh dữ liệu mẫu toàn diện PT Connect (Seed: {SEED})...")
 
     password_plain = "Password123@"
-    password_hash = "$2b$10$97NHtEb/u6D3YO6v3GWpfuhQFZkJ.CsF1eCCorUvtDzBafzxRbx92"
+    password_hash = "$2b$10$/M8YC0N1J98TLXyEp2nElOlRYtF2vNuQK.J0cBFlU6syj7Wf1ROaK"
     print(f"Mật khẩu mặc định toàn hệ thống: '{password_plain}' -> BCrypt: {password_hash}")
 
     sql_lines = []

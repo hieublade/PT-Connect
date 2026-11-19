@@ -22,7 +22,10 @@ DELIMITER $$
 
 -- =====================================================================
 -- 1. NHÓM ĐÁNH GIÁ (REVIEWS)
--- Mục đích: Kiểm soát đánh giá hợp lệ (chỉ đánh giá ca COMPLETED) và tự động đồng bộ rating của PT.
+-- Mục đích: Kiểm soát đánh giá hợp lệ (chỉ đánh giá ca COMPLETED, không chuyển booking_id).
+-- Ghi chú chuẩn hóa BCNF: Các trigger AFTER INSERT/UPDATE/DELETE đồng bộ
+-- cột dẫn xuất average_rating và total_reviews đã được gỡ bỏ hoàn toàn.
+-- Điểm đánh giá trung bình và số lượng review được tính toán động qua Views và SELECT.
 -- =====================================================================
 
 CREATE TRIGGER `trg_reviews_before_insert`
@@ -48,54 +51,6 @@ BEGIN
   IF NEW.`booking_id` <> OLD.`booking_id` THEN
     SIGNAL SQLSTATE '45000'
       SET MESSAGE_TEXT = 'Không được chuyển đánh giá sang ca tập khác.';
-  END IF;
-END$$
-
-CREATE TRIGGER `trg_reviews_after_insert`
-AFTER INSERT ON `reviews`
-FOR EACH ROW
-BEGIN
-  DECLARE v_pt_id BIGINT;
-
-  SELECT s.`pt_id` INTO v_pt_id
-  FROM `bookings` b
-  JOIN `availability_slots` s ON b.`slot_id` = s.`id`
-  WHERE b.`id` = NEW.`booking_id`;
-
-  IF v_pt_id IS NOT NULL THEN
-    CALL `sp_recalc_pt_rating`(v_pt_id);
-  END IF;
-END$$
-
-CREATE TRIGGER `trg_reviews_after_update`
-AFTER UPDATE ON `reviews`
-FOR EACH ROW
-BEGIN
-  DECLARE v_pt_id BIGINT;
-
-  SELECT s.`pt_id` INTO v_pt_id
-  FROM `bookings` b
-  JOIN `availability_slots` s ON b.`slot_id` = s.`id`
-  WHERE b.`id` = NEW.`booking_id`;
-
-  IF v_pt_id IS NOT NULL THEN
-    CALL `sp_recalc_pt_rating`(v_pt_id);
-  END IF;
-END$$
-
-CREATE TRIGGER `trg_reviews_after_delete`
-AFTER DELETE ON `reviews`
-FOR EACH ROW
-BEGIN
-  DECLARE v_pt_id BIGINT;
-
-  SELECT s.`pt_id` INTO v_pt_id
-  FROM `bookings` b
-  JOIN `availability_slots` s ON b.`slot_id` = s.`id`
-  WHERE b.`id` = OLD.`booking_id`;
-
-  IF v_pt_id IS NOT NULL THEN
-    CALL `sp_recalc_pt_rating`(v_pt_id);
   END IF;
 END$$
 

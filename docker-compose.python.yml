@@ -55,7 +55,9 @@ services:
       retries: 10
       start_period: 10s
     volumes:
+      - ./backend-py/app:/app/app
       - ./backend-py/uploads:/app/uploads
+      - ./frontend/static/uploads:/app/static/uploads
     networks:
       - ptconnect-net
 
@@ -75,6 +77,7 @@ services:
       backend-py:
         condition: service_healthy
     volumes:
+      - ./frontend:/app
       - ./frontend/static:/app/static
     networks:
       - ptconnect-net

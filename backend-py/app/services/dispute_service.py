@@ -163,8 +163,6 @@ class DisputeService:
                         "Theo quy định, bạn chỉ được quyền gửi khiếu nại trong thời hạn tối đa 2 ngày (48 giờ) kể từ thời điểm kết thúc ca tập."
                     )
 
-        deadline = now_local() + timedelta(hours=48)
-
         dispute = BookingDispute(
             booking_id=booking_id,
             sender_id=user.id,
@@ -172,7 +170,6 @@ class DisputeService:
             reason=req.reason or req.statement or "",
             evidence_url=req.evidence_url,
             status=DisputeStatus.PENDING,
-            deadline_at=deadline,
             created_at=now_local(),
         )
         self.dispute_repo.create(dispute)
@@ -226,7 +223,6 @@ class DisputeService:
 
         dispute.status = DisputeStatus.EVIDENCE_REQUESTED
         dispute.admin_notes = req.admin_notes
-        dispute.deadline_at = now_local() + timedelta(hours=48)
 
         self.dispute_repo.update(dispute)
         self.db.commit()

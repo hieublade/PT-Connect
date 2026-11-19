@@ -16,6 +16,21 @@ class LoginView:
 
     def render(self):
         """Hiển thị giao diện Đăng nhập và Đăng ký tài khoản (Milestone 3)."""
+        # Ẩn hoàn toàn sidebar trên màn hình Đăng nhập / Đăng ký
+        st.markdown(
+            """
+            <style>
+            section[data-testid="stSidebar"] {
+                display: none !important;
+            }
+            .st-key-btn_floating_live_chat {
+                display: none !important;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+
         # Container trung tâm
         col_left, col_center, col_right = st.columns([1, 2, 1])
 

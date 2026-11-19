@@ -62,9 +62,8 @@ def test_booking_slot_belongs_to_enrollment_pt(seed_db):
 def test_cancellations_respect_chk_cancel_actor(seed_db):
     assert _count(
         seed_db,
-        "SELECT COUNT(*) FROM cancellations WHERE NOT ("
-        "(cancelled_by_role = 'SYSTEM' AND cancelled_by_id IS NULL) OR "
-        "(cancelled_by_role IN ('STUDENT', 'PT', 'ADMIN') AND cancelled_by_id IS NOT NULL))",
+        "SELECT COUNT(*) FROM cancellations WHERE cancelled_by_id IS NOT NULL "
+        "AND cancelled_by_id NOT IN (SELECT id FROM users)",
     ) == 0
 
 
@@ -74,12 +73,14 @@ def test_cancelled_by_is_the_real_actor(seed_db):
         seed_db,
         "SELECT COUNT(*) FROM cancellations c JOIN bookings b ON b.id = c.booking_id "
         "JOIN availability_slots s ON s.id = b.slot_id JOIN pt_profiles p ON p.id = s.pt_id "
-        "WHERE c.cancelled_by_role = 'PT' AND c.cancelled_by_id <> p.user_id",
+        "JOIN users u ON u.id = c.cancelled_by_id "
+        "WHERE u.role = 'PT' AND c.cancelled_by_id <> p.user_id",
     ) == 0
     assert _count(
         seed_db,
         "SELECT COUNT(*) FROM cancellations c JOIN bookings b ON b.id = c.booking_id "
-        "WHERE c.cancelled_by_role = 'STUDENT' AND c.cancelled_by_id <> b.student_id",
+        "JOIN users u ON u.id = c.cancelled_by_id "
+        "WHERE u.role = 'STUDENT' AND c.cancelled_by_id <> b.student_id",
     ) == 0
 
 

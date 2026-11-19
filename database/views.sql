@@ -49,14 +49,19 @@ SELECT
     u_pt.`full_name` AS `pt_name`,
     s.`start_time` AS `session_start_time`,
     c.`cancelled_at`,
-    c.`hours_before_session`,
-    c.`cancelled_by_role`,
+    ROUND(TIMESTAMPDIFF(MINUTE, c.`cancelled_at`, s.`start_time`) / 60.0, 2) AS `hours_before_session`,
+    CASE
+        WHEN c.`cancelled_by_id` IS NULL THEN 'SYSTEM'
+        WHEN c.`cancelled_by_id` = b.`student_id` THEN 'STUDENT'
+        WHEN c.`cancelled_by_id` = u_pt.`id` THEN 'PT'
+        ELSE COALESCE(u_actor.`role`, 'STUDENT')
+    END AS `cancelled_by_role`,
     c.`cancelled_by_id`,
-    u_actor.`full_name` AS `cancelled_by_name`,
-    c.`refund_amount`,
-    c.`compensation_amount`,
-    c.`penalty_amount`,
-    c.`penalty_shortfall`,
+    COALESCE(u_actor.`full_name`, 'Hệ thống tự động') AS `cancelled_by_name`,
+    COALESCE((SELECT amount FROM payments WHERE transaction_ref = CONCAT('CXL-', c.`booking_id`, '-REF') LIMIT 1), 0.00) AS `refund_amount`,
+    COALESCE((SELECT amount FROM payments WHERE transaction_ref = CONCAT('CXL-', c.`booking_id`, '-COMP') LIMIT 1), 0.00) AS `compensation_amount`,
+    COALESCE((SELECT amount FROM payments WHERE transaction_ref = CONCAT('CXL-', c.`booking_id`, '-PEN') LIMIT 1), 0.00) AS `penalty_amount`,
+    0.00 AS `penalty_shortfall`,
     c.`reason`,
     c.`status` AS `cancellation_status`
 FROM `cancellations` c
@@ -68,26 +73,55 @@ JOIN `users` u_pt ON p.`user_id` = u_pt.`id`
 LEFT JOIN `users` u_actor ON c.`cancelled_by_id` = u_actor.`id`;
 
 -- =====================================================================
--- 3. VIEW THỐNG KÊ ĐÁNH GIÁ CỦA PT (PT RATING STATISTICS)
--- Mục đích: Kiểm tra tính nhất quán giữa điểm rating lưu trong bảng pt_profiles với dữ liệu review thực tế.
+-- 3. VIEW THỐNG KÊ ĐÁNH GIÁ CỦA PT (PT RATING STATISTICS - BCNF)
+-- Mục đích: Tính toán động điểm rating và tổng số đánh giá của từng PT từ dữ liệu review thực tế.
 -- =====================================================================
 CREATE OR REPLACE VIEW `v_pt_rating_statistics` AS
 SELECT
     p.`id` AS `pt_profile_id`,
     p.`user_id`,
     u.`full_name` AS `pt_name`,
-    p.`average_rating` AS `stored_average_rating`,
-    p.`total_reviews` AS `stored_total_reviews`,
-    COUNT(r.`id`) AS `calculated_total_reviews`,
-    ROUND(COALESCE(AVG(r.`rating`), 0.00), 2) AS `calculated_average_rating`,
-    (p.`total_reviews` = COUNT(r.`id`)
-     AND p.`average_rating` = ROUND(COALESCE(AVG(r.`rating`), 0.00), 2)) AS `is_consistent`
+    COUNT(r.`id`) AS `total_reviews`,
+    ROUND(COALESCE(AVG(r.`rating`), 0.00), 2) AS `average_rating`
 FROM `pt_profiles` p
 JOIN `users` u ON p.`user_id` = u.`id`
 LEFT JOIN `availability_slots` s ON p.`id` = s.`pt_id`
 LEFT JOIN `bookings` b ON s.`id` = b.`slot_id`
 LEFT JOIN `reviews` r ON b.`id` = r.`booking_id`
-GROUP BY p.`id`, p.`user_id`, u.`full_name`, p.`average_rating`, p.`total_reviews`;
+GROUP BY p.`id`, p.`user_id`, u.`full_name`;
+
+-- =====================================================================
+-- 3b. VIEW HỒ SƠ PT TỔNG HỢP BCNF (PT PROFILES VIEW)
+-- Mục đích: Cung cấp đầy đủ thông tin hồ sơ PT cùng điểm đánh giá và tổng số đánh giá tính toán động.
+-- =====================================================================
+CREATE OR REPLACE VIEW `v_pt_profiles` AS
+SELECT
+    p.`id`,
+    p.`user_id`,
+    u.`full_name`,
+    u.`email`,
+    u.`phone`,
+    u.`avatar_url`,
+    p.`bio`,
+    p.`specialties`,
+    p.`experience_years`,
+    p.`location_pricing_note`,
+    p.`certificate_url`,
+    p.`demo_video_url`,
+    p.`verification_status`,
+    p.`created_at`,
+    p.`updated_at`,
+    COUNT(r.`id`) AS `total_reviews`,
+    ROUND(COALESCE(AVG(r.`rating`), 0.00), 2) AS `average_rating`
+FROM `pt_profiles` p
+JOIN `users` u ON p.`user_id` = u.`id`
+LEFT JOIN `availability_slots` s ON p.`id` = s.`pt_id`
+LEFT JOIN `bookings` b ON s.`id` = b.`slot_id`
+LEFT JOIN `reviews` r ON b.`id` = r.`booking_id`
+GROUP BY p.`id`, p.`user_id`, u.`full_name`, u.`email`, u.`phone`, u.`avatar_url`,
+         p.`bio`, p.`specialties`, p.`experience_years`, p.`location_pricing_note`,
+         p.`certificate_url`, p.`demo_video_url`, p.`verification_status`,
+         p.`created_at`, p.`updated_at`;
 
 -- =====================================================================
 -- 4. VIEW GÓI TẬP ĐANG HIỆU LỰC (STUDENT ACTIVE PACKAGES)
@@ -145,3 +179,28 @@ SELECT
 FROM `wallet_audit_logs` l
 JOIN `wallets` w ON l.`wallet_id` = w.`id`
 JOIN `users` u ON w.`user_id` = u.`id`;
+
+-- =====================================================================
+-- 6. VIEW KHIẾU NẠI VÀ THỜI HẠN XỬ LÝ (BOOKING DISPUTES VIEW - BCNF)
+-- Mục đích: Tính toán động thời hạn xử lý 48h (deadline_at) từ created_at mà không cần lưu cột dẫn xuất vật lý.
+-- =====================================================================
+CREATE OR REPLACE VIEW `v_booking_disputes` AS
+SELECT
+    d.`id` AS `dispute_id`,
+    d.`booking_id`,
+    d.`sender_id`,
+    u.`full_name` AS `sender_name`,
+    u.`role` AS `sender_role`,
+    d.`dispute_type`,
+    d.`reason`,
+    d.`evidence_url`,
+    d.`counter_evidence_url`,
+    d.`counter_argument`,
+    d.`status`,
+    d.`admin_notes`,
+    d.`resolved_at`,
+    d.`created_at`,
+    d.`created_at` + INTERVAL 48 HOUR AS `deadline_at`,
+    (NOW() >= d.`created_at` + INTERVAL 48 HOUR) AS `is_past_deadline`
+FROM `booking_disputes` d
+JOIN `users` u ON d.`sender_id` = u.`id`;

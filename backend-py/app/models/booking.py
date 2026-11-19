@@ -3,7 +3,6 @@ from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
-    Computed,
     FetchedValue,
     ForeignKey,
     ForeignKeyConstraint,
@@ -58,14 +57,6 @@ class Booking(Base):
         default=BookingStatus.PENDING,
     )
     student_note: Mapped[str | None] = mapped_column(String(255), nullable=True)
-
-    # Generated column stored in DB
-    active_slot_id: Mapped[int | None] = mapped_column(
-        Computed(
-            "CASE WHEN status IN ('PENDING', 'CONFIRMED', 'COMPLETED') THEN slot_id ELSE NULL END",
-            persisted=True,
-        )
-    )
     created_at: Mapped[datetime | None] = mapped_column(server_default=FetchedValue())
     updated_at: Mapped[datetime | None] = mapped_column(server_default=FetchedValue())
 

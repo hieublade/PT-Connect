@@ -248,7 +248,7 @@ def test_cancellation_factories_enforce_actor_pairing(world):
         Cancellation(booking_id=6, cancelled_by_id=student.id, cancelled_by_role="ROBOT", **_cancel_details())
 
 
-def test_db_check_chk_cancel_actor(world):
+def test_cancellation_bcnf_unique_booking(world):
     s = world["session"]
     booking = Booking(
         booking_type=BookingType.TRIAL,
@@ -259,20 +259,16 @@ def test_db_check_chk_cancel_actor(world):
     s.add(booking)
     s.commit()
 
-    # Bỏ qua domain, ghi thẳng SQL để chứng minh CHECK ở tầng DB
-    with pytest.raises(IntegrityError):
-        s.execute(
-            text(
-                "INSERT INTO cancellations (booking_id, cancelled_by_id, cancelled_by_role, reason, "
-                "hours_before_session, refund_amount, compensation_amount, penalty_amount, status) "
-                "VALUES (:b, :u, 'SYSTEM', 'x', 1, 0, 0, 0, 'PROCESSED')"
-            ),
-            {"b": booking.id, "u": world["student_2"].id},
-        )
-    s.rollback()
-
-    s.add(Cancellation.by_system(booking.id, **_cancel_details()))
+    c1 = Cancellation.by_system(booking.id, **_cancel_details())
+    s.add(c1)
     s.commit()
+
+    # BCNF candidate key booking_id must be UNIQUE
+    with pytest.raises(IntegrityError):
+        c2 = Cancellation.by_user(booking.id, world["student_2"], "STUDENT", reason="Trùng")
+        s.add(c2)
+        s.commit()
+    s.rollback()
 
 
 # ---------------------------------------------------------------------------
@@ -383,9 +379,8 @@ def test_db_composite_fk_accepts_owner_and_trial(world):
 def test_metadata_declares_phase2_constraints():
     names = {
         table: {c.name for c in Base.metadata.tables[table].constraints if c.name}
-        for table in ("pt_locations", "enrollments", "bookings", "cancellations")
+        for table in ("pt_locations", "enrollments", "bookings")
     }
     assert "uq_pt_location" in names["pt_locations"]
     assert "uq_enroll_student" in names["enrollments"]
     assert "fk_booking_enroll_student" in names["bookings"]
-    assert "chk_cancel_actor" in names["cancellations"]

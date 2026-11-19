@@ -29,16 +29,15 @@ CREATE TABLE `pt_profiles` (
   `id` bigint PRIMARY KEY AUTO_INCREMENT,
   `user_id` bigint UNIQUE NOT NULL,
   `bio` text,
+  `specialties` varchar(255) NULL,
   `experience_years` integer NOT NULL DEFAULT 0,
   `location_pricing_note` text,
   `certificate_url` varchar(500),
-  `average_rating` decimal(3,2) NOT NULL DEFAULT 0,
-  `total_reviews` integer NOT NULL DEFAULT 0,
+  `demo_video_url` varchar(500) NULL,
   `verification_status` ENUM ('PENDING', 'VERIFIED', 'REJECTED') NOT NULL DEFAULT 'PENDING',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  CONSTRAINT `chk_pt_experience` CHECK (`experience_years` >= 0),
-  CONSTRAINT `chk_pt_rating` CHECK (`average_rating` BETWEEN 0 AND 5)
+  CONSTRAINT `chk_pt_experience` CHECK (`experience_years` >= 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `pt_locations` (
@@ -131,10 +130,7 @@ CREATE TABLE `bookings` (
   `student_note` varchar(255),
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `active_slot_id` bigint GENERATED ALWAYS AS (
-    IF(`status` IN ('PENDING', 'CONFIRMED', 'COMPLETED'), `slot_id`, NULL)
-  ) STORED,
-  UNIQUE KEY `uq_active_slot` (`active_slot_id`),
+  UNIQUE KEY `uq_active_slot` ((CASE WHEN `status` IN ('PENDING', 'CONFIRMED', 'COMPLETED') THEN `slot_id` END)),
   CONSTRAINT `chk_booking_type_enroll` CHECK (
     (`booking_type` = 'TRIAL' AND `enrollment_id` IS NULL) OR
     (`booking_type` = 'PACKAGE' AND `enrollment_id` IS NOT NULL)
@@ -155,23 +151,10 @@ CREATE TABLE `cancellations` (
   `id` bigint PRIMARY KEY AUTO_INCREMENT,
   `booking_id` bigint UNIQUE NOT NULL,
   `cancelled_by_id` bigint NULL,
-  `cancelled_by_role` ENUM ('STUDENT', 'PT', 'ADMIN', 'SYSTEM') NOT NULL DEFAULT 'STUDENT',
   `reason` varchar(500) NOT NULL,
-  `cancelled_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `hours_before_session` decimal(7,2) NOT NULL,
-  `refund_amount` decimal(12,2) NOT NULL DEFAULT 0,
-  `compensation_amount` decimal(12,2) NOT NULL DEFAULT 0,
-  `penalty_amount` decimal(12,2) NOT NULL DEFAULT 0,
-  `penalty_shortfall` decimal(12,2) NOT NULL DEFAULT 0,
   `evidence_url` varchar(500),
   `status` ENUM ('PROCESSED', 'DISPUTED', 'RESOLVED') NOT NULL DEFAULT 'PROCESSED',
-  CONSTRAINT `chk_cancel_amounts` CHECK (
-    `refund_amount` >= 0 AND `compensation_amount` >= 0 AND `penalty_amount` >= 0 AND `penalty_shortfall` >= 0
-  ),
-  CONSTRAINT `chk_cancel_actor` CHECK (
-    (`cancelled_by_role` = 'SYSTEM' AND `cancelled_by_id` IS NULL) OR
-    (`cancelled_by_role` IN ('STUDENT', 'PT', 'ADMIN') AND `cancelled_by_id` IS NOT NULL)
-  )
+  `cancelled_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `workout_plans` (
@@ -237,7 +220,6 @@ CREATE TABLE `booking_disputes` (
   `counter_argument` text,
   `status` ENUM ('PENDING', 'EVIDENCE_REQUESTED', 'RESOLVED_REFUND', 'REJECTED') NOT NULL DEFAULT 'PENDING',
   `admin_notes` text,
-  `deadline_at` timestamp NULL,
   `resolved_at` timestamp NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -252,6 +234,7 @@ CREATE INDEX `idx_bookings_enroll_status` ON `bookings` (`enrollment_id`, `statu
 CREATE INDEX `idx_wal_audit_wallet` ON `wallet_audit_logs` (`wallet_id`);
 CREATE INDEX `idx_wal_audit_created` ON `wallet_audit_logs` (`created_at`);
 CREATE INDEX `idx_disputes_sender` ON `booking_disputes` (`sender_id`, `status`);
+CREATE INDEX `idx_disputes_status_created` ON `booking_disputes` (`status`, `created_at`);
 
 -- =====================================================================
 -- 3. RÀNG BUỘC KHÓA NGOẠI (FOREIGN KEYS)
@@ -277,3 +260,22 @@ ALTER TABLE `payments`           ADD FOREIGN KEY (`enrollment_id`)   REFERENCES 
 ALTER TABLE `wallet_audit_logs`  ADD FOREIGN KEY (`wallet_id`)       REFERENCES `wallets` (`id`) ON DELETE RESTRICT;
 ALTER TABLE `booking_disputes`   ADD FOREIGN KEY (`booking_id`)      REFERENCES `bookings` (`id`);
 ALTER TABLE `booking_disputes`   ADD FOREIGN KEY (`sender_id`)       REFERENCES `users` (`id`);
+
+-- =====================================================================
+-- 4. BẢNG TRÒ CHUYỆN TRỰC TUYẾN (ONLINE CHAT - BCNF TỐI THIỂU: 1 BẢNG DUY NHẤT)
+-- =====================================================================
+
+CREATE TABLE `chat_messages` (
+  `id` bigint PRIMARY KEY AUTO_INCREMENT,
+  `sender_id` bigint NOT NULL,
+  `receiver_id` bigint NOT NULL,
+  `content` text NOT NULL,
+  `is_read` boolean NOT NULL DEFAULT false,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX `idx_chat_pair` (`sender_id`, `receiver_id`, `created_at`),
+  CONSTRAINT `chk_chat_msg_not_empty` CHECK (CHAR_LENGTH(TRIM(`content`)) > 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE `chat_messages` ADD FOREIGN KEY (`sender_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+ALTER TABLE `chat_messages` ADD FOREIGN KEY (`receiver_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+

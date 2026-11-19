@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.core.clock import now_local
@@ -39,8 +40,26 @@ class PTProfileService:
 
         return profile
 
+    def _populate_rating_stats(self, profiles: list[PTProfile]) -> None:
+        """Gắn trước điểm đánh giá từ View v_pt_rating_statistics trong 1 truy vấn duy nhất (tránh N+1 query)."""
+        if not profiles:
+            return
+        try:
+            stats = self.db.execute(text("SELECT pt_profile_id, average_rating, total_reviews FROM v_pt_rating_statistics")).fetchall()
+            stats_map = {row[0]: (row[1], row[2]) for row in stats}
+            for p in profiles:
+                if p.id in stats_map:
+                    p._average_rating = stats_map[p.id][0]
+                    p._total_reviews = stats_map[p.id][1]
+                else:
+                    p._average_rating = Decimal("0.00")
+                    p._total_reviews = 0
+        except Exception:
+            pass
+
     def get_public_pt_profiles(self, name: str | None = None) -> list[PTPublicDTO]:
         profiles = self.profile_repo.search_verified_pts(name)
+        self._populate_rating_stats(profiles)
         result = []
         for profile in profiles:
             if profile.pt and profile.pt.status == UserStatus.ACTIVE:
@@ -51,6 +70,7 @@ class PTProfileService:
         profile = self.profile_repo.get_by_id(profile_id)
         if not profile:
             raise ResourceNotFoundException(f"Không tìm thấy hồ sơ Huấn luyện viên với ID: {profile_id}")
+        self._populate_rating_stats([profile])
         return self._map_to_public_dto(profile)
 
     def get_active_courses_by_pt_profile_id(self, profile_id: int) -> list[CourseResponse]:
@@ -88,7 +108,10 @@ class PTProfileService:
         return PTProfileResponse.from_entity(profile)
 
     def _map_to_public_dto(self, profile: PTProfile) -> PTPublicDTO:
-        active_courses = self.course_repo.find_by_pt_id_and_status(profile.id, CourseStatus.ACTIVE)
+        if getattr(profile, "courses", None) is not None:
+            active_courses = [c for c in profile.courses if c.status == CourseStatus.ACTIVE]
+        else:
+            active_courses = self.course_repo.find_by_pt_id_and_status(profile.id, CourseStatus.ACTIVE)
         valid_prices = [c.base_price for c in active_courses if c.base_price and c.base_price > Decimal(0)]
         lowest_price = min(valid_prices) if valid_prices else None
         return PTPublicDTO.from_entity(profile, lowest_price=lowest_price)

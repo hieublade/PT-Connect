@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
 from sqlalchemy import ForeignKey, Integer, String, Text, DateTime
@@ -36,9 +36,15 @@ class BookingDispute(Base):
         default=DisputeStatus.PENDING,
     )
     admin_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
-    deadline_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    @property
+    def deadline_at(self) -> datetime | None:
+        """Thời hạn xử lý phản biện (48h tính từ created_at, chuẩn BCNF tính động)."""
+        if self.created_at:
+            return self.created_at + timedelta(hours=48)
+        return None
 
     # Relationships
     booking: Mapped["Booking"] = relationship("Booking", back_populates="disputes")

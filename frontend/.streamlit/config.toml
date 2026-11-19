@@ -2,14 +2,18 @@
 showSidebarNavigation = false
 
 [theme]
-primaryColor = "#FF4B4B"
-backgroundColor = "#FFFFFF"
-secondaryBackgroundColor = "#F8F9FA"
-textColor = "#212529"
+primaryColor = "#0284C7"
+backgroundColor = "#F8FAFC"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#0F172A"
 font = "sans serif"
+
+[browser]
+gatherUsageStats = false
 
 [server]
 headless = true
 enableCORS = false
 enableXsrfProtection = false
 enableStaticServing = true
+fileWatcherType = "none"

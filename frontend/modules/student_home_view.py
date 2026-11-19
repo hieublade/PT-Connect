@@ -1,6 +1,8 @@
 from typing import Any, Dict, List, Optional
 from datetime import datetime
+import re
 import streamlit as st
+import streamlit.components.v1 as st_components
 from api.student_api import StudentApi
 from api.booking_api import BookingApi
 from api.dispute_api import DisputeApi
@@ -8,7 +10,23 @@ from api.auth_api import AuthApi
 from api.client import ApiException
 from components.pt_card import render_pt_card, format_currency_vnd
 from components.booking_table import render_booking_table, format_booking_datetime
-from components.avatar_uploader import render_avatar_management, normalize_avatar_url
+from components.avatar_uploader import render_avatar_management, normalize_avatar_url, get_display_avatar
+from components.media_helper import render_evidence_viewer, normalize_media_url
+from db_repository import db_repo
+from ai_services import cosine_service
+
+
+# =============================================================================
+# HỘP THOẠI TRÒ CHUYỆN TRỰC TIẾP HỌC VIÊN - PT (FEATURE 3)
+# =============================================================================
+
+@st.dialog("Video Hướng Dẫn Bài Tập Chuẩn Kỹ Thuật", width="large")
+def workout_video_dialog(exercise_name: str, video_url: str):
+    st.markdown(f"#### Bài tập: {exercise_name}")
+    if video_url:
+        st.video(video_url)
+    else:
+        st.info("Chưa có video hướng dẫn cho bài tập này.")
 
 
 # =============================================================================
@@ -24,6 +42,21 @@ class DiscoveryPTView:
     def render(self):
         st.subheader("Tìm Kiếm & Khám Phá Huấn Luyện Viên (PT)")
 
+        # TÌM KIẾM THÔNG MINH HUẤN LUYỆN VIÊN THEO NHU CẦU
+        with st.container(border=True):
+            st.markdown("##### 🔍 Tìm kiếm thông minh Huấn luyện viên theo nhu cầu")
+            st.caption("Nhập nhu cầu tập luyện của bạn (ví dụ: muốn giảm mỡ, tăng cơ, khu vực Cầu Giấy, cần PT có kiến thức dinh dưỡng)... Hệ thống sẽ tìm và xếp hạng PT phù hợp nhất.")
+            col_ai_in, col_ai_btn = st.columns([3, 2])
+            with col_ai_in:
+                ai_prompt = st.text_input(
+                    "Mô tả nhu cầu của bạn:",
+                    placeholder="Ví dụ: Muốn giảm mỡ bụng, tập khu Cầu Giấy, cần PT có kiến thức dinh dưỡng...",
+                    key="student_ai_recom_query",
+                    label_visibility="collapsed"
+                )
+            with col_ai_btn:
+                do_ai_search = st.button("Tìm kiếm thông minh", type="primary", use_container_width=True, key="btn_exec_ai_recom")
+
         col_search, col_reset = st.columns([4, 1])
         with col_search:
             search_query = st.text_input(
@@ -33,24 +66,41 @@ class DiscoveryPTView:
             )
         def reset_pt_search():
             st.session_state["student_pt_search_input"] = ""
+            st.session_state["student_ai_recom_query"] = ""
+            st.session_state["ai_recom_active"] = False
 
         with col_reset:
             st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
             st.button("Làm mới", on_click=reset_pt_search, use_container_width=True)
 
-        # Gọi API danh sách PT
+        # Lấy danh sách PT (Nếu có query AI thì dùng Cosine Similarity, ngược lại dùng tìm kiếm tên)
         pt_list: List[Dict[str, Any]] = []
+        is_ai_ranked = False
         try:
-            pt_list = StudentApi.get_pt_profiles(name=search_query)
-        except ApiException as e:
-            st.error(f"Lỗi tải danh sách PT [{e.status_code}]: {e.message}")
+            if ai_prompt and (do_ai_search or st.session_state.get("ai_recom_active")):
+                st.session_state["ai_recom_active"] = True
+                is_ai_ranked = True
+                raw_pts = db_repo.get_all_pts_for_recommendation()
+                pt_list = cosine_service.recommend_pts(ai_prompt, raw_pts)
+            else:
+                pt_list = StudentApi.get_pt_profiles(name=search_query)
         except Exception as ex:
-            st.error(f"Lỗi hệ thống: {str(ex)}")
+            st.error(f"Lỗi tải danh sách PT: {str(ex)}")
 
         if not pt_list:
             st.info("Không tìm thấy Huấn luyện viên phù hợp với từ khóa tìm kiếm.")
         else:
-            st.markdown(f"**Tìm thấy {len(pt_list)} Huấn luyện viên chuyên nghiệp:**")
+            if is_ai_ranked:
+                is_fallback = any(p.get("is_fallback_top_rated") for p in pt_list)
+                if is_fallback:
+                    st.warning(
+                        f"⚠️ **Không có Huấn luyện viên nào phù hợp trực tiếp với từ khóa \"{ai_prompt}\".**\n\n"
+                        f"⭐ Hệ thống xin đề xuất tới bạn **Top {len(pt_list)} Huấn luyện viên được đánh giá cao nhất (nhiều sao & uy tín nhất)** dưới đây để bạn tham khảo:"
+                    )
+                else:
+                    st.success(f"Kết quả tìm kiếm thông minh: Đã tìm thấy {len(pt_list)} Huấn luyện viên phù hợp nhất với nhu cầu của bạn:")
+            else:
+                st.markdown(f"**Tìm thấy {len(pt_list)} Huấn luyện viên chuyên nghiệp:**")
 
             def handle_pt_selection(p):
                 pt_id = p.get("id")
@@ -174,6 +224,35 @@ class PTDetailCourseView:
                             unsafe_allow_html=True
                         )
 
+                        # FEATURE 2: XEM TRƯỚC LỘ TRÌNH GIÁO ÁN KHÓA HỌC THEO TUẦN (BCNF)
+                        with st.expander("Xem trước chi tiết giáo án khóa học (Theo từng tuần)", expanded=False):
+                            syllabus_weeks = db_repo.get_course_syllabus(c_id)
+                            if not syllabus_weeks:
+                                st.info("Huấn luyện viên đang cập nhật lộ trình giáo án theo tuần cho khóa học này.")
+                            else:
+                                for w in syllabus_weeks:
+                                    w_num = w.get("week_number", 1)
+                                    w_title = w.get("week_title", "")
+                                    focus_badge = f" *({w['focus_area']})*" if w.get("focus_area") else ""
+                                    st.markdown(f"**Tuần {w_num}: {w_title}**{focus_badge}")
+                                    if w.get("goal"):
+                                        st.caption(f"🎯 **Mục tiêu tuần {w_num}:** {w['goal']}")
+                                    if w.get("exercises"):
+                                        ex_list = [
+                                            {
+                                                "Thứ tự": e.get("exercise_order", idx + 1),
+                                                "Bài tập": e["exercise_name"],
+                                                "Nhóm cơ tác động": e.get("target_muscle") or "Toàn thân",
+                                                "Hiệp (Sets)": e["sets"],
+                                                "Lần lặp (Reps)": e["reps"],
+                                                "Nghỉ": f"{e['rest_seconds']}s",
+                                                "Kỹ thuật & Lưu ý": e.get("notes") or ""
+                                            }
+                                            for idx, e in enumerate(w["exercises"])
+                                        ]
+                                        st.dataframe(ex_list, use_container_width=True, hide_index=True)
+                                    st.markdown("<hr style='margin: 8px 0; border: none; border-top: 1px dashed #d0d7de;'>", unsafe_allow_html=True)
+
                     with col_c_buy:
                         st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
                         ConfirmPurchaseCourseView.render(course, pt_profile, wallet_balance, my_enrollments)
@@ -227,8 +306,8 @@ class PTDetailView:
                 with st.container(border=True):
                     col_p1, col_p2 = st.columns([1, 3])
                     with col_p1:
-                        avatar = normalize_avatar_url(pt_profile.get("avatarUrl")) or "https://api.dicebear.com/7.x/avataaars/svg?seed=" + pt_profile.get("fullName", "").replace(" ", "")
-                        st.image(avatar, width=130)
+                        avatar_disp = get_display_avatar(pt_profile.get("avatarUrl") or pt_profile.get("avatar_url"), default_seed=pt_profile.get("fullName", ""))
+                        st.image(avatar_disp, width=130)
                     with col_p2:
                         st.markdown(f"### {pt_profile.get('fullName')}")
                         st.markdown(
@@ -248,6 +327,25 @@ class PTDetailView:
                             st.markdown(" • ".join(contacts))
                         if pt_profile.get("locationPricingNote"):
                             st.caption(f"*Chính sách giá/di chuyển:* {pt_profile.get('locationPricingNote')}")
+
+                        # FEATURE 1: TRÌNH CHIẾU VIDEO DEMO HUẤN LUYỆN VIÊN (XEM TRỰC TIẾP TẠI CHỖ)
+                        demo_video_url = pt_profile.get("demoVideoUrl") or db_repo.get_pt_video_demo(selected_pt_id)
+                        if demo_video_url:
+                            st.markdown("#### Video Demo & Kỹ Thuật Huấn Luyện")
+                            st.video(demo_video_url)
+
+                        # FEATURE 3: NÚT NHẮN TIN TRỰC TIẾP VỚI PT (POPUP DIALOG CHAT)
+                        st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
+                        if st.button(
+                            "Nhắn tin trao đổi với Huấn luyện viên",
+                            type="primary",
+                            use_container_width=True,
+                            key=f"btn_chat_with_pt_{selected_pt_id}"
+                        ):
+                            st.session_state["live_chat_is_open"] = True
+                            st.session_state["live_chat_target_pt_id"] = selected_pt_id
+                            st.session_state["live_chat_just_opened_target"] = True
+                            st.rerun()
 
                 st.markdown("---")
 
@@ -668,18 +766,44 @@ class MyCourseView:
                                 if not workouts:
                                     st.caption("*(Chưa có danh sách bài tập chi tiết)*")
                                 else:
-                                    workout_rows = []
-                                    for w in workouts:
-                                        workout_rows.append({
-                                            "Tên bài tập": w.get("exerciseName"),
-                                            "Nhóm cơ": w.get("targetMuscle") or "-",
-                                            "Số Sets": w.get("sets", 3),
-                                            "Số Reps": w.get("reps", 10),
-                                            "Mức tạ": f"{w.get('weightKg')} kg" if w.get("weightKg") else "-",
-                                            "Nghỉ giữa hiệp": f"{w.get('restSeconds', 60)} giây",
-                                            "Video demo": w.get("videoDemoUrl") or ""
-                                        })
-                                    st.dataframe(workout_rows, use_container_width=True)
+                                    st.markdown("###### Danh Sách Bài Tập Của Giáo Án")
+                                    # Header row
+                                    h_c1, h_c2, h_c3, h_c4, h_c5 = st.columns([3, 2, 2, 2, 3])
+                                    with h_c1:
+                                        st.markdown("**Bài tập**")
+                                    with h_c2:
+                                        st.markdown("**Nhóm cơ**")
+                                    with h_c3:
+                                        st.markdown("**Hiệp & Lần (Sets × Reps)**")
+                                    with h_c4:
+                                        st.markdown("**Tạ / Nghỉ**")
+                                    with h_c5:
+                                        st.markdown("**Video hướng dẫn**")
+
+                                    for w_idx, w in enumerate(workouts):
+                                        w_name = w.get("exerciseName", "Bài tập")
+                                        w_muscle = w.get("targetMuscle") or "Toàn thân"
+                                        w_sets = w.get("sets", 3)
+                                        w_reps = w.get("reps", 10)
+                                        w_weight = f"{w.get('weightKg')} kg" if w.get("weightKg") else "Tạ tự thân"
+                                        w_rest = f"{w.get('restSeconds', 60)}s"
+                                        w_video = w.get("videoDemoUrl") or "https://www.youtube.com/watch?v=aclHkVaku9U"
+                                        plan_id_val = plan.get("id", 1)
+
+                                        with st.container(border=True):
+                                            c1, c2, c3, c4, c5 = st.columns([3, 2, 2, 2, 3])
+                                            with c1:
+                                                st.markdown(f"**{w_name}**")
+                                            with c2:
+                                                st.markdown(f"<span style='color: #475569;'>{w_muscle}</span>", unsafe_allow_html=True)
+                                            with c3:
+                                                st.markdown(f"`{w_sets} sets × {w_reps} reps`")
+                                            with c4:
+                                                st.markdown(f"{w_weight} • Nghỉ {w_rest}")
+                                            with c5:
+                                                btn_v_key = f"btn_watch_video_{plan_id_val}_{w_idx}_{w.get('id', w_idx)}"
+                                                if st.button("Xem video bài tập", key=btn_v_key, use_container_width=True):
+                                                    workout_video_dialog(w_name, w_video)
 
 
 class WalletView:
@@ -1043,7 +1167,7 @@ class MyDisputeView:
                         st.markdown(f"**Loại tranh chấp:** `{d_type}`")
                         st.markdown(f"**Nội dung phản ánh:** {d_reason}")
                         if d_evidence:
-                            st.markdown(f"**Ảnh bằng chứng:** [Xem ảnh]({d_evidence})")
+                            render_evidence_viewer(d_evidence, caption="Ảnh bằng chứng bên khiếu nại (Nguyên đơn)")
 
                         st.markdown("---")
 
@@ -1085,7 +1209,7 @@ class MyDisputeView:
                         if d_counter_arg:
                             st.success(f"**Văn bản phản biện đã nộp:** {d_counter_arg}")
                             if d_counter_ev:
-                                st.markdown(f"**Ảnh bằng chứng đối chứng:** [Xem ảnh đối chứng]({d_counter_ev})")
+                                render_evidence_viewer(d_counter_ev, caption="Ảnh bằng chứng đối chứng (Bị đơn)")
 
                         if d_notes:
                             st.info(f"**Phán quyết & Kết luận từ Admin:** {d_notes}")

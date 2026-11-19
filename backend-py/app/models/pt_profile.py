@@ -1,9 +1,9 @@
 from datetime import datetime
 from decimal import Decimal
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import Enum as SQLEnum
-from sqlalchemy import FetchedValue, ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy import FetchedValue, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship, synonym
 
 from app.db.base import Base
@@ -22,22 +22,14 @@ class PTProfile(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), unique=True, nullable=False)
     bio: Mapped[str | None] = mapped_column(Text, nullable=True)
+    specialties: Mapped[str | None] = mapped_column(String(255), nullable=True)
     experience_years: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     location_pricing_note: Mapped[str | None] = mapped_column(Text, nullable=True)
     certificate_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    demo_video_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     # Bí danh tương thích ngược: code cũ đọc/ghi profile.certificate_urls vẫn chạy
     certificate_urls = synonym("certificate_url")
 
-    average_rating: Mapped[Decimal] = mapped_column(
-        Numeric(3, 2),
-        nullable=False,
-        server_default=FetchedValue(),
-    )
-    total_reviews: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-        server_default=FetchedValue(),
-    )
     verification_status: Mapped[VerificationStatus] = mapped_column(
         SQLEnum(VerificationStatus, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
@@ -56,15 +48,52 @@ class PTProfile(Base):
         order_by="PTLocation.id",
     )
 
-    def __init__(self, **kw):
+    def __init__(self, **kw: Any):
         kw.setdefault("experience_years", 0)
         kw.setdefault("verification_status", VerificationStatus.PENDING)
-        kw.setdefault("average_rating", Decimal("0.00"))
-        kw.setdefault("total_reviews", 0)
+        self._average_rating = Decimal(str(kw.pop("average_rating", "0.00")))
+        self._total_reviews = int(kw.pop("total_reviews", 0))
         locs = kw.pop("available_locations", None)
         super().__init__(**kw)
         if locs is not None:
             self.replace_locations(locs)
+
+    @property
+    def average_rating(self) -> Decimal:
+        """Thuộc tính dẫn xuất tính động (Chuẩn BCNF - không lưu cột vật lý)."""
+        if hasattr(self, "_average_rating") and self._average_rating is not None:
+            return Decimal(str(self._average_rating))
+        ratings = []
+        if getattr(self, "slots", None):
+            for s in self.slots:
+                for b in getattr(s, "bookings", []):
+                    r = getattr(b, "review", None)
+                    if r and getattr(r, "rating", None) is not None:
+                        ratings.append(r.rating)
+        if ratings:
+            return Decimal(str(round(sum(ratings) / len(ratings), 2)))
+        return Decimal("0.00")
+
+    @average_rating.setter
+    def average_rating(self, val: Any) -> None:
+        self._average_rating = Decimal(str(val)) if val is not None else Decimal("0.00")
+
+    @property
+    def total_reviews(self) -> int:
+        """Thuộc tính dẫn xuất tính động (Chuẩn BCNF - không lưu cột vật lý)."""
+        if hasattr(self, "_total_reviews") and self._total_reviews is not None:
+            return int(self._total_reviews)
+        count = 0
+        if getattr(self, "slots", None):
+            for s in self.slots:
+                for b in getattr(s, "bookings", []):
+                    if getattr(b, "review", None) is not None:
+                        count += 1
+        return count
+
+    @total_reviews.setter
+    def total_reviews(self, val: Any) -> None:
+        self._total_reviews = int(val) if val is not None else 0
 
     @property
     def available_locations(self) -> str:

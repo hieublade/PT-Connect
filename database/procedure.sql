@@ -59,30 +59,22 @@ BEGIN
     WHERE `id` = `p_enrollment_id`;
 END$$
 
--- Mục đích: Tính toán lại điểm đánh giá trung bình và tổng số lượng review của PT, cập nhật vào bảng pt_profiles.
+-- Mục đích: Tính toán động điểm đánh giá trung bình và tổng số lượng review của PT (Chuẩn BCNF - không lưu cột vật lý).
 DROP PROCEDURE IF EXISTS `sp_recalc_pt_rating`$$
 CREATE PROCEDURE `sp_recalc_pt_rating`(
     IN `p_pt_id` BIGINT
 )
 BEGIN
-    DECLARE `v_lock_id` BIGINT;
-    DECLARE `v_total` INT DEFAULT 0;
-    DECLARE `v_avg` DECIMAL(5,2) DEFAULT 0.00;
-
-    SELECT `id` INTO `v_lock_id` FROM `pt_profiles` WHERE `id` = `p_pt_id` FOR UPDATE;
-
-    SELECT COUNT(r.`id`), COALESCE(ROUND(AVG(r.`rating`), 2), 0.00)
-    INTO `v_total`, `v_avg`
+    -- Điểm đánh giá trung bình và số lượng review được tính toán động từ bảng reviews.
+    -- Thủ tục này trả về kết quả tính toán động trực tiếp.
+    SELECT 
+        `p_pt_id` AS `pt_id`,
+        COUNT(r.`id`) AS `total_reviews`,
+        COALESCE(ROUND(AVG(r.`rating`), 2), 0.00) AS `average_rating`
     FROM `reviews` r
     JOIN `bookings` b ON r.`booking_id` = b.`id`
     JOIN `availability_slots` s ON b.`slot_id` = s.`id`
-    WHERE s.`pt_id` = `p_pt_id`
-    FOR SHARE OF r;
-
-    UPDATE `pt_profiles`
-    SET `average_rating` = `v_avg`,
-        `total_reviews` = `v_total`
-    WHERE `id` = `p_pt_id`;
+    WHERE s.`pt_id` = `p_pt_id`;
 END$$
 
 -- =====================================================================
@@ -608,25 +600,13 @@ proc_label: BEGIN
     INSERT INTO `cancellations` (
         `booking_id`,
         `cancelled_by_id`,
-        `cancelled_by_role`,
         `reason`,
-        `hours_before_session`,
-        `refund_amount`,
-        `compensation_amount`,
-        `penalty_amount`,
-        `penalty_shortfall`,
         `status`,
         `cancelled_at`
     ) VALUES (
         `p_booking_id`,
         `p_cancelled_by_id`,
-        `v_actor_role`,
         `p_reason`,
-        `v_hours_before`,
-        `v_refund`,
-        `v_comp`,
-        `v_pen`,
-        `v_shortfall`,
         'PROCESSED',
         NOW()
     );
@@ -920,8 +900,7 @@ proc_label: BEGIN
     ELSEIF `p_action` = 'EVIDENCE_REQUESTED' THEN
         UPDATE `booking_disputes`
         SET `status` = 'EVIDENCE_REQUESTED',
-            `admin_notes` = `p_admin_notes`,
-            `deadline_at` = NOW() + INTERVAL 48 HOUR
+            `admin_notes` = `p_admin_notes`
         WHERE `id` = `p_dispute_id`;
 
         SET `p_message` = 'Đã yêu cầu bổ sung bằng chứng trong thời hạn 48 giờ.';
@@ -929,6 +908,69 @@ proc_label: BEGIN
         SET `p_status_code` = 2;
         SET `p_message` = 'Hành động phân xử không hợp lệ.';
     END IF;
+END$$
+
+-- =====================================================================
+-- 10. THỦ TỤC LƯU GIÁO ÁN VÀ BÀI TẬP GỢI Ý THÔNG MINH (AI WORKOUT PLAN)
+-- =====================================================================
+DROP PROCEDURE IF EXISTS `sp_save_ai_workout_plan`$$
+CREATE PROCEDURE `sp_save_ai_workout_plan`(
+    IN `p_enrollment_id` BIGINT,
+    IN `p_title` VARCHAR(150),
+    IN `p_goal` VARCHAR(255),
+    IN `p_start_date` DATE,
+    IN `p_end_date` DATE,
+    IN `p_exercises_json` JSON,
+    OUT `o_plan_id` BIGINT
+)
+BEGIN
+    DECLARE `v_plan_id` BIGINT;
+    DECLARE `v_enroll_exists` INT;
+
+    SELECT COUNT(*) INTO `v_enroll_exists` FROM `enrollments` WHERE `id` = `p_enrollment_id`;
+    IF `v_enroll_exists` = 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Hợp đồng đăng ký khóa học không tồn tại';
+    END IF;
+
+    IF `p_end_date` < `p_start_date` THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu';
+    END IF;
+
+    START TRANSACTION;
+
+    INSERT INTO `workout_plans` (`enrollment_id`, `title`, `goal`, `start_date`, `end_date`)
+    VALUES (`p_enrollment_id`, `p_title`, `p_goal`, `p_start_date`, `p_end_date`);
+    SET `v_plan_id` = LAST_INSERT_ID();
+
+    IF `p_exercises_json` IS NOT NULL AND JSON_LENGTH(`p_exercises_json`) > 0 THEN
+        INSERT INTO `workouts` (`plan_id`, `exercise_order`, `exercise_name`, `target_muscle`, `sets`, `reps`, `weight_kg`, `rest_seconds`, `video_demo_url`)
+        SELECT
+            `v_plan_id`,
+            jt.`exercise_order`,
+            jt.`exercise_name`,
+            jt.`target_muscle`,
+            jt.`sets`,
+            jt.`reps`,
+            jt.`weight_kg`,
+            jt.`rest_seconds`,
+            jt.`video_demo_url`
+        FROM JSON_TABLE(
+            `p_exercises_json`,
+            '$[*]' COLUMNS (
+                `exercise_order` FOR ORDINALITY,
+                `exercise_name` VARCHAR(150) PATH '$.exercise_name',
+                `target_muscle` VARCHAR(100) PATH '$.target_muscle',
+                `sets` INT PATH '$.sets',
+                `reps` INT PATH '$.reps',
+                `weight_kg` DECIMAL(5,2) PATH '$.weight_kg',
+                `rest_seconds` INT PATH '$.rest_seconds',
+                `video_demo_url` VARCHAR(500) PATH '$.video_demo_url'
+            )
+        ) AS jt;
+    END IF;
+
+    SET `o_plan_id` = `v_plan_id`;
+    COMMIT;
 END$$
 
 DELIMITER ;

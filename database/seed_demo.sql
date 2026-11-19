@@ -29,56 +29,56 @@ SET FOREIGN_KEY_CHECKS = 1;
 
 -- 1. USERS
 INSERT INTO `users` (`id`, `full_name`, `email`, `password_hash`, `phone`, `role`, `status`, `avatar_url`) VALUES
-  (1, 'Quản Trị Viên Hệ Thống', 'admin@ptconnect.vn', '$2b$10$97NHtEb/u6D3YO6v3GWpfuhQFZkJ.CsF1eCCorUvtDzBafzxRbx92', '0900000000', 'ADMIN', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=AdminSystem'),
-  (2, 'Lê Hoàng Cường', 'pt.hoangc@ptconnect.vn', '$2b$10$97NHtEb/u6D3YO6v3GWpfuhQFZkJ.CsF1eCCorUvtDzBafzxRbx92', '0900000003', 'PT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=pt.hoangc@ptconnect.vn'),
-  (3, 'Phạm Minh Dũng', 'pt.minhd@ptconnect.vn', '$2b$10$97NHtEb/u6D3YO6v3GWpfuhQFZkJ.CsF1eCCorUvtDzBafzxRbx92', '0900000004', 'PT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=pt.minhd@ptconnect.vn'),
-  (4, 'Trần Quốc Bảo', 'pt.quocbao@ptconnect.vn', '$2b$10$97NHtEb/u6D3YO6v3GWpfuhQFZkJ.CsF1eCCorUvtDzBafzxRbx92', '0900000005', 'PT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=pt.quocbao@ptconnect.vn'),
-  (5, 'Nguyễn Thu Hà', 'pt.thuha@ptconnect.vn', '$2b$10$97NHtEb/u6D3YO6v3GWpfuhQFZkJ.CsF1eCCorUvtDzBafzxRbx92', '0900000006', 'PT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=pt.thuha@ptconnect.vn'),
-  (6, 'Đỗ Tuấn Kiệt', 'pt.tuankiet@ptconnect.vn', '$2b$10$97NHtEb/u6D3YO6v3GWpfuhQFZkJ.CsF1eCCorUvtDzBafzxRbx92', '0900000007', 'PT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=pt.tuankiet@ptconnect.vn'),
-  (7, 'Vũ Hoàng Nam', 'pt.hoangnam@ptconnect.vn', '$2b$10$97NHtEb/u6D3YO6v3GWpfuhQFZkJ.CsF1eCCorUvtDzBafzxRbx92', '0900000008', 'PT', 'PENDING', 'https://api.dicebear.com/7.x/avataaars/svg?seed=pt.hoangnam@ptconnect.vn'),
-  (8, 'Đặng Thúy Nga', 'pt.thuynga@ptconnect.vn', '$2b$10$97NHtEb/u6D3YO6v3GWpfuhQFZkJ.CsF1eCCorUvtDzBafzxRbx92', '0900000009', 'PT', 'PENDING', 'https://api.dicebear.com/7.x/avataaars/svg?seed=pt.thuynga@ptconnect.vn'),
-  (9, 'Bùi Văn Quyết', 'pt.vanquyet@ptconnect.vn', '$2b$10$97NHtEb/u6D3YO6v3GWpfuhQFZkJ.CsF1eCCorUvtDzBafzxRbx92', '0900000010', 'PT', 'SUSPENDED', 'https://api.dicebear.com/7.x/avataaars/svg?seed=pt.vanquyet@ptconnect.vn'),
-  (10, 'Nguyễn Văn A', 'student.a@ptconnect.vn', '$2b$10$97NHtEb/u6D3YO6v3GWpfuhQFZkJ.CsF1eCCorUvtDzBafzxRbx92', '0900000001', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_1'),
-  (11, 'Hồ Thị Nam', 'student_02@ptconnect.vn', '$2b$10$97NHtEb/u6D3YO6v3GWpfuhQFZkJ.CsF1eCCorUvtDzBafzxRbx92', '0910000002', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_2'),
-  (12, 'Hoàng Đức Mai', 'student_03@ptconnect.vn', '$2b$10$97NHtEb/u6D3YO6v3GWpfuhQFZkJ.CsF1eCCorUvtDzBafzxRbx92', '0910000003', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_3'),
-  (13, 'Ngô Thị Sơn', 'student_04@ptconnect.vn', '$2b$10$97NHtEb/u6D3YO6v3GWpfuhQFZkJ.CsF1eCCorUvtDzBafzxRbx92', '0910000004', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_4'),
-  (14, 'Đỗ Ngọc Anh', 'student_05@ptconnect.vn', '$2b$10$97NHtEb/u6D3YO6v3GWpfuhQFZkJ.CsF1eCCorUvtDzBafzxRbx92', '0910000005', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_5'),
-  (15, 'Trần Đức Mai', 'student_06@ptconnect.vn', '$2b$10$97NHtEb/u6D3YO6v3GWpfuhQFZkJ.CsF1eCCorUvtDzBafzxRbx92', '0910000006', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_6'),
-  (16, 'Đỗ Văn Sơn', 'student_07@ptconnect.vn', '$2b$10$97NHtEb/u6D3YO6v3GWpfuhQFZkJ.CsF1eCCorUvtDzBafzxRbx92', '0910000007', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_7'),
-  (17, 'Ngô Phương Sơn', 'student_08@ptconnect.vn', '$2b$10$97NHtEb/u6D3YO6v3GWpfuhQFZkJ.CsF1eCCorUvtDzBafzxRbx92', '0910000008', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_8'),
-  (18, 'Phạm Thanh Tùng', 'student_09@ptconnect.vn', '$2b$10$97NHtEb/u6D3YO6v3GWpfuhQFZkJ.CsF1eCCorUvtDzBafzxRbx92', '0910000009', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_9'),
-  (19, 'Dương Văn Linh', 'student_10@ptconnect.vn', '$2b$10$97NHtEb/u6D3YO6v3GWpfuhQFZkJ.CsF1eCCorUvtDzBafzxRbx92', '0910000010', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_10'),
-  (20, 'Vũ Thu Hương', 'student_11@ptconnect.vn', '$2b$10$97NHtEb/u6D3YO6v3GWpfuhQFZkJ.CsF1eCCorUvtDzBafzxRbx92', '0910000011', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_11'),
-  (21, 'Phạm Thu Hùng', 'student_12@ptconnect.vn', '$2b$10$97NHtEb/u6D3YO6v3GWpfuhQFZkJ.CsF1eCCorUvtDzBafzxRbx92', '0910000012', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_12'),
-  (22, 'Vũ Thị Khoa', 'student_13@ptconnect.vn', '$2b$10$97NHtEb/u6D3YO6v3GWpfuhQFZkJ.CsF1eCCorUvtDzBafzxRbx92', '0910000013', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_13'),
-  (23, 'Phan Quốc Hương', 'student_14@ptconnect.vn', '$2b$10$97NHtEb/u6D3YO6v3GWpfuhQFZkJ.CsF1eCCorUvtDzBafzxRbx92', '0910000014', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_14'),
-  (24, 'Nguyễn Bảo Phương', 'student_15@ptconnect.vn', '$2b$10$97NHtEb/u6D3YO6v3GWpfuhQFZkJ.CsF1eCCorUvtDzBafzxRbx92', '0910000015', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_15'),
-  (25, 'Trần Ngọc Tuấn', 'student_16@ptconnect.vn', '$2b$10$97NHtEb/u6D3YO6v3GWpfuhQFZkJ.CsF1eCCorUvtDzBafzxRbx92', '0910000016', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_16'),
-  (26, 'Hoàng Phương Long', 'student_17@ptconnect.vn', '$2b$10$97NHtEb/u6D3YO6v3GWpfuhQFZkJ.CsF1eCCorUvtDzBafzxRbx92', '0910000017', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_17'),
-  (27, 'Phan Quốc Trang', 'student_18@ptconnect.vn', '$2b$10$97NHtEb/u6D3YO6v3GWpfuhQFZkJ.CsF1eCCorUvtDzBafzxRbx92', '0910000018', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_18'),
-  (28, 'Trần Văn Mai', 'student_19@ptconnect.vn', '$2b$10$97NHtEb/u6D3YO6v3GWpfuhQFZkJ.CsF1eCCorUvtDzBafzxRbx92', '0910000019', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_19'),
-  (29, 'Hoàng Thị Mai', 'student_20@ptconnect.vn', '$2b$10$97NHtEb/u6D3YO6v3GWpfuhQFZkJ.CsF1eCCorUvtDzBafzxRbx92', '0910000020', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_20'),
-  (30, 'Trần Ngọc Hương', 'student_21@ptconnect.vn', '$2b$10$97NHtEb/u6D3YO6v3GWpfuhQFZkJ.CsF1eCCorUvtDzBafzxRbx92', '0910000021', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_21'),
-  (31, 'Hồ Thu Linh', 'student_22@ptconnect.vn', '$2b$10$97NHtEb/u6D3YO6v3GWpfuhQFZkJ.CsF1eCCorUvtDzBafzxRbx92', '0910000022', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_22'),
-  (32, 'Phan Đức Hương', 'student_23@ptconnect.vn', '$2b$10$97NHtEb/u6D3YO6v3GWpfuhQFZkJ.CsF1eCCorUvtDzBafzxRbx92', '0910000023', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_23'),
-  (33, 'Hồ Phương Tuấn', 'student_24@ptconnect.vn', '$2b$10$97NHtEb/u6D3YO6v3GWpfuhQFZkJ.CsF1eCCorUvtDzBafzxRbx92', '0910000024', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_24'),
-  (34, 'Hồ Hải Sơn', 'student_25@ptconnect.vn', '$2b$10$97NHtEb/u6D3YO6v3GWpfuhQFZkJ.CsF1eCCorUvtDzBafzxRbx92', '0910000025', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_25'),
-  (35, 'Phạm Hải Phương', 'student_26@ptconnect.vn', '$2b$10$97NHtEb/u6D3YO6v3GWpfuhQFZkJ.CsF1eCCorUvtDzBafzxRbx92', '0910000026', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_26'),
-  (36, 'Hoàng Phương Sơn', 'student_27@ptconnect.vn', '$2b$10$97NHtEb/u6D3YO6v3GWpfuhQFZkJ.CsF1eCCorUvtDzBafzxRbx92', '0910000027', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_27'),
-  (37, 'Hồ Thu Anh', 'student_28@ptconnect.vn', '$2b$10$97NHtEb/u6D3YO6v3GWpfuhQFZkJ.CsF1eCCorUvtDzBafzxRbx92', '0910000028', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_28'),
-  (38, 'Nguyễn Thu Hiếu', 'student_29@ptconnect.vn', '$2b$10$97NHtEb/u6D3YO6v3GWpfuhQFZkJ.CsF1eCCorUvtDzBafzxRbx92', '0910000029', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_29'),
-  (39, 'Trần Đức Tùng', 'student_30@ptconnect.vn', '$2b$10$97NHtEb/u6D3YO6v3GWpfuhQFZkJ.CsF1eCCorUvtDzBafzxRbx92', '0910000030', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_30');
+  (1, 'Quản Trị Viên Hệ Thống', 'admin@ptconnect.vn', '$2b$10$/M8YC0N1J98TLXyEp2nElOlRYtF2vNuQK.J0cBFlU6syj7Wf1ROaK', '0900000000', 'ADMIN', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=AdminSystem'),
+  (2, 'Lê Hoàng Cường', 'pt.hoangc@ptconnect.vn', '$2b$10$/M8YC0N1J98TLXyEp2nElOlRYtF2vNuQK.J0cBFlU6syj7Wf1ROaK', '0900000003', 'PT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=pt.hoangc@ptconnect.vn'),
+  (3, 'Phạm Minh Dũng', 'pt.minhd@ptconnect.vn', '$2b$10$/M8YC0N1J98TLXyEp2nElOlRYtF2vNuQK.J0cBFlU6syj7Wf1ROaK', '0900000004', 'PT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=pt.minhd@ptconnect.vn'),
+  (4, 'Trần Quốc Bảo', 'pt.quocbao@ptconnect.vn', '$2b$10$/M8YC0N1J98TLXyEp2nElOlRYtF2vNuQK.J0cBFlU6syj7Wf1ROaK', '0900000005', 'PT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=pt.quocbao@ptconnect.vn'),
+  (5, 'Nguyễn Thu Hà', 'pt.thuha@ptconnect.vn', '$2b$10$/M8YC0N1J98TLXyEp2nElOlRYtF2vNuQK.J0cBFlU6syj7Wf1ROaK', '0900000006', 'PT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=pt.thuha@ptconnect.vn'),
+  (6, 'Đỗ Tuấn Kiệt', 'pt.tuankiet@ptconnect.vn', '$2b$10$/M8YC0N1J98TLXyEp2nElOlRYtF2vNuQK.J0cBFlU6syj7Wf1ROaK', '0900000007', 'PT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=pt.tuankiet@ptconnect.vn'),
+  (7, 'Vũ Hoàng Nam', 'pt.hoangnam@ptconnect.vn', '$2b$10$/M8YC0N1J98TLXyEp2nElOlRYtF2vNuQK.J0cBFlU6syj7Wf1ROaK', '0900000008', 'PT', 'PENDING', 'https://api.dicebear.com/7.x/avataaars/svg?seed=pt.hoangnam@ptconnect.vn'),
+  (8, 'Đặng Thúy Nga', 'pt.thuynga@ptconnect.vn', '$2b$10$/M8YC0N1J98TLXyEp2nElOlRYtF2vNuQK.J0cBFlU6syj7Wf1ROaK', '0900000009', 'PT', 'PENDING', 'https://api.dicebear.com/7.x/avataaars/svg?seed=pt.thuynga@ptconnect.vn'),
+  (9, 'Bùi Văn Quyết', 'pt.vanquyet@ptconnect.vn', '$2b$10$/M8YC0N1J98TLXyEp2nElOlRYtF2vNuQK.J0cBFlU6syj7Wf1ROaK', '0900000010', 'PT', 'SUSPENDED', 'https://api.dicebear.com/7.x/avataaars/svg?seed=pt.vanquyet@ptconnect.vn'),
+  (10, 'Nguyễn Văn A', 'student.a@ptconnect.vn', '$2b$10$/M8YC0N1J98TLXyEp2nElOlRYtF2vNuQK.J0cBFlU6syj7Wf1ROaK', '0900000001', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_1'),
+  (11, 'Hồ Thị Nam', 'student_02@ptconnect.vn', '$2b$10$/M8YC0N1J98TLXyEp2nElOlRYtF2vNuQK.J0cBFlU6syj7Wf1ROaK', '0910000002', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_2'),
+  (12, 'Hoàng Đức Mai', 'student_03@ptconnect.vn', '$2b$10$/M8YC0N1J98TLXyEp2nElOlRYtF2vNuQK.J0cBFlU6syj7Wf1ROaK', '0910000003', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_3'),
+  (13, 'Ngô Thị Sơn', 'student_04@ptconnect.vn', '$2b$10$/M8YC0N1J98TLXyEp2nElOlRYtF2vNuQK.J0cBFlU6syj7Wf1ROaK', '0910000004', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_4'),
+  (14, 'Đỗ Ngọc Anh', 'student_05@ptconnect.vn', '$2b$10$/M8YC0N1J98TLXyEp2nElOlRYtF2vNuQK.J0cBFlU6syj7Wf1ROaK', '0910000005', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_5'),
+  (15, 'Trần Đức Mai', 'student_06@ptconnect.vn', '$2b$10$/M8YC0N1J98TLXyEp2nElOlRYtF2vNuQK.J0cBFlU6syj7Wf1ROaK', '0910000006', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_6'),
+  (16, 'Đỗ Văn Sơn', 'student_07@ptconnect.vn', '$2b$10$/M8YC0N1J98TLXyEp2nElOlRYtF2vNuQK.J0cBFlU6syj7Wf1ROaK', '0910000007', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_7'),
+  (17, 'Ngô Phương Sơn', 'student_08@ptconnect.vn', '$2b$10$/M8YC0N1J98TLXyEp2nElOlRYtF2vNuQK.J0cBFlU6syj7Wf1ROaK', '0910000008', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_8'),
+  (18, 'Phạm Thanh Tùng', 'student_09@ptconnect.vn', '$2b$10$/M8YC0N1J98TLXyEp2nElOlRYtF2vNuQK.J0cBFlU6syj7Wf1ROaK', '0910000009', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_9'),
+  (19, 'Dương Văn Linh', 'student_10@ptconnect.vn', '$2b$10$/M8YC0N1J98TLXyEp2nElOlRYtF2vNuQK.J0cBFlU6syj7Wf1ROaK', '0910000010', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_10'),
+  (20, 'Vũ Thu Hương', 'student_11@ptconnect.vn', '$2b$10$/M8YC0N1J98TLXyEp2nElOlRYtF2vNuQK.J0cBFlU6syj7Wf1ROaK', '0910000011', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_11'),
+  (21, 'Phạm Thu Hùng', 'student_12@ptconnect.vn', '$2b$10$/M8YC0N1J98TLXyEp2nElOlRYtF2vNuQK.J0cBFlU6syj7Wf1ROaK', '0910000012', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_12'),
+  (22, 'Vũ Thị Khoa', 'student_13@ptconnect.vn', '$2b$10$/M8YC0N1J98TLXyEp2nElOlRYtF2vNuQK.J0cBFlU6syj7Wf1ROaK', '0910000013', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_13'),
+  (23, 'Phan Quốc Hương', 'student_14@ptconnect.vn', '$2b$10$/M8YC0N1J98TLXyEp2nElOlRYtF2vNuQK.J0cBFlU6syj7Wf1ROaK', '0910000014', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_14'),
+  (24, 'Nguyễn Bảo Phương', 'student_15@ptconnect.vn', '$2b$10$/M8YC0N1J98TLXyEp2nElOlRYtF2vNuQK.J0cBFlU6syj7Wf1ROaK', '0910000015', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_15'),
+  (25, 'Trần Ngọc Tuấn', 'student_16@ptconnect.vn', '$2b$10$/M8YC0N1J98TLXyEp2nElOlRYtF2vNuQK.J0cBFlU6syj7Wf1ROaK', '0910000016', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_16'),
+  (26, 'Hoàng Phương Long', 'student_17@ptconnect.vn', '$2b$10$/M8YC0N1J98TLXyEp2nElOlRYtF2vNuQK.J0cBFlU6syj7Wf1ROaK', '0910000017', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_17'),
+  (27, 'Phan Quốc Trang', 'student_18@ptconnect.vn', '$2b$10$/M8YC0N1J98TLXyEp2nElOlRYtF2vNuQK.J0cBFlU6syj7Wf1ROaK', '0910000018', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_18'),
+  (28, 'Trần Văn Mai', 'student_19@ptconnect.vn', '$2b$10$/M8YC0N1J98TLXyEp2nElOlRYtF2vNuQK.J0cBFlU6syj7Wf1ROaK', '0910000019', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_19'),
+  (29, 'Hoàng Thị Mai', 'student_20@ptconnect.vn', '$2b$10$/M8YC0N1J98TLXyEp2nElOlRYtF2vNuQK.J0cBFlU6syj7Wf1ROaK', '0910000020', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_20'),
+  (30, 'Trần Ngọc Hương', 'student_21@ptconnect.vn', '$2b$10$/M8YC0N1J98TLXyEp2nElOlRYtF2vNuQK.J0cBFlU6syj7Wf1ROaK', '0910000021', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_21'),
+  (31, 'Hồ Thu Linh', 'student_22@ptconnect.vn', '$2b$10$/M8YC0N1J98TLXyEp2nElOlRYtF2vNuQK.J0cBFlU6syj7Wf1ROaK', '0910000022', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_22'),
+  (32, 'Phan Đức Hương', 'student_23@ptconnect.vn', '$2b$10$/M8YC0N1J98TLXyEp2nElOlRYtF2vNuQK.J0cBFlU6syj7Wf1ROaK', '0910000023', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_23'),
+  (33, 'Hồ Phương Tuấn', 'student_24@ptconnect.vn', '$2b$10$/M8YC0N1J98TLXyEp2nElOlRYtF2vNuQK.J0cBFlU6syj7Wf1ROaK', '0910000024', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_24'),
+  (34, 'Hồ Hải Sơn', 'student_25@ptconnect.vn', '$2b$10$/M8YC0N1J98TLXyEp2nElOlRYtF2vNuQK.J0cBFlU6syj7Wf1ROaK', '0910000025', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_25'),
+  (35, 'Phạm Hải Phương', 'student_26@ptconnect.vn', '$2b$10$/M8YC0N1J98TLXyEp2nElOlRYtF2vNuQK.J0cBFlU6syj7Wf1ROaK', '0910000026', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_26'),
+  (36, 'Hoàng Phương Sơn', 'student_27@ptconnect.vn', '$2b$10$/M8YC0N1J98TLXyEp2nElOlRYtF2vNuQK.J0cBFlU6syj7Wf1ROaK', '0910000027', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_27'),
+  (37, 'Hồ Thu Anh', 'student_28@ptconnect.vn', '$2b$10$/M8YC0N1J98TLXyEp2nElOlRYtF2vNuQK.J0cBFlU6syj7Wf1ROaK', '0910000028', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_28'),
+  (38, 'Nguyễn Thu Hiếu', 'student_29@ptconnect.vn', '$2b$10$/M8YC0N1J98TLXyEp2nElOlRYtF2vNuQK.J0cBFlU6syj7Wf1ROaK', '0910000029', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_29'),
+  (39, 'Trần Đức Tùng', 'student_30@ptconnect.vn', '$2b$10$/M8YC0N1J98TLXyEp2nElOlRYtF2vNuQK.J0cBFlU6syj7Wf1ROaK', '0910000030', 'STUDENT', 'ACTIVE', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student_30');
 
 -- 2. PT PROFILES
-INSERT INTO `pt_profiles` (`id`, `user_id`, `experience_years`, `location_pricing_note`, `certificate_url`, `average_rating`, `total_reviews`, `verification_status`) VALUES
-  (1, 2, 6, 'Dạy tại nhà phụ thu 20% tiền đi lại', 'https://storage.ptconnect.vn/certs/cert_nasam.jpg', 0.0, 0, 'VERIFIED'),
-  (2, 3, 4, 'Khác địa điểm thỏa thuận thêm phí', 'https://storage.ptconnect.vn/certs/cert_nasam.jpg', 0.0, 0, 'VERIFIED'),
-  (3, 4, 5, 'Giá chuẩn theo hợp đồng', 'https://storage.ptconnect.vn/certs/cert_nasam.jpg', 0.0, 0, 'VERIFIED'),
-  (4, 5, 3, 'Kèm tại nhà phụ thu 50k/buổi', 'https://storage.ptconnect.vn/certs/cert_nasam.jpg', 0.0, 0, 'VERIFIED'),
-  (5, 6, 7, 'Không phụ thu địa điểm chỉ định', 'https://storage.ptconnect.vn/certs/cert_nasam.jpg', 0.0, 0, 'VERIFIED'),
-  (6, 7, 2, 'Chờ ban quản trị xét duyệt hồ sơ', 'https://storage.ptconnect.vn/certs/cert_nasam.jpg', 0.0, 0, 'PENDING'),
-  (7, 8, 1, 'Chờ kiểm tra bằng cấp chứng chỉ', 'https://storage.ptconnect.vn/certs/cert_nasam.jpg', 0.0, 0, 'PENDING'),
-  (8, 9, 3, 'Tài khoản bị tạm ngưng', 'https://storage.ptconnect.vn/certs/cert_nasam.jpg', 0.0, 0, 'REJECTED');
+INSERT INTO `pt_profiles` (`id`, `user_id`, `bio`, `specialties`, `experience_years`, `location_pricing_note`, `certificate_url`, `demo_video_url`, `verification_status`) VALUES
+  (1, 2, 'Chuyên gia thể hình cá nhân và tăng cơ giảm mỡ chuẩn khoa học. Hơn 6 năm kinh nghiệm huấn luyện thi đấu và dinh dưỡng thực chiến tại khu vực Cầu Giấy và Thanh Xuân.', 'Tăng cơ, Giảm mỡ, Thể hình, Dinh dưỡng thể thao', 6, 'Dạy tại nhà phụ thu 20% tiền đi lại', 'https://storage.ptconnect.vn/certs/cert_nasam.jpg', 'https://www.youtube.com/watch?v=aclHkVaku9U', 'VERIFIED'),
+  (2, 3, 'Huấn luyện viên Calisthenics và chỉnh sửa tư thế cột sống, cải thiện đau mỏi vai gáy. Kinh nghiệm 4 năm dạy kèm 1-1 tại Thanh Xuân và Đống Đa.', 'Calisthenics, Chỉnh sửa tư thế, Tăng thể lực, Đau vai gáy', 4, 'Khác địa điểm thỏa thuận thêm phí', 'https://storage.ptconnect.vn/certs/cert_nasam.jpg', 'https://www.youtube.com/watch?v=IODxDxX7oi4', 'VERIFIED'),
+  (3, 4, 'Chuyên gia Powerlifting và phát triển sức mạnh tối đa (Squat, Bench, Deadlift). Đạt chứng chỉ NASM CPT quốc tế, huấn luyện tại Tây Hồ và Cầu Giấy.', 'Powerlifting, Sức mạnh, Tăng cân, Bulking', 5, 'Giá chuẩn theo hợp đồng', 'https://storage.ptconnect.vn/certs/cert_nasam.jpg', 'https://www.youtube.com/watch?v=bEv6CCg2BC8', 'VERIFIED'),
+  (4, 5, 'HLV chuyên sâu Giảm mỡ siết cơ nữ, Pilates, Yoga phục hồi và thon gọn vóc dáng sau sinh. Có kinh nghiệm hướng dẫn dinh dưỡng Eat Clean tại Ba Đình, Cầu Giấy.', 'Giảm mỡ nữ, Yoga, Pilates, Giảm cân sau sinh, Dinh dưỡng Eat Clean', 3, 'Kèm tại nhà phụ thu 50k/buổi', 'https://storage.ptconnect.vn/certs/cert_nasam.jpg', 'https://www.youtube.com/watch?v=v7AYKMP6rOE', 'VERIFIED'),
+  (5, 6, 'HLV thể lực, Boxing, Kickfit cường độ cao đốt mỡ cấp tốc và phản xạ tự vệ. 7 năm kinh nghiệm tại Times City và Hai Bà Trưng.', 'Kickfit, Boxing, Cardio đốt mỡ, Tự vệ, Tăng sức bền', 7, 'Không phụ thu địa điểm chỉ định', 'https://storage.ptconnect.vn/certs/cert_nasam.jpg', 'https://www.youtube.com/watch?v=1bPEqY_4j-w', 'VERIFIED'),
+  (6, 7, 'Huấn luyện viên trẻ năng động chuyên hỗ trợ người mới bắt đầu làm quen với tạ và xây dựng thói quen vận động lành mạnh.', 'Người mới bắt đầu, Thể dục tổng quát, Giảm mỡ nhẹ nhàng', 2, 'Chờ ban quản trị xét duyệt hồ sơ', 'https://storage.ptconnect.vn/certs/cert_nasam.jpg', 'https://www.youtube.com/watch?v=aclHkVaku9U', 'PENDING'),
+  (7, 8, 'HLV Yoga và giãn cơ trị liệu, phục hồi chấn thương nhẹ và tăng độ dẻo dai cơ thể cho dân văn phòng.', 'Yoga trị liệu, Giãn cơ, Dẻo dai cơ thể', 1, 'Chờ kiểm tra bằng cấp chứng chỉ', 'https://storage.ptconnect.vn/certs/cert_nasam.jpg', 'https://www.youtube.com/watch?v=v7AYKMP6rOE', 'PENDING'),
+  (8, 9, 'HLV thể hình cơ bản và nâng cao.', 'Thể hình cơ bản', 3, 'Tài khoản bị tạm ngưng', 'https://storage.ptconnect.vn/certs/cert_nasam.jpg', 'https://www.youtube.com/watch?v=1bPEqY_4j-w', 'REJECTED');
 
 -- 2b. PT LOCATIONS (BCNF)
 INSERT INTO `pt_locations` (`pt_id`, `location_name`) VALUES
@@ -1531,30 +1531,30 @@ INSERT INTO `reviews` (`id`, `booking_id`, `rating`, `comment`, `created_at`) VA
   (64, 148, 5, 'Rất hài lòng với lộ trình huấn luyện cá nhân hóa rõ ràng.', '2026-09-22 08:00:00');
 
 -- 10. CANCELLATIONS
-INSERT INTO `cancellations` (`id`, `booking_id`, `cancelled_by_id`, `cancelled_by_role`, `reason`, `cancelled_at`, `hours_before_session`, `refund_amount`, `compensation_amount`, `penalty_amount`, `penalty_shortfall`, `status`) VALUES
-  (1, 8, 10, 'STUDENT', 'Bận việc đột xuất tại công ty không kịp đến phòng tập', '2026-11-07 12:00:00', 31.0, 300000.00, 0.00, 200000.00, 200000.00, 'PROCESSED'),
-  (2, 13, 5, 'PT', 'Có việc gia đình phát sinh gấp', '2026-10-26 03:00:00', 31.0, 0.00, 0.00, 0.00, 0.00, 'PROCESSED'),
-  (3, 25, 3, 'PT', 'Có việc gia đình phát sinh gấp', '2026-11-06 16:30:00', 43.0, 0.00, 0.00, 0.00, 0.00, 'PROCESSED'),
-  (4, 26, 13, 'STUDENT', 'Bị cảm sốt nhẹ cần nghỉ ngơi hồi phục', '2026-09-06 18:30:00', 42.0, 300000.00, 0.00, 0.00, 0.00, 'PROCESSED'),
-  (5, 27, 14, 'STUDENT', 'Trùng lịch công tác đột xuất cuối tuần', '2026-11-01 13:00:00', 33.0, 300000.00, 0.00, 0.00, 0.00, 'PROCESSED'),
-  (6, 39, 2, 'PT', 'Trùng lịch công tác đột xuất cuối tuần', '2026-10-06 22:00:00', 43.0, 0.00, 0.00, 0.00, 0.00, 'PROCESSED'),
-  (7, 49, 6, 'PT', 'Bị cảm sốt nhẹ cần nghỉ ngơi hồi phục', '2026-09-10 03:30:00', 45.0, 0.00, 0.00, 0.00, 0.00, 'PROCESSED'),
-  (8, 51, 6, 'PT', 'Bận việc đột xuất tại công ty', '2026-08-26 10:00:00', 45.0, 0.00, 0.00, 0.00, 0.00, 'PROCESSED'),
-  (9, 75, 6, 'PT', 'Có việc gia đình phát sinh gấp', '2026-08-28 12:30:00', 47.0, 0.00, 0.00, 0.00, 0.00, 'PROCESSED'),
-  (10, 89, 23, 'STUDENT', 'Có việc gia đình phát sinh gấp', '2026-09-24 08:00:00', 25.0, 375000.00, 0.00, 0.00, 0.00, 'PROCESSED'),
-  (11, 118, 29, 'STUDENT', 'Bị cảm sốt nhẹ cần nghỉ ngơi hồi phục', '2026-09-18 21:00:00', 43.0, 350000.00, 0.00, 0.00, 0.00, 'PROCESSED'),
-  (12, 121, 30, 'STUDENT', 'Trùng lịch công tác đột xuất cuối tuần', '2026-11-06 06:00:00', 26.0, 400000.00, 0.00, 0.00, 0.00, 'PROCESSED'),
-  (13, 126, 30, 'STUDENT', 'Bận việc đột xuất tại công ty', '2026-08-08 03:00:00', 25.0, 300000.00, 0.00, 0.00, 0.00, 'PROCESSED'),
-  (14, 141, 33, 'STUDENT', 'Có việc gia đình phát sinh gấp', '2026-09-25 01:30:00', 27.0, 300000.00, 0.00, 0.00, 0.00, 'PROCESSED');
+INSERT INTO `cancellations` (`id`, `booking_id`, `cancelled_by_id`, `reason`, `status`, `cancelled_at`) VALUES
+  (1, 8, 10, 'Bận việc đột xuất tại công ty không kịp đến phòng tập', 'PROCESSED', '2026-11-07 12:00:00'),
+  (2, 13, 5, 'Có việc gia đình phát sinh gấp', 'PROCESSED', '2026-10-26 03:00:00'),
+  (3, 25, 3, 'Có việc gia đình phát sinh gấp', 'PROCESSED', '2026-11-06 16:30:00'),
+  (4, 26, 13, 'Bị cảm sốt nhẹ cần nghỉ ngơi hồi phục', 'PROCESSED', '2026-09-06 18:30:00'),
+  (5, 27, 14, 'Trùng lịch công tác đột xuất cuối tuần', 'PROCESSED', '2026-11-01 13:00:00'),
+  (6, 39, 2, 'Trùng lịch công tác đột xuất cuối tuần', 'PROCESSED', '2026-10-06 22:00:00'),
+  (7, 49, 6, 'Bị cảm sốt nhẹ cần nghỉ ngơi hồi phục', 'PROCESSED', '2026-09-10 03:30:00'),
+  (8, 51, 6, 'Bận việc đột xuất tại công ty', 'PROCESSED', '2026-08-26 10:00:00'),
+  (9, 75, 6, 'Có việc gia đình phát sinh gấp', 'PROCESSED', '2026-08-28 12:30:00'),
+  (10, 89, 23, 'Có việc gia đình phát sinh gấp', 'PROCESSED', '2026-09-24 08:00:00'),
+  (11, 118, 29, 'Bị cảm sốt nhẹ cần nghỉ ngơi hồi phục', 'PROCESSED', '2026-09-18 21:00:00'),
+  (12, 121, 30, 'Trùng lịch công tác đột xuất cuối tuần', 'PROCESSED', '2026-11-06 06:00:00'),
+  (13, 126, 30, 'Bận việc đột xuất tại công ty', 'PROCESSED', '2026-08-08 03:00:00'),
+  (14, 141, 33, 'Có việc gia đình phát sinh gấp', 'PROCESSED', '2026-09-25 01:30:00');
 
 -- 10b. BOOKING DISPUTES
-INSERT INTO `booking_disputes` (`id`, `booking_id`, `sender_id`, `dispute_type`, `reason`, `evidence_url`, `counter_evidence_url`, `counter_argument`, `status`, `admin_notes`, `deadline_at`, `resolved_at`, `created_at`) VALUES
-  (1, 1, 10, 'WRONG_ABSENT', 'Em có mặt tại phòng tập đúng giờ nhưng PT điểm danh vắng mặt nhầm. Em gửi kèm ảnh chụp check-in tại quầy lễ tân lúc 14h00.', '/static/uploads/evidence_checkin_gym.jpg', NULL, NULL, 'PENDING', NULL, '2026-11-15 21:00:00', NULL, '2026-11-13 21:00:00'),
-  (2, 9, 11, 'PT_NO_SHOW', 'HLV không đến điểm hẹn và không thông báo trước.', '/static/uploads/evidence_chat.jpg', '/static/uploads/counter_evidence_pt.jpg', 'Tôi bị hỏng xe trên đường đến và đã nhắn tin thông báo trước 15 phút, sẵn sàng bù ca vào ngày mai.', 'EVIDENCE_REQUESTED', 'Admin đã nhận phản biện từ HLV, đang tiến hành đối chiếu đối chứng camera phòng tập.', '2026-11-15 09:00:00', NULL, '2026-11-13 09:00:00'),
-  (3, 16, 12, 'CONTRACT_TERMINATION', 'HLV không đến muộn và thay đổi lịch không báo trước. Đề nghị chấm dứt hợp đồng và hoàn tiền các buổi còn lại.', '/static/uploads/evidence_schedule_logs.jpg', NULL, 'Tôi đồng ý chấm dứt hợp đồng do thời gian tới tôi chuyển công tác, nhờ Admin hỗ trợ hoàn tiền các buổi còn lại cho học viên.', 'PENDING', 'Admin đang xem xét yêu cầu chấm dứt hợp đồng của học viên và ý kiến đồng thuận từ HLV.', '2026-11-15 03:00:00', NULL, '2026-11-13 03:00:00'),
-  (4, 4, 2, 'STUDENT_NO_SHOW', 'Học viên không đến nhưng phản ánh sai sự thật rằng HLV vắng mặt.', '/static/uploads/pt_checkin.jpg', NULL, NULL, 'PENDING', NULL, '2026-11-16 09:00:00', NULL, '2026-11-14 07:00:00'),
-  (5, 5, 10, 'ATTITUDE_QUALITY', 'HLV thái độ gắt gỏng và tự ý kết thúc buổi tập sớm 20 phút mà không có lý do chính đáng.', '/static/uploads/evidence_chat.jpg', NULL, 'Tôi đã giải thích với học viên do có ca tập đột xuất, tôi nhận sai sót.', 'RESOLVED_REFUND', 'Admin đã xác minh vi phạm kỷ luật của HLV. Đã chấp thuận khiếu nại và hoàn trả 1 buổi tập vào hợp đồng học viên.', NULL, '2026-11-13 23:00:00', '2026-11-12 09:00:00'),
-  (6, 20, 13, 'STUDENT_NO_SHOW', 'Học viên phản ánh HLV không xuất hiện tại phòng tập lúc 18h00.', '/static/uploads/evidence_checkin_gym.jpg', '/static/uploads/counter_evidence_pt.jpg', 'Camera phòng tập chứng minh tôi đã có mặt từ 17h50 đến 18h30 tại sảnh chính nhưng học viên không đến.', 'REJECTED', 'Admin đã đối chiếu dữ liệu camera và nhật ký ra vào phòng tập. Bác bỏ khiếu nại của học viên do HLV có mặt đúng giờ.', NULL, '2026-11-14 01:00:00', '2026-11-11 09:00:00');
+INSERT INTO `booking_disputes` (`id`, `booking_id`, `sender_id`, `dispute_type`, `reason`, `evidence_url`, `counter_evidence_url`, `counter_argument`, `status`, `admin_notes`, `resolved_at`, `created_at`) VALUES
+  (1, 1, 10, 'WRONG_ABSENT', 'Em có mặt tại phòng tập đúng giờ nhưng PT điểm danh vắng mặt nhầm. Em gửi kèm ảnh chụp check-in tại quầy lễ tân lúc 14h00.', '/static/uploads/evidence_checkin_gym.jpg', NULL, NULL, 'PENDING', NULL, NULL, '2026-11-13 21:00:00'),
+  (2, 9, 11, 'PT_NO_SHOW', 'HLV không đến điểm hẹn và không thông báo trước.', '/static/uploads/evidence_chat.jpg', '/static/uploads/counter_evidence_pt.jpg', 'Tôi bị hỏng xe trên đường đến và đã nhắn tin thông báo trước 15 phút, sẵn sàng bù ca vào ngày mai.', 'EVIDENCE_REQUESTED', 'Admin đã nhận phản biện từ HLV, đang tiến hành đối chiếu đối chứng camera phòng tập.', NULL, '2026-11-13 09:00:00'),
+  (3, 16, 12, 'CONTRACT_TERMINATION', 'HLV không đến muộn và thay đổi lịch không báo trước. Đề nghị chấm dứt hợp đồng và hoàn tiền các buổi còn lại.', '/static/uploads/evidence_schedule_logs.jpg', NULL, 'Tôi đồng ý chấm dứt hợp đồng do thời gian tới tôi chuyển công tác, nhờ Admin hỗ trợ hoàn tiền các buổi còn lại cho học viên.', 'PENDING', 'Admin đang xem xét yêu cầu chấm dứt hợp đồng của học viên và ý kiến đồng thuận từ HLV.', NULL, '2026-11-13 03:00:00'),
+  (4, 4, 2, 'STUDENT_NO_SHOW', 'Học viên không đến nhưng phản ánh sai sự thật rằng HLV vắng mặt.', '/static/uploads/pt_checkin.jpg', NULL, NULL, 'PENDING', NULL, NULL, '2026-11-14 07:00:00'),
+  (5, 5, 10, 'ATTITUDE_QUALITY', 'HLV thái độ gắt gỏng và tự ý kết thúc buổi tập sớm 20 phút mà không có lý do chính đáng.', '/static/uploads/evidence_chat.jpg', NULL, 'Tôi đã giải thích với học viên do có ca tập đột xuất, tôi nhận sai sót.', 'RESOLVED_REFUND', 'Admin đã xác minh vi phạm kỷ luật của HLV. Đã chấp thuận khiếu nại và hoàn trả 1 buổi tập vào hợp đồng học viên.', '2026-11-13 23:00:00', '2026-11-12 09:00:00'),
+  (6, 20, 13, 'STUDENT_NO_SHOW', 'Học viên phản ánh HLV không xuất hiện tại phòng tập lúc 18h00.', '/static/uploads/evidence_checkin_gym.jpg', '/static/uploads/counter_evidence_pt.jpg', 'Camera phòng tập chứng minh tôi đã có mặt từ 17h50 đến 18h30 tại sảnh chính nhưng học viên không đến.', 'REJECTED', 'Admin đã đối chiếu dữ liệu camera và nhật ký ra vào phòng tập. Bác bỏ khiếu nại của học viên do HLV có mặt đúng giờ.', '2026-11-14 01:00:00', '2026-11-11 09:00:00');
 
 -- 11. PAYMENTS
 INSERT INTO `payments` (`id`, `wallet_id`, `enrollment_id`, `amount`, `payment_type`, `payment_method`, `status`, `transaction_ref`, `created_at`) VALUES
@@ -1748,22 +1748,5 @@ INSERT INTO `workouts` (`id`, `plan_id`, `exercise_order`, `exercise_name`, `tar
   (73, 15, 4, 'Lat Pulldown', 'Cơ lưng xô', 4, 12, 35.00, 60, 'https://storage.ptconnect.vn/videos/lat_pulldown.mp4'),
   (74, 15, 5, 'Dumbbell Shoulder Press', 'Cơ vai', 3, 10, 12.00, 60, 'https://storage.ptconnect.vn/videos/dumbbell_shoulder_press.mp4');
 
--- 14. ĐỒNG BỘ CHỈ SỐ ĐÁNH GIÁ CỦA PT THEO REVIEWS THỰC TẾ
-UPDATE `pt_profiles` p
-SET
-  `average_rating` = COALESCE((
-    SELECT ROUND(AVG(r.`rating`), 2)
-    FROM `reviews` r
-    JOIN `bookings` b ON r.`booking_id` = b.`id`
-    JOIN `availability_slots` s ON b.`slot_id` = s.`id`
-    WHERE s.`pt_id` = p.`id`
-  ), 0),
-  `total_reviews` = (
-    SELECT COUNT(*)
-    FROM `reviews` r
-    JOIN `bookings` b ON r.`booking_id` = b.`id`
-    JOIN `availability_slots` s ON b.`slot_id` = s.`id`
-    WHERE s.`pt_id` = p.`id`
-  );
-
+-- 14. ĐỒNG BỘ CHỈ SỐ ĐÁNH GIÁ CỦA PT: ĐÃ CHUYỂN HOÀN TOÀN SANG TÍNH TOÁN ĐỘNG (VIEW v_pt_rating_statistics VÀ SELECT) ĐẠT CHUẨN BCNF (KHÔNG LƯU CỘT DẪN XUẤT VẬT LÝ).
 -- HOÀN TẤT DỮ LIỆU SEED DEMO.

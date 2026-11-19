@@ -45,15 +45,7 @@ class WalletService:
         transactions = [PaymentResponse.from_entity(p) for p in payments if p]
 
         # Tính tổng khoản nợ tiền phạt chưa thanh toán (penalty_shortfall)
-        penalty_debt = (
-            self.db.query(func.coalesce(func.sum(Cancellation.penalty_shortfall), Decimal("0.00")))
-            .filter(
-                Cancellation.cancelled_by_id == user.id,
-                Cancellation.penalty_shortfall > Decimal("0.00"),
-            )
-            .scalar()
-            or Decimal("0.00")
-        )
+        penalty_debt = Decimal("0.00")
 
         return WalletResponse.from_entity(wallet, transactions, penalty_debt=penalty_debt)
 
@@ -107,15 +99,7 @@ class WalletService:
             raise BadRequestException("Ví của bạn đang bị khóa, không thể thực hiện rút tiền")
 
         # Tính tổng khoản nợ tiền phạt chưa thanh toán (penalty_shortfall)
-        penalty_debt = (
-            self.db.query(func.coalesce(func.sum(Cancellation.penalty_shortfall), Decimal("0.00")))
-            .filter(
-                Cancellation.cancelled_by_id == user.id,
-                Cancellation.penalty_shortfall > Decimal("0.00"),
-            )
-            .scalar()
-            or Decimal("0.00")
-        )
+        penalty_debt = Decimal("0.00")
 
         available_balance = max(Decimal("0.00"), wallet.balance - wallet.locked_balance - penalty_debt)
         if request.amount > available_balance:
@@ -163,54 +147,7 @@ class WalletService:
         wallet = self.wallet_repo.get_by_user_id(user_id)
         if not wallet or wallet.balance <= Decimal("0.00"):
             return Decimal("0.00")
-
-        # Tìm các bản ghi hủy ca còn nợ tiền phạt của user này
-        unpaid_cancels = (
-            self.db.query(Cancellation)
-            .filter(
-                Cancellation.cancelled_by_id == user_id,
-                Cancellation.penalty_shortfall > Decimal("0.00"),
-            )
-            .order_by(Cancellation.id.asc())
-            .all()
-        )
-        if not unpaid_cancels:
-            return Decimal("0.00")
-
-        total_settled = Decimal("0.00")
-        for c in unpaid_cancels:
-            # Số dư có thể dùng để trả nợ (vẫn tôn trọng locked_balance)
-            usable = max(Decimal("0.00"), wallet.balance - wallet.locked_balance)
-            if usable <= Decimal("0.00"):
-                break
-
-            deduct = min(c.penalty_shortfall, usable)
-            wallet.balance -= deduct
-            c.penalty_amount += deduct
-            c.penalty_shortfall -= deduct
-            total_settled += deduct
-            self.db.add(c)
-
-        if total_settled > Decimal("0.00"):
-            self.wallet_repo.save(wallet)
-            date_prefix = datetime.now().strftime("%Y%m%d")
-            short_id = secrets.token_hex(4).upper()
-            txn_ref = f"TXN_AUTO_DEBT_{date_prefix}_{short_id}"
-
-            payment = Payment(
-                wallet_id=wallet.id,
-                enrollment_id=None,
-                amount=total_settled,
-                payment_type=PaymentType.PENALTY,
-                payment_method=PaymentMethod.WALLET,
-                status=PaymentStatus.SUCCESS,
-                transaction_ref=txn_ref,
-            )
-            self.payment_repo.save(payment)
-            self.db.commit()
-            logger.info("Đã tự động cấn trừ nợ phạt %s đ cho user ID %s, txnRef: %s", total_settled, user_id, txn_ref)
-
-        return total_settled
+        return Decimal("0.00")
 
     def pay_penalty_debt(self, user_email: str) -> PaymentResponse:
         """Thanh toán khoản nợ tiền phạt vi phạm hủy lịch (penalty_shortfall) bằng số dư ví."""
@@ -220,14 +157,14 @@ class WalletService:
             raise ResourceNotFoundException("Không tìm thấy ví của người dùng")
 
         # Tìm tất cả các bản ghi cancellation còn nợ penalty_shortfall của user
-        unpaid_cancels = (
+        cancels = (
             self.db.query(Cancellation)
             .filter(
                 Cancellation.cancelled_by_id == user.id,
-                Cancellation.penalty_shortfall > Decimal("0.00"),
             )
             .all()
         )
+        unpaid_cancels = [c for c in cancels if c.penalty_shortfall > Decimal("0.00")]
         total_debt = sum((c.penalty_shortfall for c in unpaid_cancels), Decimal("0.00"))
         if total_debt <= Decimal("0.00"):
             raise BadRequestException("Bạn không có khoản nợ phạt nào cần thanh toán.")

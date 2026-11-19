@@ -10,11 +10,15 @@ from components.slot_card import render_slot_card
 from components.booking_table import render_booking_table, format_booking_datetime
 from api.dispute_api import DisputeApi
 from components.avatar_uploader import render_avatar_management, normalize_avatar_url
+from components.media_helper import render_evidence_viewer, normalize_media_url
+from db_repository import db_repo
+from ai_services import gemini_workout_service
 
 
 # =============================================================================
 # MODAL DIALOGS (CẤP MODULE ĐỂ TRÁNH LỖI RERUN LOOP TRONG CLASS METHOD)
 # =============================================================================
+
 
 @st.dialog("Xác nhận mở khung giờ")
 def confirm_create_slot_dialog(dt_start_iso: str, dt_end_iso: str, slot_label: str):
@@ -335,6 +339,62 @@ class ManageWorkoutPlanView:
                             except Exception as ex:
                                 st.error(f"Lỗi: {str(ex)}")
 
+                # GỢI Ý DANH SÁCH BÀI TẬP THEO MỤC TIÊU
+                st.markdown("---")
+                st.markdown("##### Gợi Ý Danh Sách Bài Tập Mẫu Theo Mục Tiêu")
+                st.caption("Hệ thống tự động đề xuất danh sách bài tập khoa học theo mục tiêu thể lực; bạn có thể chỉnh sửa trực tiếp trên bảng trước khi lưu.")
+
+                col_ai_g, col_ai_btn = st.columns([3, 1])
+                with col_ai_g:
+                    ai_plan_goal = st.text_input(
+                        "Nhập mục tiêu tập luyện để gợi ý bài tập:",
+                        value="Tăng cơ bắp và giảm mỡ toàn thân",
+                        key="input_ai_plan_goal"
+                    )
+                with col_ai_btn:
+                    st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
+                    if st.button("Gợi ý bài tập", type="secondary", use_container_width=True, key="btn_run_ai_workout"):
+                        with st.spinner("Đang chuẩn bị danh sách bài tập khoa học..."):
+                            generated = gemini_workout_service.generate_workout_plan(goal=ai_plan_goal)
+                            st.session_state["ai_workout_table"] = generated
+                            st.success(f"Đã tạo {len(generated)} bài tập gợi ý!")
+
+                if "ai_workout_table" in st.session_state and st.session_state["ai_workout_table"]:
+                    st.markdown("**Bảng bài tập đề xuất (Chỉnh sửa trực tiếp trên bảng):**")
+                    edited_data = st.data_editor(
+                        st.session_state["ai_workout_table"],
+                        num_rows="dynamic",
+                        use_container_width=True,
+                        key="editor_gemini_workouts"
+                    )
+
+                    if st.button("Lưu Giáo Án Này Cho Học Viên", type="primary", key="btn_save_gemini_plan"):
+                        try:
+                            clean_exercises = []
+                            for row in edited_data:
+                                clean_exercises.append({
+                                    "exercise_order": int(row.get("exercise_order", len(clean_exercises) + 1)),
+                                    "exercise_name": str(row.get("exercise_name", "Bài tập")),
+                                    "target_muscle": str(row.get("target_muscle", "Toàn thân")),
+                                    "sets": int(row.get("sets", 3)),
+                                    "reps": int(row.get("reps", 10)),
+                                    "rest_seconds": int(row.get("rest_seconds", 60)),
+                                    "notes": str(row.get("notes", ""))
+                                })
+                            db_repo.save_ai_workout_plan(
+                                enrollment_id=int(chosen_eid),
+                                title=f"Giáo án rèn luyện - {chosen_e.get('studentName')}",
+                                goal=ai_plan_goal,
+                                start_date=date.today().isoformat(),
+                                end_date=(date.today() + timedelta(days=30)).isoformat(),
+                                exercises=clean_exercises
+                            )
+                            st.success("Đã lưu trọn gói giáo án thành công vào Cơ sở dữ liệu!")
+                            del st.session_state["ai_workout_table"]
+                            st.rerun()
+                        except Exception as ex:
+                            st.error(f"Lỗi lưu giáo án: {ex}")
+
         # 2. Danh Sách Giáo Án Đã Tạo
         st.markdown("#### Danh Sách Giáo Án Đã Tạo")
         plans: List[Dict[str, Any]] = []
@@ -502,6 +562,15 @@ class ManagePTProfileView:
                 placeholder="https://storage.ptconnect.vn/certs/cert_nasam.jpg"
             )
 
+            # FEATURE 1: VIDEO DEMO HUẤN LUYỆN VIÊN
+            pt_id_val = self.parent.profile_data.get("id")
+            current_video = self.parent.profile_data.get("demoVideoUrl") or (db_repo.get_pt_video_demo(pt_id_val) if pt_id_val else "")
+            f_video = st.text_input(
+                "Đường dẫn Video Demo Huấn luyện viên (YouTube / MP4):",
+                value=current_video or "",
+                placeholder="Ví dụ: https://www.youtube.com/watch?v=demo_trainer_form"
+            )
+
             btn_save = st.form_submit_button("Lưu Cập Nhật Hồ Sơ", type="primary", use_container_width=True)
 
             if btn_save:
@@ -518,6 +587,8 @@ class ManagePTProfileView:
                     }
                     try:
                         PTApi.update_profile(payload)
+                        if pt_id_val and f_video:
+                            db_repo.update_pt_video_demo(pt_id_val, f_video.strip())
                         st.success("Cập nhật hồ sơ Huấn luyện viên thành công!")
                         st.rerun()
                     except ApiException as e:
@@ -855,6 +926,14 @@ class PTHomeView:
             unsafe_allow_html=True
         )
 
+        # FEATURE 3: NÚT MỞ HỘP THƯ TƯ VẤN HỌC VIÊN
+        col_hdr_space, col_hdr_inbox = st.columns([3, 2])
+        with col_hdr_inbox:
+            if st.button("💬 Hộp Thư Trò Chuyện Trực Tuyến", type="primary", use_container_width=True, key="btn_open_pt_consult_inbox"):
+                st.session_state["live_chat_is_open"] = True
+                st.session_state["live_chat_target_pt_id"] = None
+                st.rerun()
+
         verification_status = self.profile_data.get("verificationStatus", "PENDING")
 
         # Banner thông báo trạng thái phê duyệt
@@ -1060,7 +1139,7 @@ class PTHomeView:
                         st.markdown(f"**Loại tranh chấp:** `{d_type}`")
                         st.markdown(f"**Nội dung phản ánh:** {d_reason}")
                         if d_evidence:
-                            st.markdown(f"**Ảnh bằng chứng:** [Xem ảnh bằng chứng]({d_evidence})")
+                            render_evidence_viewer(d_evidence, caption="Ảnh bằng chứng bên khiếu nại")
 
                         st.markdown("---")
 
@@ -1104,7 +1183,7 @@ class PTHomeView:
                         if d_counter_arg:
                             st.success(f"**Văn bản phản biện đã nộp:** {d_counter_arg}")
                             if d_counter_ev:
-                                st.markdown(f"**Ảnh bằng chứng đối chứng:** [Xem ảnh đối chứng]({d_counter_ev})")
+                                render_evidence_viewer(d_counter_ev, caption="Ảnh bằng chứng đối chứng")
 
                         if d_notes:
                             st.info(f"**Kết luận & Phán quyết từ Quản trị viên:** {d_notes}")

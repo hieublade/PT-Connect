@@ -4,6 +4,7 @@ from api.admin_api import AdminApi
 from api.dispute_api import DisputeApi
 from api.pt_api import PTApi
 from api.client import ApiException
+from components.media_helper import render_evidence_viewer, normalize_media_url
 from analytics.stats import (
     prepare_bookings_df,
     prepare_payments_df,
@@ -477,13 +478,13 @@ class AdminDisputeManagementView:
                 st.markdown(f"**Loại khiếu nại:** `{d_type}`")
                 st.markdown(f"**Nội dung phản ánh:** {d_reason}")
                 if d_evidence:
-                    st.markdown(f"**Ảnh bằng chứng bên khiếu nại:** [Xem ảnh bằng chứng]({d_evidence})")
+                    render_evidence_viewer(d_evidence, caption="Ảnh bằng chứng bên khiếu nại (Nguyên đơn)")
 
                 st.markdown("---")
                 if d_counter_arg:
                     st.success(f"**Phản biện từ bên bị khiếu nại:** {d_counter_arg}")
                     if d_counter_ev:
-                        st.markdown(f"**Ảnh bằng chứng đối chứng:** [Xem ảnh đối chứng]({d_counter_ev})")
+                        render_evidence_viewer(d_counter_ev, caption="Ảnh bằng chứng bên phản biện (Bị đơn)")
                 else:
                     if d_deadline:
                         st.warning(f"**Chưa có phản biện từ đối phương.** Thời hạn 48 giờ kết thúc lúc: `{d_deadline}`")

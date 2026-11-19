@@ -80,10 +80,13 @@ class DisputeApi:
 
     @staticmethod
     def upload_evidence(file_bytes: bytes, filename: str) -> str:
-        """Tải lên file ảnh bằng chứng đối chứng và trả về đường dẫn URL."""
+        """Tải lên file ảnh bằng chứng đối chứng và trả về đường dẫn URL chuẩn '/app/static/uploads/...'. """
         files = {"file": (filename, file_bytes, "image/jpeg")}
         res = api_client.post_files("/api/v1/disputes/upload-evidence", files=files)
         if isinstance(res, dict) and "url" in res:
-            return res["url"]
-        return "/static/uploads/" + filename
+            url = res["url"]
+            if url.startswith("/static/"):
+                return f"/app{url}"
+            return url
+        return f"/app/static/uploads/{filename}"
 

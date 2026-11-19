@@ -1,4 +1,5 @@
 from typing import Any, Dict, List, Optional
+import streamlit as st
 from api.client import api_client
 
 
@@ -6,6 +7,7 @@ class StudentApi:
     """Các hàm gọi API cho Học viên (Student) - Milestone 5."""
 
     @staticmethod
+    @st.cache_data(ttl=30, show_spinner=False)
     def get_pt_profiles(name: Optional[str] = None) -> List[Dict[str, Any]]:
         """Lấy danh sách PT đã duyệt (VERIFIED & ACTIVE), hỗ trợ tìm kiếm theo tên."""
         params = {}
@@ -15,17 +17,20 @@ class StudentApi:
         return res if isinstance(res, list) else []
 
     @staticmethod
+    @st.cache_data(ttl=30, show_spinner=False)
     def get_pt_profile(pt_id: int) -> Dict[str, Any]:
         """Xem hồ sơ công khai của một PT (không có chứng chỉ)."""
         return api_client.get(f"/api/v1/pt-profiles/{pt_id}")
 
     @staticmethod
+    @st.cache_data(ttl=30, show_spinner=False)
     def get_pt_courses(pt_id: int) -> List[Dict[str, Any]]:
         """Lấy danh sách các khóa học ACTIVE của một PT."""
         res = api_client.get(f"/api/v1/pt-profiles/{pt_id}/courses")
         return res if isinstance(res, list) else []
 
     @staticmethod
+    @st.cache_data(ttl=15, show_spinner=False)
     def get_pt_slots(pt_id: int) -> List[Dict[str, Any]]:
         """Lấy danh sách các khung giờ rảnh AVAILABLE trong tương lai của một PT."""
         res = api_client.get(f"/api/v1/pt-profiles/{pt_id}/slots")

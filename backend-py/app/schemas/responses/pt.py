@@ -16,11 +16,13 @@ class PTProfileResponse(CamelModel):
     phone: str | None = None
     avatar_url: str | None = None
     bio: str | None = None
+    specialties: str | None = None
     experience_years: int = 0
     available_locations: str | None = None
     location_pricing_note: str | None = None
     certificate_url: str | None = None
     certificate_urls: str | None = None
+    demo_video_url: str | None = None
     average_rating: float = 0.0
     total_reviews: int = 0
     verification_status: VerificationStatus
@@ -59,11 +61,13 @@ class PTProfileResponse(CamelModel):
             phone=tel,
             avatar_url=avatar,
             bio=profile.bio,
+            specialties=getattr(profile, "specialties", None),
             experience_years=profile.experience_years if profile.experience_years is not None else 0,
             available_locations=profile.available_locations,
             location_pricing_note=profile.location_pricing_note,
             certificate_url=clean_certificate_url(profile.certificate_url),
             certificate_urls=clean_certificate_url(profile.certificate_url),
+            demo_video_url=getattr(profile, "demo_video_url", None),
             average_rating=rating_val,
             total_reviews=reviews_val,
             verification_status=profile.verification_status,
@@ -81,9 +85,11 @@ class PTPublicDTO(CamelModel):
     phone: str | None = None
     avatar_url: str | None = None
     bio: str | None = None
+    specialties: str | None = None
     experience_years: int = 0
     available_locations: str | None = None
     location_pricing_note: str | None = None
+    demo_video_url: str | None = None
     average_rating: float = 0.0
     total_reviews: int = 0
     lowest_price: Money | None = None
@@ -118,9 +124,11 @@ class PTPublicDTO(CamelModel):
             phone=tel,
             avatar_url=avatar,
             bio=profile.bio,
+            specialties=getattr(profile, "specialties", None),
             experience_years=profile.experience_years if profile.experience_years is not None else 0,
             available_locations=profile.available_locations,
             location_pricing_note=profile.location_pricing_note,
+            demo_video_url=getattr(profile, "demo_video_url", None),
             average_rating=rating_val,
             total_reviews=reviews_val,
             lowest_price=lowest_price,

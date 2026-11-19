@@ -108,7 +108,7 @@ erDiagram
 
     WORKOUT_PLANS ||--o{ WORKOUTS : "plan_id (1:N)"
 
-    AVAILABILITY_SLOTS ||--o| BOOKINGS : "slot_id (active_slot_id UNIQUE)"
+    AVAILABILITY_SLOTS ||--o| BOOKINGS : "slot_id (uq_active_slot functional index)"
 
     BOOKINGS ||--o| REVIEWS : "booking_id (1:1 UNIQUE)"
     BOOKINGS ||--o| ATTENDANCE : "booking_id (1:1 UNIQUE)"
@@ -135,11 +135,11 @@ erDiagram
         bigint id PK
         bigint user_id UK,FK
         text bio
+        varchar specialties
         int experience_years
         text location_pricing_note
         varchar certificate_url
-        decimal average_rating
-        int total_reviews
+        varchar demo_video_url
         enum verification_status
         timestamp created_at
         timestamp updated_at
@@ -198,7 +198,6 @@ erDiagram
         varchar student_note
         timestamp created_at
         timestamp updated_at
-        bigint active_slot_id UK "generated physical column for conditional unique"
     }
 
     REVIEWS {
@@ -247,7 +246,6 @@ erDiagram
         text counter_argument
         enum status
         text admin_notes
-        timestamp deadline_at
         timestamp resolved_at
         timestamp created_at
     }

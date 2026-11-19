@@ -258,7 +258,7 @@ python frontend/tools/generate_data.py --import
 6. **Hợp đồng điện tử:** Hệ thống tự động sinh mã giao dịch và xuất file hợp đồng điện tử PDF có giá trị lưu trữ. Học viên tải và xem PDF trực tiếp trên web.
 7. **Đặt ca theo gói:** Học viên đặt lịch các buổi tập theo khóa đã mua → Hệ thống tự động trừ số buổi còn lại (`remaining_sessions`).
 8. **Điểm danh hai phía bằng OTP:** Khi ca tập diễn ra, hai bên nhập mã xác thực OTP ngẫu nhiên để hoàn thành ca tập → Chuyển trạng thái sang `COMPLETED`.
-9. **Đánh giá & Kích hoạt Trigger:** Học viên viết đánh giá 5 sao → MySQL Trigger tự động tính lại `average_rating` và tăng `total_reviews` trên hồ sơ PT ngay lập tức.
+9. **Đánh giá & Tính toán Động BCNF:** Học viên viết đánh giá 5 sao → Điểm đánh giá `average_rating` và tổng số lượt đánh giá `total_reviews` được tính toán động qua View và SELECT, đảm bảo chuẩn BCNF tuyệt đối.
 10. **Dashboard thống kê:** Admin xem báo cáo trực quan hóa với Plotly (Tỷ lệ hoàn thành ca tập, doanh thu sàn, phân bổ trạng thái booking theo thời gian thực).
 
 ---

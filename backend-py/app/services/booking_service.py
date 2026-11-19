@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 from decimal import ROUND_HALF_UP, Decimal
 
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import Session
 
 from app.core.clock import now_local, today_local
@@ -157,17 +157,16 @@ class BookingService:
             raise BadRequestException(str(ex)) from ex
         self.db.add(booking)
 
-        # 4. Mark slot as BOOKED
+        # 4. Mark slot as BOOKED (Database trigger trg_bookings_after_insert updates slot status in DB)
         try:
-            slot.book()
-            self.slot_repo.save(slot)
             self.db.flush()
+            slot.book()
             self.db.commit()
             self.db.refresh(booking)
-        except IntegrityError as ex:
+        except (IntegrityError, OperationalError) as ex:
             self.db.rollback()
-            logger.warning("Integrity error on booking insert: %s", ex)
-            raise BookingConflictException("Khung giờ này vừa có người khác đặt trước, vui lòng chọn khung giờ khác")
+            logger.warning("Integrity/Operational error on booking insert: %s", ex)
+            raise BookingConflictException("Khung giờ này vừa có người khác đặt trước hoặc không còn khả dụng, vui lòng chọn khung giờ khác")
 
         logger.info("Created booking %s for %s", booking.id, student_email)
         return BookingResponse.from_entity(booking)

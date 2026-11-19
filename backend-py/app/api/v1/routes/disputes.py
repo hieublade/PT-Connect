@@ -41,7 +41,7 @@ async def upload_dispute_evidence(
     with open(dest_path, "wb") as f:
         f.write(content)
 
-    file_url = f"/static/uploads/{safe_filename}"
+    file_url = f"/app/static/uploads/{safe_filename}"
     return ok_response(
         data={"url": file_url, "filename": safe_filename},
         message="Tải lên ảnh bằng chứng thành công",
