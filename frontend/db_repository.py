@@ -496,7 +496,7 @@ class DBRepository:
                     """
                     SELECT p.id AS pt_id, p.id AS id, p.user_id, u.full_name AS fullName,
                            u.full_name, u.avatar_url AS avatarUrl, u.avatar_url,
-                           p.bio, p.specialties, p.experience_years AS experienceYears,
+                           p.bio, p.specialty, p.specialty AS specialties, p.experience_years AS experienceYears,
                            p.experience_years,
                            ROUND(COALESCE(AVG(r.rating), 0.0), 2) AS averageRating,
                            ROUND(COALESCE(AVG(r.rating), 0.0), 2) AS average_rating,
@@ -510,11 +510,11 @@ class DBRepository:
                     JOIN users u ON p.user_id = u.id
                     LEFT JOIN pt_locations l ON p.id = l.pt_id
                     LEFT JOIN availability_slots s ON p.id = s.pt_id
-                    LEFT JOIN bookings b ON s.id = b.slot_id
+                    LEFT JOIN bookings b ON s.pt_id = b.pt_id AND s.start_time = b.slot_start_time
                     LEFT JOIN reviews r ON b.id = r.booking_id
                     WHERE u.status = 'ACTIVE'
                     GROUP BY p.id, p.user_id, u.full_name, u.avatar_url,
-                             p.bio, p.specialties, p.experience_years, p.demo_video_url;
+                             p.bio, p.specialty, p.experience_years, p.demo_video_url;
                     """
                 )
                 return cur.fetchall()

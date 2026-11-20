@@ -53,7 +53,7 @@ def test_package_bookings_match_enrollment_owner(seed_db):
 def test_booking_slot_belongs_to_enrollment_pt(seed_db):
     assert _count(
         seed_db,
-        "SELECT COUNT(*) FROM bookings b JOIN availability_slots s ON s.id = b.slot_id "
+        "SELECT COUNT(*) FROM bookings b JOIN availability_slots s ON s.pt_id = b.pt_id AND s.start_time = b.slot_start_time "
         "JOIN enrollments e ON e.id = b.enrollment_id JOIN courses c ON c.id = e.course_id "
         "WHERE s.pt_id <> c.pt_id",
     ) == 0
@@ -72,7 +72,7 @@ def test_cancelled_by_is_the_real_actor(seed_db):
     assert _count(
         seed_db,
         "SELECT COUNT(*) FROM cancellations c JOIN bookings b ON b.id = c.booking_id "
-        "JOIN availability_slots s ON s.id = b.slot_id JOIN pt_profiles p ON p.id = s.pt_id "
+        "JOIN availability_slots s ON s.pt_id = b.pt_id AND s.start_time = b.slot_start_time JOIN pt_profiles p ON p.id = s.pt_id "
         "JOIN users u ON u.id = c.cancelled_by_id "
         "WHERE u.role = 'PT' AND c.cancelled_by_id <> p.user_id",
     ) == 0

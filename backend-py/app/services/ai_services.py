@@ -64,10 +64,11 @@ class CosineRecommendationService:
         # 1. Xây dựng văn bản đại diện (Document) cho mỗi PT
         pt_corpus: List[str] = []
         for pt in pts_list:
+            spec = pt.get("specialty") or pt.get("specialties", "")
             doc_parts = [
                 pt.get("full_name", ""),
-                pt.get("specialties", ""),
-                pt.get("specialties", ""),  # Nhân đôi trọng số chuyên môn
+                spec,
+                spec,  # Nhân đôi trọng số chuyên môn
                 pt.get("bio", ""),
                 pt.get("working_locations", ""),
                 pt.get("working_locations", ""),  # Nhân đôi trọng số địa điểm

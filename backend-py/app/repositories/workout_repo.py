@@ -12,7 +12,15 @@ class WorkoutRepository:
         return (
             self.db.query(Workout)
             .options(selectinload(Workout.plan))
-            .filter(Workout.id == workout_id)
+            .filter(Workout.exercise_order == workout_id)
+            .first()
+        )
+
+    def get_by_plan_and_order(self, plan_id: int, order: int) -> Workout | None:
+        return (
+            self.db.query(Workout)
+            .options(selectinload(Workout.plan))
+            .filter(Workout.plan_id == plan_id, Workout.exercise_order == order)
             .first()
         )
 

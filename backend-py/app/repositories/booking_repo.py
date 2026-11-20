@@ -47,7 +47,19 @@ class BookingRepository:
         )
 
     def find_by_slot_id(self, slot_id: int) -> Booking | None:
-        return self.db.query(Booking).filter(Booking.slot_id == slot_id).first()
+        if slot_id >= 10_000_000_000:
+            pt_id = slot_id // 10_000_000_000
+            start_time = datetime.fromtimestamp(slot_id % 10_000_000_000).replace(microsecond=0)
+            return (
+                self.db.query(Booking)
+                .filter(
+                    Booking._pt_id == pt_id,
+                    Booking.slot_start_time >= start_time - timedelta(seconds=1),
+                    Booking.slot_start_time <= start_time + timedelta(seconds=1),
+                )
+                .first()
+            )
+        return self.db.query(Booking).filter(Booking._pt_id == slot_id).first()
 
     def find_by_student_id(self, student_id: int, status: BookingStatus | None = None) -> list[Booking]:
         query = (

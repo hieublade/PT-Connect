@@ -48,6 +48,7 @@ class ApiClient:
         return headers
 
     def _handle_response(self, response: requests.Response) -> Any:
+        response.encoding = "utf-8"
         try:
             body = response.json()
         except Exception:

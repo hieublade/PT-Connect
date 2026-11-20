@@ -29,7 +29,7 @@ CREATE TABLE `pt_profiles` (
   `id` bigint PRIMARY KEY AUTO_INCREMENT,
   `user_id` bigint UNIQUE NOT NULL,
   `bio` text,
-  `specialties` varchar(255) NULL,
+  `specialty` varchar(255) NULL,
   `experience_years` integer NOT NULL DEFAULT 0,
   `location_pricing_note` text,
   `certificate_url` varchar(500),
@@ -63,15 +63,17 @@ CREATE TABLE `wallets` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `wallet_audit_logs` (
-  `id` bigint PRIMARY KEY AUTO_INCREMENT,
   `wallet_id` bigint NOT NULL,
+  `seq_no` integer NOT NULL DEFAULT 1,
   `old_balance` decimal(14,2) NOT NULL,
   `new_balance` decimal(14,2) NOT NULL,
   `old_locked_balance` decimal(14,2) NOT NULL,
   `new_locked_balance` decimal(14,2) NOT NULL,
   `action_type` ENUM ('TOPUP', 'PAYMENT', 'REFUND', 'COMPENSATION', 'PENALTY') NOT NULL,
   `reason` varchar(255) NULL,
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`wallet_id`, `seq_no`),
+  CONSTRAINT `chk_audit_seq_no` CHECK (`seq_no` > 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `courses` (
@@ -109,13 +111,12 @@ CREATE TABLE `enrollments` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `availability_slots` (
-  `id` bigint PRIMARY KEY AUTO_INCREMENT,
   `pt_id` bigint NOT NULL,
   `start_time` datetime NOT NULL,
   `end_time` datetime NOT NULL,
   `status` ENUM ('AVAILABLE', 'BOOKED', 'LOCKED') NOT NULL DEFAULT 'AVAILABLE',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE KEY `uq_slot_pt_start` (`pt_id`, `start_time`),
+  PRIMARY KEY (`pt_id`, `start_time`),
   CONSTRAINT `chk_slot_time` CHECK (`end_time` > `start_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -124,13 +125,17 @@ CREATE TABLE `bookings` (
   `booking_type` ENUM ('TRIAL', 'PACKAGE') NOT NULL DEFAULT 'PACKAGE',
   `enrollment_id` bigint,
   `student_id` bigint NOT NULL,
-  `slot_id` bigint NOT NULL,
+  `pt_id` bigint NOT NULL,
+  `slot_start_time` datetime NOT NULL,
   `session_fee` decimal(12,2) NOT NULL,
   `status` ENUM ('PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED') NOT NULL DEFAULT 'PENDING',
   `student_note` varchar(255),
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  UNIQUE KEY `uq_active_slot` ((CASE WHEN `status` IN ('PENDING', 'CONFIRMED', 'COMPLETED') THEN `slot_id` END)),
+  UNIQUE KEY `uq_active_slot` (
+    (CASE WHEN `status` IN ('PENDING', 'CONFIRMED', 'COMPLETED') THEN `pt_id` END),
+    (CASE WHEN `status` IN ('PENDING', 'CONFIRMED', 'COMPLETED') THEN date_format(`slot_start_time`, '%Y-%m-%d %H:%i:%s') END)
+  ),
   CONSTRAINT `chk_booking_type_enroll` CHECK (
     (`booking_type` = 'TRIAL' AND `enrollment_id` IS NULL) OR
     (`booking_type` = 'PACKAGE' AND `enrollment_id` IS NOT NULL)
@@ -169,7 +174,6 @@ CREATE TABLE `workout_plans` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `workouts` (
-  `id` bigint PRIMARY KEY AUTO_INCREMENT,
   `plan_id` bigint NOT NULL,
   `exercise_order` integer NOT NULL DEFAULT 1,
   `exercise_name` varchar(150) NOT NULL,
@@ -179,7 +183,7 @@ CREATE TABLE `workouts` (
   `weight_kg` decimal(5,2),
   `rest_seconds` integer NOT NULL DEFAULT 60,
   `video_demo_url` varchar(500),
-  UNIQUE KEY `uq_plan_exercise_order` (`plan_id`, `exercise_order`),
+  PRIMARY KEY (`plan_id`, `exercise_order`),
   CONSTRAINT `chk_workout_order` CHECK (`exercise_order` > 0),
   CONSTRAINT `chk_workout_values` CHECK (`sets` > 0 AND `reps` > 0 AND `rest_seconds` >= 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -224,6 +228,17 @@ CREATE TABLE `booking_disputes` (
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE `chat_messages` (
+  `id` bigint PRIMARY KEY AUTO_INCREMENT,
+  `sender_id` bigint NOT NULL,
+  `receiver_id` bigint NOT NULL,
+  `content` text NOT NULL,
+  `is_read` boolean NOT NULL DEFAULT false,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX `idx_chat_pair` (`sender_id`, `receiver_id`, `created_at`),
+  CONSTRAINT `chk_chat_msg_not_empty` CHECK (CHAR_LENGTH(TRIM(`content`)) > 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- =====================================================================
 -- 2. CHỈ MỤC TỐI ƯU TRUY VẤN (INDEXES)
 -- =====================================================================
@@ -248,7 +263,7 @@ ALTER TABLE `enrollments`        ADD FOREIGN KEY (`course_id`)       REFERENCES 
 ALTER TABLE `availability_slots` ADD FOREIGN KEY (`pt_id`)           REFERENCES `pt_profiles` (`id`);
 ALTER TABLE `bookings`           ADD CONSTRAINT `fk_booking_enroll_student` FOREIGN KEY (`enrollment_id`, `student_id`) REFERENCES `enrollments` (`id`, `student_id`);
 ALTER TABLE `bookings`           ADD FOREIGN KEY (`student_id`)      REFERENCES `users` (`id`);
-ALTER TABLE `bookings`           ADD FOREIGN KEY (`slot_id`)         REFERENCES `availability_slots` (`id`);
+ALTER TABLE `bookings`           ADD FOREIGN KEY (`pt_id`, `slot_start_time`) REFERENCES `availability_slots` (`pt_id`, `start_time`);
 ALTER TABLE `reviews`            ADD FOREIGN KEY (`booking_id`)      REFERENCES `bookings` (`id`);
 ALTER TABLE `cancellations`      ADD FOREIGN KEY (`booking_id`)      REFERENCES `bookings` (`id`);
 ALTER TABLE `cancellations`      ADD FOREIGN KEY (`cancelled_by_id`) REFERENCES `users` (`id`);
@@ -260,22 +275,6 @@ ALTER TABLE `payments`           ADD FOREIGN KEY (`enrollment_id`)   REFERENCES 
 ALTER TABLE `wallet_audit_logs`  ADD FOREIGN KEY (`wallet_id`)       REFERENCES `wallets` (`id`) ON DELETE RESTRICT;
 ALTER TABLE `booking_disputes`   ADD FOREIGN KEY (`booking_id`)      REFERENCES `bookings` (`id`);
 ALTER TABLE `booking_disputes`   ADD FOREIGN KEY (`sender_id`)       REFERENCES `users` (`id`);
-
--- =====================================================================
--- 4. BẢNG TRÒ CHUYỆN TRỰC TUYẾN (ONLINE CHAT - BCNF TỐI THIỂU: 1 BẢNG DUY NHẤT)
--- =====================================================================
-
-CREATE TABLE `chat_messages` (
-  `id` bigint PRIMARY KEY AUTO_INCREMENT,
-  `sender_id` bigint NOT NULL,
-  `receiver_id` bigint NOT NULL,
-  `content` text NOT NULL,
-  `is_read` boolean NOT NULL DEFAULT false,
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  INDEX `idx_chat_pair` (`sender_id`, `receiver_id`, `created_at`),
-  CONSTRAINT `chk_chat_msg_not_empty` CHECK (CHAR_LENGTH(TRIM(`content`)) > 0)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 ALTER TABLE `chat_messages` ADD FOREIGN KEY (`sender_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 ALTER TABLE `chat_messages` ADD FOREIGN KEY (`receiver_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 

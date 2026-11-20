@@ -158,7 +158,9 @@ class WorkoutPlanService:
         if not plan.is_owned_by_pt(pt_profile.id):
             raise UnauthorizedException("Bạn không phải là Huấn luyện viên của giáo án này")
 
-        workout = self.workout_repo.get_by_id(workout_id)
+        workout = self.workout_repo.get_by_plan_and_order(plan_id, workout_id)
+        if not workout:
+            workout = self.workout_repo.get_by_id(workout_id)
         if not workout:
             raise ResourceNotFoundException(f"Không tìm thấy bài tập với ID: {workout_id}")
 

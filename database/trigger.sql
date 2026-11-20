@@ -64,6 +64,7 @@ AFTER UPDATE ON `wallets`
 FOR EACH ROW
 BEGIN
   DECLARE v_action VARCHAR(30);
+  DECLARE v_seq_no INT;
 
   IF OLD.`balance` <> NEW.`balance` OR OLD.`locked_balance` <> NEW.`locked_balance` THEN
     IF NEW.`balance` > OLD.`balance` THEN
@@ -72,8 +73,13 @@ BEGIN
       SET v_action = 'PAYMENT';
     END IF;
 
+    SELECT COALESCE(MAX(`seq_no`), 0) + 1 INTO v_seq_no
+    FROM `wallet_audit_logs`
+    WHERE `wallet_id` = NEW.`id`;
+
     INSERT INTO `wallet_audit_logs` (
       `wallet_id`,
+      `seq_no`,
       `old_balance`,
       `new_balance`,
       `old_locked_balance`,
@@ -83,6 +89,7 @@ BEGIN
       `created_at`
     ) VALUES (
       NEW.`id`,
+      v_seq_no,
       OLD.`balance`,
       NEW.`balance`,
       OLD.`locked_balance`,
@@ -125,7 +132,7 @@ BEGIN
 
   SELECT `pt_id`, `status` INTO v_slot_pt_id, v_slot_status
   FROM `availability_slots`
-  WHERE `id` = NEW.`slot_id`;
+  WHERE `pt_id` = NEW.`pt_id` AND `start_time` = NEW.`slot_start_time`;
 
   IF NEW.`status` IN ('PENDING', 'CONFIRMED')
      AND v_slot_status IS NOT NULL AND v_slot_status <> 'AVAILABLE' THEN
@@ -153,7 +160,7 @@ BEGIN
   IF NEW.`status` IN ('PENDING', 'CONFIRMED', 'COMPLETED') THEN
     UPDATE `availability_slots`
     SET `status` = 'BOOKED'
-    WHERE `id` = NEW.`slot_id` AND `status` = 'AVAILABLE';
+    WHERE `pt_id` = NEW.`pt_id` AND `start_time` = NEW.`slot_start_time` AND `status` = 'AVAILABLE';
   END IF;
 END$$
 
@@ -161,7 +168,7 @@ CREATE TRIGGER `trg_bookings_before_update`
 BEFORE UPDATE ON `bookings`
 FOR EACH ROW
 BEGIN
-  IF NEW.`slot_id` <> OLD.`slot_id`
+  IF NEW.`pt_id` <> OLD.`pt_id` OR NEW.`slot_start_time` <> OLD.`slot_start_time`
      OR NEW.`student_id` <> OLD.`student_id`
      OR NEW.`booking_type` <> OLD.`booking_type`
      OR NOT (NEW.`enrollment_id` <=> OLD.`enrollment_id`)
@@ -189,7 +196,7 @@ BEGIN
     IF NEW.`status` = 'CANCELLED' THEN
       UPDATE `availability_slots`
       SET `status` = 'AVAILABLE'
-      WHERE `id` = NEW.`slot_id` AND `status` = 'BOOKED';
+      WHERE `pt_id` = NEW.`pt_id` AND `start_time` = NEW.`slot_start_time` AND `status` = 'BOOKED';
 
     ELSEIF NEW.`status` = 'COMPLETED'
            AND NEW.`booking_type` = 'PACKAGE' AND NEW.`enrollment_id` IS NOT NULL THEN

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session, selectinload
 
@@ -12,18 +12,45 @@ class AvailabilitySlotRepository:
         self.db = db
 
     def get_by_id(self, slot_id: int) -> AvailabilitySlot | None:
+        if isinstance(slot_id, int) and slot_id >= 10_000_000_000:
+            pt_id = slot_id // 10_000_000_000
+            start_time = datetime.fromtimestamp(slot_id % 10_000_000_000).replace(microsecond=0)
+            return (
+                self.db.query(AvailabilitySlot)
+                .options(selectinload(AvailabilitySlot.pt).selectinload(PTProfile.pt))
+                .filter(
+                    AvailabilitySlot.pt_id == pt_id,
+                    AvailabilitySlot.start_time >= start_time - timedelta(seconds=1),
+                    AvailabilitySlot.start_time <= start_time + timedelta(seconds=1),
+                )
+                .first()
+            )
         return (
             self.db.query(AvailabilitySlot)
             .options(selectinload(AvailabilitySlot.pt).selectinload(PTProfile.pt))
-            .filter(AvailabilitySlot.id == slot_id)
+            .filter(AvailabilitySlot.pt_id == slot_id)
             .first()
         )
 
     def get_by_id_with_lock(self, slot_id: int) -> AvailabilitySlot | None:
+        if isinstance(slot_id, int) and slot_id >= 10_000_000_000:
+            pt_id = slot_id // 10_000_000_000
+            start_time = datetime.fromtimestamp(slot_id % 10_000_000_000).replace(microsecond=0)
+            return (
+                self.db.query(AvailabilitySlot)
+                .options(selectinload(AvailabilitySlot.pt).selectinload(PTProfile.pt))
+                .filter(
+                    AvailabilitySlot.pt_id == pt_id,
+                    AvailabilitySlot.start_time >= start_time - timedelta(seconds=1),
+                    AvailabilitySlot.start_time <= start_time + timedelta(seconds=1),
+                )
+                .with_for_update()
+                .first()
+            )
         return (
             self.db.query(AvailabilitySlot)
             .options(selectinload(AvailabilitySlot.pt).selectinload(PTProfile.pt))
-            .filter(AvailabilitySlot.id == slot_id)
+            .filter(AvailabilitySlot.pt_id == slot_id)
             .with_for_update()
             .first()
         )

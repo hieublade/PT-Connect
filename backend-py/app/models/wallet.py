@@ -84,8 +84,8 @@ class IllegalArgumentException(ValueError):
 class WalletAuditLog(Base):
     __tablename__ = "wallet_audit_logs"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    wallet_id: Mapped[int] = mapped_column(ForeignKey("wallets.id"), nullable=False)
+    wallet_id: Mapped[int] = mapped_column(ForeignKey("wallets.id"), primary_key=True)
+    seq_no: Mapped[int] = mapped_column(Integer, primary_key=True, default=1)
     old_balance: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
     new_balance: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
     old_locked_balance: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
@@ -97,3 +97,19 @@ class WalletAuditLog(Base):
     created_at: Mapped[datetime] = mapped_column(server_default=FetchedValue())
 
     wallet: Mapped["Wallet"] = relationship("Wallet")
+
+    def __init__(self, **kw):
+        passed_id = kw.pop("id", None)
+        if passed_id is not None:
+            self._temp_id = int(passed_id)
+        super().__init__(**kw)
+
+    @property
+    def id(self) -> int:
+        if hasattr(self, "_temp_id") and self._temp_id is not None:
+            return self._temp_id
+        return int(self.seq_no or 0)
+
+    @id.setter
+    def id(self, val: int) -> None:
+        self._temp_id = int(val)

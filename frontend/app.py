@@ -127,14 +127,14 @@ st.markdown(
         transition: all 0.2s ease !important;
     }
     button[data-baseweb="tab"]:hover {
-        color: #0284c7 !important;
+        color: #f97316 !important;
         background-color: #ffffff !important;
     }
     button[data-baseweb="tab"][aria-selected="true"] {
-        background-color: #0284c7 !important;
+        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
         color: #ffffff !important;
         font-weight: 700 !important;
-        box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35) !important;
+        box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35) !important;
     }
     button[data-baseweb="tab"][aria-selected="true"] p,
     button[data-baseweb="tab"][aria-selected="true"] span {
@@ -142,7 +142,7 @@ st.markdown(
     }
 
     /* =========================================================================
-       3. NÚT BẤM VÀ THẺ NỘI DUNG (MAIN CONTENT)
+       3. NÚT BẤM VÀ THẺ NỘI DUNG (MAIN CONTENT) - PHỐI 3 MÀU THỂ THAO BẮT MẮT
        ========================================================================= */
     div[data-testid="stVerticalBlockBorderWrapper"] {
         background-color: #ffffff !important;
@@ -151,20 +151,54 @@ st.markdown(
         box-shadow: 0 4px 14px -2px rgba(15, 23, 42, 0.05) !important;
     }
 
+    /* Nút chính (Primary CTA): Cam San Hô rực rỡ, năng động */
     div.stButton > button[kind="primary"],
     div.stButton > button[data-testid="baseButton-primary"] {
-        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+        background: linear-gradient(135deg, #f97316 0%, #ea580c 100%) !important;
         color: #ffffff !important;
         border: none !important;
         border-radius: 10px !important;
-        font-weight: 600 !important;
-        box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35) !important;
+        font-weight: 700 !important;
+        box-shadow: 0 4px 14px rgba(249, 115, 22, 0.4) !important;
         transition: all 0.2s ease !important;
     }
     div.stButton > button[kind="primary"]:hover,
     div.stButton > button[data-testid="baseButton-primary"]:hover {
+        background: linear-gradient(135deg, #fb923c 0%, #f97316 100%) !important;
         transform: translateY(-2px) !important;
-        box-shadow: 0 6px 18px rgba(2, 132, 199, 0.5) !important;
+        box-shadow: 0 6px 20px rgba(249, 115, 22, 0.6) !important;
+    }
+    div.stButton > button[kind="primary"] p,
+    div.stButton > button[kind="primary"] span,
+    div.stButton > button[data-testid="baseButton-primary"] p,
+    div.stButton > button[data-testid="baseButton-primary"] span {
+        color: #ffffff !important;
+        font-weight: 700 !important;
+    }
+
+    /* Nút phụ (Secondary): Viền Xanh Coban tinh tế */
+    div.stButton > button:not([kind="primary"]):not([data-testid="baseButton-primary"]) {
+        border-radius: 10px !important;
+        border: 1.5px solid #cbd5e1 !important;
+        color: #0f172a !important;
+        font-weight: 600 !important;
+        transition: all 0.2s ease !important;
+    }
+    div.stButton > button:not([kind="primary"]):not([data-testid="baseButton-primary"]):hover {
+        border-color: #0284c7 !important;
+        color: #0284c7 !important;
+        background-color: #f0f9ff !important;
+        transform: translateY(-1px) !important;
+    }
+
+    /* Số liệu Metric: Màu Cam San Hô nổi bật */
+    [data-testid="stMetricValue"] {
+        color: #ea580c !important;
+        font-weight: 800 !important;
+    }
+    [data-testid="stMetricLabel"] {
+        color: #475569 !important;
+        font-weight: 600 !important;
     }
 
     /* Kích thước hộp thoại xem video và live chat rộng rãi, rõ nét */
@@ -172,6 +206,7 @@ st.markdown(
         max-width: 920px !important;
         width: 85vw !important;
         border-radius: 16px !important;
+        border-top: 5px solid #f97316 !important;
     }
     </style>
     """,
@@ -186,7 +221,7 @@ def render_sidebar(user: dict):
             """
             <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 1.2rem;">
                 <h2 style="margin: 0; font-size: 1.6rem; font-weight: 800; color: #ffffff; letter-spacing: -0.5px;">
-                    PT Connect
+                    PT <span style="background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Connect</span>
                 </h2>
             </div>
             """,

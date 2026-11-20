@@ -39,8 +39,8 @@ class LoginView:
             st.markdown(
                 """
                 <div style="text-align: center; margin-bottom: 2rem;">
-                    <h1 style="font-size: 2.6rem; margin-bottom: 0.3rem;">PT Connect</h1>
-                    <p style="color: #6c757d; font-size: 1.05rem; margin-top: 0;">
+                    <h1 style="font-size: 2.6rem; font-weight: 800; color: #0284c7; margin-bottom: 0.3rem;">PT <span style="color: #f97316;">Connect</span></h1>
+                    <p style="color: #64748b; font-size: 1.05rem; margin-top: 0;">
                         Nền tảng kết nối Học viên & Huấn luyện viên cá nhân chuyên nghiệp
                     </p>
                 </div>

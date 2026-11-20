@@ -1,3 +1,4 @@
+SET NAMES utf8mb4;
 USE `ptconnect`;
 
 DELIMITER $$
@@ -73,7 +74,7 @@ BEGIN
         COALESCE(ROUND(AVG(r.`rating`), 2), 0.00) AS `average_rating`
     FROM `reviews` r
     JOIN `bookings` b ON r.`booking_id` = b.`id`
-    JOIN `availability_slots` s ON b.`slot_id` = s.`id`
+    JOIN `availability_slots` s ON b.`pt_id` = s.`pt_id` AND b.`slot_start_time` = s.`start_time`
     WHERE s.`pt_id` = `p_pt_id`;
 END$$
 
@@ -110,7 +111,7 @@ proc_label: BEGIN
         LEAVE proc_label;
     END IF;
 
-    IF `p_payment_type` IS NULL OR `p_payment_type` NOT IN ('COMPENSATION', 'REFUND', 'PENALTY') THEN
+    IF `p_payment_type` IS NULL OR `p_payment_type` NOT IN ('COMPENSATION', 'REFUND', 'PENALTY', 'PLATFORM_FEE') THEN
         SET `p_status_code` = 3;
         LEAVE proc_label;
     END IF;
@@ -165,7 +166,8 @@ END$$
 DROP PROCEDURE IF EXISTS `sp_book_session`$$
 CREATE PROCEDURE `sp_book_session`(
     IN `p_student_id` BIGINT,
-    IN `p_slot_id` BIGINT,
+    IN `p_pt_id` BIGINT,
+    IN `p_slot_start_time` DATETIME,
     IN `p_enrollment_id` BIGINT,
     IN `p_booking_type` VARCHAR(20),
     IN `p_student_note` VARCHAR(255),
@@ -249,7 +251,7 @@ proc_label: BEGIN
     SELECT `pt_id`, `start_time`, `end_time`, `status`
     INTO `v_slot_pt_id`, `v_slot_start`, `v_slot_end`, `v_slot_status`
     FROM `availability_slots`
-    WHERE `id` = `p_slot_id`
+    WHERE `pt_id` = `p_pt_id` AND `start_time` = `p_slot_start_time`
     FOR UPDATE;
 
     IF `v_slot_status` IS NULL OR `v_slot_status` <> 'AVAILABLE' THEN
@@ -269,7 +271,7 @@ proc_label: BEGIN
     SELECT COUNT(*)
     INTO `v_overlap_count`
     FROM `bookings` b
-    JOIN `availability_slots` s ON b.`slot_id` = s.`id`
+    JOIN `availability_slots` s ON b.`pt_id` = s.`pt_id` AND b.`slot_start_time` = s.`start_time`
     WHERE b.`student_id` = `p_student_id`
       AND b.`status` IN ('PENDING', 'CONFIRMED')
       AND s.`start_time` < `v_slot_end`
@@ -286,7 +288,7 @@ proc_label: BEGIN
         SELECT COUNT(*)
         INTO `v_trial_count`
         FROM `bookings` b
-        JOIN `availability_slots` s ON b.`slot_id` = s.`id`
+        JOIN `availability_slots` s ON b.`pt_id` = s.`pt_id` AND b.`slot_start_time` = s.`start_time`
         WHERE b.`student_id` = `p_student_id`
           AND s.`pt_id` = `v_slot_pt_id`
           AND b.`booking_type` = 'TRIAL'
@@ -365,7 +367,8 @@ proc_label: BEGIN
         `booking_type`,
         `enrollment_id`,
         `student_id`,
-        `slot_id`,
+        `pt_id`,
+        `slot_start_time`,
         `session_fee`,
         `status`,
         `student_note`,
@@ -374,7 +377,8 @@ proc_label: BEGIN
         `p_booking_type`,
         `p_enrollment_id`,
         `p_student_id`,
-        `p_slot_id`,
+        `p_pt_id`,
+        `p_slot_start_time`,
         `v_session_fee`,
         'PENDING',
         `p_student_note`,
@@ -404,7 +408,8 @@ proc_label: BEGIN
     DECLARE `v_booking_type` VARCHAR(20);
     DECLARE `v_enrollment_id` BIGINT;
     DECLARE `v_student_id` BIGINT;
-    DECLARE `v_slot_id` BIGINT;
+    DECLARE `v_slot_pt_id` BIGINT;
+    DECLARE `v_slot_start_time` DATETIME;
     DECLARE `v_session_fee` DECIMAL(12,2);
     DECLARE `v_slot_start` DATETIME;
     DECLARE `v_pt_user_id` BIGINT;
@@ -463,12 +468,12 @@ proc_label: BEGIN
         FOR UPDATE;
     END IF;
 
-    SELECT b.`status`, b.`booking_type`, b.`enrollment_id`, b.`student_id`, b.`slot_id`, b.`session_fee`,
+    SELECT b.`status`, b.`booking_type`, b.`enrollment_id`, b.`student_id`, b.`pt_id`, b.`slot_start_time`, b.`session_fee`,
            s.`start_time`, p.`user_id`
-    INTO `v_booking_status`, `v_booking_type`, `v_enrollment_id`, `v_student_id`, `v_slot_id`, `v_session_fee`,
+    INTO `v_booking_status`, `v_booking_type`, `v_enrollment_id`, `v_student_id`, `v_slot_pt_id`, `v_slot_start_time`, `v_session_fee`,
          `v_slot_start`, `v_pt_user_id`
     FROM `bookings` b
-    JOIN `availability_slots` s ON b.`slot_id` = s.`id`
+    JOIN `availability_slots` s ON b.`pt_id` = s.`pt_id` AND b.`slot_start_time` = s.`start_time`
     JOIN `pt_profiles` p ON s.`pt_id` = p.`id`
     WHERE b.`id` = `p_booking_id`
     FOR UPDATE OF b;
@@ -794,11 +799,12 @@ CREATE PROCEDURE `sp_auto_cancel_stale_bookings`(
 BEGIN
     DECLARE `v_done` INT DEFAULT 0;
     DECLARE `v_bk_id` BIGINT;
-    DECLARE `v_slot_id` BIGINT;
+    DECLARE `v_slot_pt_id` BIGINT;
+    DECLARE `v_slot_start_time` DATETIME;
     DECLARE `v_bk_type` VARCHAR(20);
     DECLARE `v_enroll_id` BIGINT;
     DECLARE `cur_stale` CURSOR FOR
-        SELECT `id`, `slot_id`, `booking_type`, `enrollment_id`
+        SELECT `id`, `pt_id`, `slot_start_time`, `booking_type`, `enrollment_id`
         FROM `bookings`
         WHERE `status` = 'PENDING'
           AND `created_at` < NOW() - INTERVAL 4 HOUR;
@@ -808,13 +814,13 @@ BEGIN
 
     OPEN `cur_stale`;
     stale_loop: LOOP
-        FETCH `cur_stale` INTO `v_bk_id`, `v_slot_id`, `v_bk_type`, `v_enroll_id`;
+        FETCH `cur_stale` INTO `v_bk_id`, `v_slot_pt_id`, `v_slot_start_time`, `v_bk_type`, `v_enroll_id`;
         IF `v_done` = 1 THEN
             LEAVE stale_loop;
         END IF;
 
         UPDATE `bookings` SET `status` = 'CANCELLED' WHERE `id` = `v_bk_id`;
-        UPDATE `availability_slots` SET `status` = 'AVAILABLE' WHERE `id` = `v_slot_id`;
+        UPDATE `availability_slots` SET `status` = 'AVAILABLE' WHERE `pt_id` = `v_slot_pt_id` AND `start_time` = `v_slot_start_time`;
 
         -- Hoàn trả lại 1 buổi tập vào gói học viên nếu ca bị hủy là ca theo gói (PACKAGE)
         IF `v_bk_type` = 'PACKAGE' AND `v_enroll_id` IS NOT NULL THEN
@@ -916,8 +922,8 @@ END$$
 DROP PROCEDURE IF EXISTS `sp_save_ai_workout_plan`$$
 CREATE PROCEDURE `sp_save_ai_workout_plan`(
     IN `p_enrollment_id` BIGINT,
-    IN `p_title` VARCHAR(150),
-    IN `p_goal` VARCHAR(255),
+    IN `p_title` VARCHAR(150) CHARACTER SET utf8mb4,
+    IN `p_goal` VARCHAR(255) CHARACTER SET utf8mb4,
     IN `p_start_date` DATE,
     IN `p_end_date` DATE,
     IN `p_exercises_json` JSON,
@@ -958,13 +964,13 @@ BEGIN
             `p_exercises_json`,
             '$[*]' COLUMNS (
                 `exercise_order` FOR ORDINALITY,
-                `exercise_name` VARCHAR(150) PATH '$.exercise_name',
-                `target_muscle` VARCHAR(100) PATH '$.target_muscle',
+                `exercise_name` VARCHAR(150) CHARACTER SET utf8mb4 PATH '$.exercise_name',
+                `target_muscle` VARCHAR(100) CHARACTER SET utf8mb4 PATH '$.target_muscle',
                 `sets` INT PATH '$.sets',
                 `reps` INT PATH '$.reps',
                 `weight_kg` DECIMAL(5,2) PATH '$.weight_kg',
                 `rest_seconds` INT PATH '$.rest_seconds',
-                `video_demo_url` VARCHAR(500) PATH '$.video_demo_url'
+                `video_demo_url` VARCHAR(500) CHARACTER SET utf8mb4 PATH '$.video_demo_url'
             )
         ) AS jt;
     END IF;

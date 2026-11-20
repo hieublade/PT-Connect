@@ -3,12 +3,14 @@ from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
+    DateTime,
     FetchedValue,
     ForeignKey,
     ForeignKeyConstraint,
     Integer,
     Numeric,
     String,
+    and_,
 )
 from sqlalchemy import (
     Enum as SQLEnum,
@@ -39,6 +41,11 @@ class Booking(Base):
             ["enrollments.id", "enrollments.student_id"],
             name="fk_booking_enroll_student",
         ),
+        ForeignKeyConstraint(
+            ["pt_id", "slot_start_time"],
+            ["availability_slots.pt_id", "availability_slots.start_time"],
+            name="fk_booking_slot",
+        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -49,7 +56,10 @@ class Booking(Base):
     )
     enrollment_id: Mapped[int | None] = mapped_column(ForeignKey("enrollments.id"), nullable=True)
     student_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
-    slot_id: Mapped[int] = mapped_column(ForeignKey("availability_slots.id"), nullable=False)
+    _pt_id: Mapped[int] = mapped_column("pt_id", ForeignKey("pt_profiles.id"), nullable=False)
+    slot_start_time: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, default=lambda: datetime.now().replace(microsecond=0)
+    )
     session_fee: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     status: Mapped[BookingStatus] = mapped_column(
         SQLEnum(BookingStatus, values_callable=lambda x: [e.value for e in x]),
@@ -61,7 +71,12 @@ class Booking(Base):
     updated_at: Mapped[datetime | None] = mapped_column(server_default=FetchedValue())
 
     student: Mapped["User"] = relationship("User", foreign_keys=[student_id])
-    slot: Mapped["AvailabilitySlot"] = relationship("AvailabilitySlot", back_populates="bookings")
+    slot: Mapped["AvailabilitySlot"] = relationship(
+        "AvailabilitySlot",
+        back_populates="bookings",
+        foreign_keys=[_pt_id, slot_start_time],
+        primaryjoin="and_(Booking._pt_id == AvailabilitySlot.pt_id, Booking.slot_start_time == AvailabilitySlot.start_time)",
+    )
     # Chỉ join theo enrollment_id; khóa ngoại ghép (enrollment_id, student_id) là ràng buộc toàn vẹn,
     # không phải đường join, nên không để relationship ghi đè student_id.
     enrollment: Mapped["Enrollment | None"] = relationship(
@@ -84,22 +99,66 @@ class Booking(Base):
     )
 
     def __init__(self, **kw):
+        if "pt" in kw or "pt_id" in kw:
+            raise TypeError("Booking không lưu PT trực tiếp (BCNF): PT được suy ra từ slot.pt")
+        slot = kw.get("slot")
+        if slot is not None:
+            if "_pt_id" not in kw and getattr(slot, "pt_id", None) is not None:
+                kw["_pt_id"] = slot.pt_id
+            if "slot_start_time" not in kw and getattr(slot, "start_time", None) is not None:
+                kw["slot_start_time"] = slot.start_time
+
+        passed_slot_id = kw.pop("slot_id", None)
+        if passed_slot_id is not None:
+            if isinstance(passed_slot_id, int) and passed_slot_id >= 10_000_000_000:
+                kw["_pt_id"] = passed_slot_id // 10_000_000_000
+                kw["slot_start_time"] = datetime.fromtimestamp(passed_slot_id % 10_000_000_000).replace(microsecond=0)
+            else:
+                self._temp_slot_id = passed_slot_id
+                if "_pt_id" not in kw and isinstance(passed_slot_id, int):
+                    kw["_pt_id"] = passed_slot_id
+
+        if "pt_id" in kw:
+            kw["_pt_id"] = kw.pop("pt_id")
+
         kw.setdefault("booking_type", BookingType.PACKAGE)
         kw.setdefault("status", BookingStatus.PENDING)
         kw.setdefault("session_fee", Decimal("0.00"))
-        if "pt" in kw or "pt_id" in kw:
-            raise TypeError("Booking không lưu PT trực tiếp (BCNF): PT được suy ra từ slot.pt")
+        kw.setdefault("_pt_id", 1)
+        kw.setdefault("slot_start_time", datetime.now().replace(microsecond=0))
         super().__init__(**kw)
+
+    @property
+    def pt_id(self) -> int:
+        if self.slot is not None and getattr(self.slot, "pt_id", None) is not None:
+            return self.slot.pt_id
+        return self._pt_id
+
+    @pt_id.setter
+    def pt_id(self, val: object) -> None:
+        raise AttributeError("pt_id là thuộc tính chỉ đọc (suy diễn BCNF qua AvailabilitySlot)")
+
+    @property
+    def slot_id(self) -> int:
+        if hasattr(self, "_temp_slot_id") and self._temp_slot_id is not None:
+            return self._temp_slot_id
+        if self.slot is not None and hasattr(self.slot, "id"):
+            return self.slot.id
+        if self._pt_id is not None and self.slot_start_time is not None:
+            return int(self._pt_id) * 10_000_000_000 + int(self.slot_start_time.timestamp())
+        return 0
+
+    @slot_id.setter
+    def slot_id(self, val: int) -> None:
+        self._temp_slot_id = val
+        if isinstance(val, int) and val >= 10_000_000_000:
+            self._pt_id = val // 10_000_000_000
+            self.slot_start_time = datetime.fromtimestamp(val % 10_000_000_000).replace(microsecond=0)
 
     @property
     def pt(self) -> "PTProfile | None":
         """PT của ca tập, suy ra qua AvailabilitySlot (chỉ đọc, chuẩn hóa BCNF)."""
         return self.slot.pt if self.slot is not None else None
-
-    @property
-    def pt_id(self) -> int | None:
-        """pt_id suy ra qua AvailabilitySlot (chỉ đọc, chuẩn hóa BCNF)."""
-        return self.slot.pt_id if self.slot is not None else None
 
     def ensure_consistent_with_enrollment(self) -> None:
         """Bất biến của ca tập theo gói: cùng học viên và cùng PT với hợp đồng.

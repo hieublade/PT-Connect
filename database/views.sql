@@ -66,7 +66,7 @@ SELECT
     c.`status` AS `cancellation_status`
 FROM `cancellations` c
 JOIN `bookings` b ON c.`booking_id` = b.`id`
-JOIN `availability_slots` s ON b.`slot_id` = s.`id`
+JOIN `availability_slots` s ON b.`pt_id` = s.`pt_id` AND b.`slot_start_time` = s.`start_time`
 JOIN `pt_profiles` p ON s.`pt_id` = p.`id`
 JOIN `users` u_stu ON b.`student_id` = u_stu.`id`
 JOIN `users` u_pt ON p.`user_id` = u_pt.`id`
@@ -86,7 +86,7 @@ SELECT
 FROM `pt_profiles` p
 JOIN `users` u ON p.`user_id` = u.`id`
 LEFT JOIN `availability_slots` s ON p.`id` = s.`pt_id`
-LEFT JOIN `bookings` b ON s.`id` = b.`slot_id`
+LEFT JOIN `bookings` b ON s.`pt_id` = b.`pt_id` AND s.`start_time` = b.`slot_start_time`
 LEFT JOIN `reviews` r ON b.`id` = r.`booking_id`
 GROUP BY p.`id`, p.`user_id`, u.`full_name`;
 
@@ -103,7 +103,7 @@ SELECT
     u.`phone`,
     u.`avatar_url`,
     p.`bio`,
-    p.`specialties`,
+    p.`specialty`,
     p.`experience_years`,
     p.`location_pricing_note`,
     p.`certificate_url`,
@@ -116,10 +116,10 @@ SELECT
 FROM `pt_profiles` p
 JOIN `users` u ON p.`user_id` = u.`id`
 LEFT JOIN `availability_slots` s ON p.`id` = s.`pt_id`
-LEFT JOIN `bookings` b ON s.`id` = b.`slot_id`
+LEFT JOIN `bookings` b ON s.`pt_id` = b.`pt_id` AND s.`start_time` = b.`slot_start_time`
 LEFT JOIN `reviews` r ON b.`id` = r.`booking_id`
 GROUP BY p.`id`, p.`user_id`, u.`full_name`, u.`email`, u.`phone`, u.`avatar_url`,
-         p.`bio`, p.`specialties`, p.`experience_years`, p.`location_pricing_note`,
+         p.`bio`, p.`specialty`, p.`experience_years`, p.`location_pricing_note`,
          p.`certificate_url`, p.`demo_video_url`, p.`verification_status`,
          p.`created_at`, p.`updated_at`;
 
@@ -162,7 +162,7 @@ WHERE e.`status` = 'ACTIVE'
 -- =====================================================================
 CREATE OR REPLACE VIEW `v_wallet_audit_logs` AS
 SELECT
-    l.`id`,
+    l.`seq_no`,
     l.`wallet_id`,
     w.`user_id`,
     u.`full_name`,

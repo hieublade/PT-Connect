@@ -1,3 +1,4 @@
+from sqlalchemy import and_
 from sqlalchemy.orm import Session, selectinload
 from app.models.dispute import BookingDispute
 from app.models.booking import Booking
@@ -60,7 +61,13 @@ class DisputeRepository:
             self.db.query(BookingDispute)
             .options(*self._default_options())
             .join(Booking, BookingDispute.booking_id == Booking.id)
-            .join(AvailabilitySlot, Booking.slot_id == AvailabilitySlot.id)
+            .join(
+                AvailabilitySlot,
+                and_(
+                    Booking._pt_id == AvailabilitySlot.pt_id,
+                    Booking.slot_start_time == AvailabilitySlot.start_time,
+                ),
+            )
             .join(PTProfile, AvailabilitySlot.pt_id == PTProfile.id)
             .filter(
                 (BookingDispute.sender_id == user_id)

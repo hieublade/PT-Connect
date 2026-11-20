@@ -116,7 +116,8 @@ def open_live_chat_dialog(current_user: Dict[str, Any], initial_pt_id: Optional[
         for p in pts:
             p_uid = p.get("user_id")
             p_name = p.get("fullName", "Huấn luyện viên")
-            specialty_text = f" ({p.get('specialties')})" if p.get("specialties") else ""
+            spec_val = p.get("specialty") or p.get("specialties")
+            specialty_text = f" ({spec_val})" if spec_val else ""
             stat = pt_msg_stats.get(p_uid)
             if stat and stat.get("unread_count", 0) > 0:
                 unread_badge = f"[{stat['unread_count']} tin mới] "
@@ -155,7 +156,8 @@ def open_live_chat_dialog(current_user: Dict[str, Any], initial_pt_id: Optional[
         chosen_data = pt_map[chosen_uid][1]
         partner_name = chosen_data.get("fullName", "Huấn luyện viên")
         partner_avatar = chosen_data.get("avatarUrl")
-        partner_subtitle = f"{chosen_data.get('experienceYears', 0)} năm KN • {chosen_data.get('specialties') or 'Thể hình & Thể lực'}"
+        spec_info = chosen_data.get("specialty") or chosen_data.get("specialties") or "Thể hình & Thể lực"
+        partner_subtitle = f"{chosen_data.get('experienceYears', 0)} năm KN • {spec_info}"
 
     else:
         # PT chọn Học viên để trả lời tư vấn: Ưu tiên học viên có tin nhắn mới nhất lên đầu
@@ -338,13 +340,13 @@ def render_floating_chat_widget(user: Dict[str, Any]):
         <style>
         @keyframes chatPulseGlowRainbow {
             0% {
-                box-shadow: 0 10px 30px rgba(255, 0, 127, 0.6), 0 0 0 0 rgba(0, 223, 216, 0.7);
+                box-shadow: 0 10px 30px rgba(249, 115, 22, 0.6), 0 0 0 0 rgba(2, 132, 199, 0.7);
             }
             60% {
-                box-shadow: 0 10px 30px rgba(255, 0, 127, 0.6), 0 0 0 22px rgba(0, 223, 216, 0);
+                box-shadow: 0 10px 30px rgba(249, 115, 22, 0.6), 0 0 0 22px rgba(2, 132, 199, 0);
             }
             100% {
-                box-shadow: 0 10px 30px rgba(255, 0, 127, 0.6), 0 0 0 0 rgba(0, 223, 216, 0);
+                box-shadow: 0 10px 30px rgba(249, 115, 22, 0.6), 0 0 0 0 rgba(2, 132, 199, 0);
             }
         }
         .st-key-btn_floating_live_chat,
@@ -384,10 +386,10 @@ def render_floating_chat_widget(user: Dict[str, Any]):
             max-width: 82px !important;
             max-height: 82px !important;
             border-radius: 50% !important;
-            /* Phối màu Gradient 4 tầng Neon cực kỳ sặc sỡ và nổi bật: Hồng Sen -> Tím Neon -> Xanh Biển -> Cyan */
-            background: linear-gradient(135deg, #ff007f 0%, #7928ca 35%, #0070f3 70%, #00dfd8 100%) !important;
+            /* Phối màu Gradient 3 màu thể thao bắt mắt: Cam San Hô -> Cam Cháy -> Xanh Coban */
+            background: linear-gradient(135deg, #f97316 0%, #ea580c 45%, #0284c7 100%) !important;
             border: 3.5px solid #ffffff !important;
-            box-shadow: 0 10px 30px rgba(255, 0, 127, 0.55), 0 0 25px rgba(0, 223, 216, 0.45) !important;
+            box-shadow: 0 10px 30px rgba(249, 115, 22, 0.55), 0 0 25px rgba(2, 132, 199, 0.45) !important;
             animation: chatPulseGlowRainbow 2.8s infinite !important;
             display: flex !important;
             align-items: center !important;

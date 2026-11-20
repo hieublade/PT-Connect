@@ -16,6 +16,7 @@ class PTProfileResponse(CamelModel):
     phone: str | None = None
     avatar_url: str | None = None
     bio: str | None = None
+    specialty: str | None = None
     specialties: str | None = None
     experience_years: int = 0
     available_locations: str | None = None
@@ -61,7 +62,8 @@ class PTProfileResponse(CamelModel):
             phone=tel,
             avatar_url=avatar,
             bio=profile.bio,
-            specialties=getattr(profile, "specialties", None),
+            specialty=getattr(profile, "specialty", getattr(profile, "specialties", None)),
+            specialties=getattr(profile, "specialties", getattr(profile, "specialty", None)),
             experience_years=profile.experience_years if profile.experience_years is not None else 0,
             available_locations=profile.available_locations,
             location_pricing_note=profile.location_pricing_note,
@@ -85,6 +87,7 @@ class PTPublicDTO(CamelModel):
     phone: str | None = None
     avatar_url: str | None = None
     bio: str | None = None
+    specialty: str | None = None
     specialties: str | None = None
     experience_years: int = 0
     available_locations: str | None = None
@@ -124,7 +127,8 @@ class PTPublicDTO(CamelModel):
             phone=tel,
             avatar_url=avatar,
             bio=profile.bio,
-            specialties=getattr(profile, "specialties", None),
+            specialty=getattr(profile, "specialty", getattr(profile, "specialties", None)),
+            specialties=getattr(profile, "specialties", getattr(profile, "specialty", None)),
             experience_years=profile.experience_years if profile.experience_years is not None else 0,
             available_locations=profile.available_locations,
             location_pricing_note=profile.location_pricing_note,

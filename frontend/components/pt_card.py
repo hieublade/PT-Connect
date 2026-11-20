@@ -52,7 +52,7 @@ def render_pt_card(
                 st.markdown(
                     f"""
                     <div style="margin-bottom: 2px;">
-                        <span style="background: #0284c7; color: #ffffff; padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 0.76rem;">
+                        <span style="background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: #ffffff; padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 0.76rem; box-shadow: 0 2px 6px rgba(249, 115, 22, 0.35);">
                             Độ phù hợp: {float(match_pct):.1f}%
                         </span>
                     </div>
@@ -65,7 +65,7 @@ def render_pt_card(
             # Rating display
             rating_val = float(rating) if rating is not None else 0.0
             st.markdown(
-                f"<span style='color: #d97706; font-weight: 600;'>Đánh giá: {rating_val:.1f}/5</span> "
+                f"<span style='color: #ea580c; font-weight: 700;'>★ {rating_val:.1f}/5</span> "
                 f"<span style='color: #64748b; font-size: 0.85rem;'>({total_reviews} đánh giá)</span> "
                 f"• <span style='color: #0284c7; font-weight: 600;'>{exp_years} năm kinh nghiệm</span>",
                 unsafe_allow_html=True
@@ -87,7 +87,7 @@ def render_pt_card(
         c_price, c_btn = st.columns([3, 2])
         with c_price:
             if lowest_price:
-                st.markdown(f"**Giá chỉ từ:** <span style='color: #0284c7; font-weight: 800; font-size: 1.1rem;'>{format_currency_vnd(lowest_price)}</span>", unsafe_allow_html=True)
+                st.markdown(f"**Giá chỉ từ:** <span style='color: #ea580c; font-weight: 800; font-size: 1.15rem;'>{format_currency_vnd(lowest_price)}</span>", unsafe_allow_html=True)
             else:
                 st.markdown("**Giá:** <span style='color: #64748b;'>Liên hệ xem khóa</span>", unsafe_allow_html=True)
 

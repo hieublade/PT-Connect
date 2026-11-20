@@ -22,7 +22,9 @@ class PTProfile(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), unique=True, nullable=False)
     bio: Mapped[str | None] = mapped_column(Text, nullable=True)
-    specialties: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    specialty: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # Bí danh tương thích ngược: code cũ đọc/ghi profile.specialties vẫn chạy
+    specialties = synonym("specialty")
     experience_years: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     location_pricing_note: Mapped[str | None] = mapped_column(Text, nullable=True)
     certificate_url: Mapped[str | None] = mapped_column(String(500), nullable=True)

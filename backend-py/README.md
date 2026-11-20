@@ -135,7 +135,7 @@ erDiagram
         bigint id PK
         bigint user_id UK,FK
         text bio
-        varchar specialties
+        varchar specialty
         int experience_years
         text location_pricing_note
         varchar certificate_url
