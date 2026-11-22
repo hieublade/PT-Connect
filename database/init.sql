@@ -131,6 +131,14 @@ CREATE TABLE `reviews` (
   `booking_id` bigint UNIQUE NOT NULL,
   `rating` smallint NOT NULL,
   `comment` text,
+  `status` varchar(30) DEFAULT 'PUBLISHED',
+  `pt_appeal` text,
+  `pt_evidence` text,
+  `pt_appealed_at` datetime,
+  `student_evidence` text,
+  `admin_decision` varchar(50),
+  `admin_note` text,
+  `resolved_at` datetime,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT `chk_review_rating` CHECK (`rating` BETWEEN 1 AND 5)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Đánh giá nhận xét của học viên';
@@ -318,14 +326,14 @@ BEGIN
           FROM `reviews` r 
           JOIN `bookings` b ON r.`booking_id` = b.`id` 
           JOIN `availability_slots` s ON b.`slot_id` = s.`id`
-          WHERE s.`pt_id` = v_pt_id
-        ), 0),
+          WHERE s.`pt_id` = v_pt_id AND (r.`status` = 'PUBLISHED' OR r.`status` IS NULL)
+        ), 5.0),
         `total_reviews` = (
           SELECT COUNT(*) 
           FROM `reviews` r 
           JOIN `bookings` b ON r.`booking_id` = b.`id` 
           JOIN `availability_slots` s ON b.`slot_id` = s.`id`
-          WHERE s.`pt_id` = v_pt_id
+          WHERE s.`pt_id` = v_pt_id AND (r.`status` = 'PUBLISHED' OR r.`status` IS NULL)
         )
     WHERE `id` = v_pt_id;
   END IF;
@@ -348,14 +356,14 @@ BEGIN
           FROM `reviews` r 
           JOIN `bookings` b ON r.`booking_id` = b.`id` 
           JOIN `availability_slots` s ON b.`slot_id` = s.`id`
-          WHERE s.`pt_id` = v_pt_id
-        ), 0),
+          WHERE s.`pt_id` = v_pt_id AND (r.`status` = 'PUBLISHED' OR r.`status` IS NULL)
+        ), 5.0),
         `total_reviews` = (
           SELECT COUNT(*) 
           FROM `reviews` r 
           JOIN `bookings` b ON r.`booking_id` = b.`id` 
           JOIN `availability_slots` s ON b.`slot_id` = s.`id`
-          WHERE s.`pt_id` = v_pt_id
+          WHERE s.`pt_id` = v_pt_id AND (r.`status` = 'PUBLISHED' OR r.`status` IS NULL)
         )
     WHERE `id` = v_pt_id;
   END IF;
@@ -378,14 +386,14 @@ BEGIN
           FROM `reviews` r 
           JOIN `bookings` b ON r.`booking_id` = b.`id` 
           JOIN `availability_slots` s ON b.`slot_id` = s.`id`
-          WHERE s.`pt_id` = v_pt_id
-        ), 0),
+          WHERE s.`pt_id` = v_pt_id AND (r.`status` = 'PUBLISHED' OR r.`status` IS NULL)
+        ), 5.0),
         `total_reviews` = (
           SELECT COUNT(*) 
           FROM `reviews` r 
           JOIN `bookings` b ON r.`booking_id` = b.`id` 
           JOIN `availability_slots` s ON b.`slot_id` = s.`id`
-          WHERE s.`pt_id` = v_pt_id
+          WHERE s.`pt_id` = v_pt_id AND (r.`status` = 'PUBLISHED' OR r.`status` IS NULL)
         )
     WHERE `id` = v_pt_id;
   END IF;
@@ -435,7 +443,8 @@ CREATE TABLE IF NOT EXISTS `chat_messages` (
 
 CREATE TABLE IF NOT EXISTS `dispute_cases` (
   `id` bigint NOT NULL AUTO_INCREMENT,
-  `booking_id` bigint NOT NULL,
+  `booking_id` bigint NULL,
+  `enrollment_id` bigint NULL,
   `complainant_id` bigint NOT NULL,
   `complainant_role` varchar(20) NOT NULL,
   `defendant_id` bigint NULL,
@@ -454,9 +463,11 @@ CREATE TABLE IF NOT EXISTS `dispute_cases` (
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   FOREIGN KEY (`booking_id`) REFERENCES `bookings` (`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`enrollment_id`) REFERENCES `enrollments` (`id`) ON DELETE CASCADE,
   FOREIGN KEY (`complainant_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   FOREIGN KEY (`defendant_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   INDEX `idx_dispute_booking` (`booking_id`),
+  INDEX `idx_dispute_enrollment` (`enrollment_id`),
   INDEX `idx_dispute_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

@@ -9,9 +9,6 @@ import lombok.*;
 })
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class PTLocation {
 
     @Id
@@ -24,5 +21,15 @@ public class PTLocation {
 
     @Column(name = "location_name", nullable = false, length = 255)
     private String locationName;
+
+    public PTLocation() {
+    }
+
+    @Builder
+    public PTLocation(Long id, PTProfile ptProfile, String locationName) {
+        this.id = id;
+        this.ptProfile = ptProfile;
+        this.locationName = locationName;
+    }
 }
 

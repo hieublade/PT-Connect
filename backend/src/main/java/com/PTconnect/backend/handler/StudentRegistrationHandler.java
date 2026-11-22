@@ -10,10 +10,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 public class StudentRegistrationHandler implements UserRegistrationHandler {
 
     private final StudentRepository studentRepository;
+
+    public StudentRegistrationHandler(StudentRepository studentRepository) {
+        this.studentRepository = studentRepository;
+    }
 
     @Override
     public boolean supports(Role role) {

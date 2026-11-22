@@ -1,0 +1,1940 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Báo Cáo Bài Tập Lớn Java - Hệ Thống PT-Connect | PTIT</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-main: #0B0F19;
+      --bg-card: rgba(18, 24, 38, 0.85);
+      --bg-card-hover: rgba(28, 36, 56, 0.95);
+      --border-card: rgba(255, 255, 255, 0.08);
+      --border-glow: rgba(56, 189, 248, 0.3);
+      --primary: #2563EB;
+      --primary-light: #38BDF8;
+      --primary-glow: rgba(37, 99, 235, 0.35);
+      --accent-red: #EF4444;
+      --accent-orange: #F97316;
+      --accent-amber: #F59E0B;
+      --accent-green: #10B981;
+      --accent-purple: #8B5CF6;
+      --text-main: #F8FAFC;
+      --text-muted: #94A3B8;
+      --text-dim: #64748B;
+      --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      user-select: none;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Ambient background glowing orbs */
+    .ambient-bg {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+    .orb-1 {
+      position: absolute;
+      top: -10%;
+      left: -5%;
+      width: 50vw;
+      height: 50vw;
+      background: radial-gradient(circle, rgba(37, 99, 235, 0.18) 0%, rgba(11, 15, 25, 0) 70%);
+      filter: blur(80px);
+    }
+    .orb-2 {
+      position: absolute;
+      bottom: -15%;
+      right: -5%;
+      width: 45vw;
+      height: 45vw;
+      background: radial-gradient(circle, rgba(14, 165, 233, 0.15) 0%, rgba(11, 15, 25, 0) 70%);
+      filter: blur(80px);
+    }
+    .orb-3 {
+      position: absolute;
+      top: 40%;
+      right: 25%;
+      width: 30vw;
+      height: 30vw;
+      background: radial-gradient(circle, rgba(239, 68, 68, 0.08) 0%, rgba(11, 15, 25, 0) 70%);
+      filter: blur(90px);
+    }
+
+    /* Top Navigation Bar */
+    .top-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 54px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      background: rgba(11, 15, 25, 0.8);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-card);
+      z-index: 50;
+    }
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-badge {
+      background: linear-gradient(135deg, #DC2626, #991B1B);
+      color: white;
+      font-weight: 800;
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
+    }
+    .brand-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .brand-title span {
+      color: var(--primary-light);
+    }
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .action-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-card);
+      color: var(--text-muted);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .action-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: var(--text-main);
+      border-color: var(--primary-light);
+    }
+    .action-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary-light);
+    }
+
+    /* Presentation Main Viewport */
+    .deck-viewport {
+      position: absolute;
+      top: 54px;
+      bottom: 64px;
+      left: 0;
+      right: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px 28px;
+      z-index: 10;
+    }
+
+    /* 16:9 Aspect Ratio Slide Container */
+    .slide-canvas {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      max-width: 1560px;
+      max-height: 878px;
+      aspect-ratio: 16 / 9;
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.92) 0%, rgba(11, 15, 25, 0.95) 100%);
+      border: 1px solid var(--border-card);
+      border-radius: 20px;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 40px -10px var(--primary-glow);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Slide Header */
+    .slide-header {
+      padding: 22px 36px 12px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      position: relative;
+    }
+    .slide-category {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--primary-light);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .slide-category::before {
+      content: '';
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      background: var(--primary-light);
+      border-radius: 50%;
+    }
+    .slide-heading {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: var(--text-main);
+      line-height: 1.25;
+    }
+    .slide-heading span {
+      background: linear-gradient(90deg, #38BDF8, #818CF8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .slide-tag {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-card);
+      color: var(--text-muted);
+    }
+
+    /* Slide Content Body */
+    .slide-body {
+      flex: 1;
+      padding: 20px 36px 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      position: relative;
+    }
+
+    /* Grid Layout Helpers */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      height: 100%;
+      align-items: stretch;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      height: 100%;
+      align-items: stretch;
+    }
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      height: 100%;
+      align-items: stretch;
+    }
+    .grid-2-3 {
+      display: grid;
+      grid-template-columns: 2fr 3fr;
+      gap: 22px;
+      height: 100%;
+    }
+    .grid-3-2 {
+      display: grid;
+      grid-template-columns: 3fr 2fr;
+      gap: 22px;
+      height: 100%;
+    }
+
+    /* Custom Presentation Cards */
+    .p-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 14px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      transition: all 0.25s ease;
+    }
+    .p-card:hover {
+      border-color: rgba(56, 189, 248, 0.4);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+    }
+    .p-card-primary {
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.15) 0%, rgba(15, 23, 42, 0.8) 100%);
+      border-color: rgba(56, 189, 248, 0.35);
+    }
+    .p-card-red {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, rgba(15, 23, 42, 0.8) 100%);
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+    .p-card-green {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(15, 23, 42, 0.8) 100%);
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+    .p-card-amber {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(15, 23, 42, 0.8) 100%);
+      border-color: rgba(245, 158, 11, 0.3);
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .card-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .card-desc {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      line-height: 1.55;
+    }
+
+    /* Process Step Badge */
+    .step-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10.5px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 12px;
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--primary-light);
+      margin-bottom: 8px;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+
+    /* Highlight Badges */
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 6px;
+      letter-spacing: 0.2px;
+    }
+    .badge-blue { background: rgba(37, 99, 235, 0.2); color: #60A5FA; border: 1px solid rgba(37, 99, 235, 0.4); }
+    .badge-green { background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.4); }
+    .badge-amber { background: rgba(245, 158, 11, 0.2); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.4); }
+    .badge-red { background: rgba(239, 68, 68, 0.2); color: #F87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+    .badge-purple { background: rgba(139, 92, 246, 0.2); color: #A78BFA; border: 1px solid rgba(139, 92, 246, 0.4); }
+
+    /* Bullet List with Icons */
+    .bullet-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .bullet-list li {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .bullet-list li strong {
+      color: var(--text-main);
+    }
+    .bullet-list li::before {
+      content: '▹';
+      color: var(--primary-light);
+      font-weight: bold;
+    }
+
+    /* Code Snippet Box */
+    .code-box {
+      background: #060911;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: #E2E8F0;
+      line-height: 1.6;
+      overflow-x: auto;
+    }
+    .code-box .kw { color: #F472B6; font-weight: 600; }
+    .code-box .fn { color: #60A5FA; }
+    .code-box .str { color: #34D399; }
+    .code-box .ann { color: #FBBF24; }
+    .code-box .cm { color: #64748B; font-style: italic; }
+
+    /* Tables */
+    .p-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .p-table th {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-main);
+      font-weight: 700;
+      text-align: left;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border-card);
+      font-size: 11.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .p-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      line-height: 1.4;
+    }
+    .p-table tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+      color: var(--text-main);
+    }
+
+    /* Bottom Control Bar */
+    .bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      background: rgba(11, 15, 25, 0.9);
+      backdrop-filter: blur(16px);
+      border-top: 1px solid var(--border-card);
+      z-index: 50;
+    }
+    .progress-track {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #2563EB, #38BDF8, #818CF8);
+      width: 5.88%;
+      transition: width 0.3s ease;
+    }
+    .slide-counter {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .slide-counter strong {
+      color: var(--text-main);
+      font-size: 15px;
+    }
+    .nav-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .ctrl-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-card);
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .ctrl-btn:hover:not(:disabled) {
+      background: var(--primary);
+      border-color: var(--primary-light);
+      box-shadow: 0 0 15px var(--primary-glow);
+    }
+    .ctrl-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    /* Presenter Notes Drawer */
+    .notes-drawer {
+      position: fixed;
+      bottom: 64px;
+      left: 0;
+      right: 0;
+      height: 180px;
+      background: #050811;
+      border-top: 2px solid var(--primary);
+      padding: 16px 36px;
+      z-index: 45;
+      display: none;
+      box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.7);
+      animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .notes-drawer.open {
+      display: block;
+    }
+    .notes-header {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--primary-light);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .notes-content {
+      font-size: 13.5px;
+      color: #CBD5E1;
+      line-height: 1.6;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+
+    /* Slide Grid Modal (Drawer Overview) */
+    .grid-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(7, 10, 19, 0.95);
+      backdrop-filter: blur(20px);
+      z-index: 100;
+      display: none;
+      padding: 60px 40px;
+      overflow-y: auto;
+    }
+    .grid-modal.open {
+      display: block;
+    }
+    .grid-modal-header {
+      max-width: 1300px;
+      margin: 0 auto 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .grid-modal-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: white;
+    }
+    .grid-cards {
+      max-width: 1300px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 20px;
+    }
+    .mini-slide-card {
+      background: #111827;
+      border: 1px solid var(--border-card);
+      border-radius: 12px;
+      padding: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    .mini-slide-card:hover {
+      border-color: var(--primary-light);
+      transform: translateY(-4px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    }
+    .mini-slide-card.current {
+      border-color: var(--primary);
+      box-shadow: 0 0 15px var(--primary-glow);
+      background: #1E293B;
+    }
+    .mini-num {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--primary-light);
+      margin-bottom: 4px;
+    }
+    .mini-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: white;
+      line-height: 1.35;
+    }
+
+    /* Print View Setup (Ctrl + P -> PDF) */
+    @media print {
+      body {
+        overflow: visible !important;
+        height: auto !important;
+        background: #0B0F19 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      .top-bar, .bottom-bar, .notes-drawer, .grid-modal, .ambient-bg {
+        display: none !important;
+      }
+      .deck-viewport {
+        position: static !important;
+        padding: 0 !important;
+        display: block !important;
+      }
+      .slide {
+        display: block !important;
+        page-break-after: always !important;
+        break-after: page !important;
+        height: 100vh !important;
+        width: 100vw !important;
+        margin: 0 !important;
+        padding: 20px !important;
+      }
+      .slide-canvas {
+        max-width: 100% !important;
+        max-height: 100% !important;
+        height: 100% !important;
+        border-radius: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+      }
+      @page {
+        size: 16in 9in landscape;
+        margin: 0;
+      }
+    }
+
+    /* Slide specific styles */
+    .slide {
+      display: none;
+      width: 100%;
+      height: 100%;
+    }
+    .slide.active {
+      display: flex;
+      flex-direction: column;
+      animation: fadeIn 0.3s ease forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.99); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Ambient glowing backdrop -->
+  <div class="ambient-bg">
+    <div class="orb-1"></div>
+    <div class="orb-2"></div>
+    <div class="orb-3"></div>
+  </div>
+
+  <!-- Top Navigation Bar -->
+  <header class="top-bar">
+    <div class="brand-wrap">
+      <div class="brand-badge">PTIT</div>
+      <div class="brand-title">
+        BÁO CÁO BÀI TẬP LỚN JAVA <span>PT-CONNECT</span>
+      </div>
+    </div>
+    <div class="nav-actions">
+      <button class="action-btn" id="btnNotes" title="Phím tắt: N">
+        <span>📝</span> Ghi chú thuyết trình
+      </button>
+      <button class="action-btn" id="btnGrid" title="Phím tắt: G">
+        <span>📑</span> Danh sách Slide
+      </button>
+      <button class="action-btn" id="btnPrint" title="Xuất toàn bộ slide ra file PDF (Ctrl+P)">
+        <span>🖨️</span> Xuất PDF
+      </button>
+      <button class="action-btn" id="btnFullscreen" title="Phím tắt: F">
+        <span>⛶</span> Toàn màn hình
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Slide Viewport -->
+  <main class="deck-viewport">
+    <div class="slide-canvas">
+
+      <!-- ==================== SLIDE 1: TRANG BÌA ==================== -->
+      <section class="slide active" id="slide-1" data-notes="Kính chào ThS. Nguyễn Mạnh Sơn và Hội đồng bảo vệ. Hôm nay nhóm chúng em xin báo cáo Bài tập lớn Lập trình Java với đề tài: Xây dựng nền tảng thương mại dịch vụ kết nối Huấn luyện viên cá nhân và Học viên thể hình PT-Connect. Điểm mấu chốt của đề tài không phải ứng dụng CRUD thông thường mà là giải quyết các bài toán hóc búa: ký quỹ 90/10, hợp đồng điện tử PDF, khóa bi quan chống trùng lịch và điểm danh OTP 2 chiều.">
+        <div class="slide-body" style="padding: 40px 60px; text-align: center; justify-content: center; align-items: center; position: relative;">
+          
+          <div style="display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 16px;">
+            <div style="background: rgba(220, 38, 38, 0.2); border: 1px solid rgba(220, 38, 38, 0.5); padding: 5px 14px; border-radius: 20px; font-size: 11px; font-weight: 800; color: #FCA5A5; letter-spacing: 1px;">
+              HỌC VIỆN CÔNG NGHỆ BƯU CHÍNH VIỄN THÔNG (PTIT)
+            </div>
+            <div style="background: rgba(37, 99, 235, 0.2); border: 1px solid rgba(37, 99, 235, 0.5); padding: 5px 14px; border-radius: 20px; font-size: 11px; font-weight: 700; color: #93C5FD; letter-spacing: 0.5px;">
+              KHOA CÔNG NGHỆ THÔNG TIN 1 - BỘ MÔN CSDL & CNPM
+            </div>
+          </div>
+
+          <h4 style="font-size: 14px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px;">
+            BÁO CÁO BÀI TẬP LỚN HỌC PHẦN LẬP TRÌNH JAVA
+          </h4>
+
+          <h1 style="font-size: 38px; font-weight: 800; color: #FFFFFF; line-height: 1.25; margin-bottom: 16px; max-width: 1100px;">
+            NỀN TẢNG KẾT NỐI HUẤN LUYỆN VIÊN CÁ NHÂN & HỌC VIÊN THỂ HÌNH <span style="background: linear-gradient(90deg, #38BDF8, #818CF8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">(PT-CONNECT)</span>
+          </h1>
+
+          <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border-card); border-radius: 12px; padding: 10px 24px; font-size: 13.5px; color: #94A3B8; max-width: 900px; margin-bottom: 30px;">
+            ⚡ <em>Giải pháp Đối soát Tài chính Ký quỹ 90/10, Hợp đồng Điện tử PDF, Khóa Bi quan Concurrency & Điểm danh OTP Chống Gian lận</em>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; width: 100%; max-width: 980px; text-align: left; background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border-card); border-radius: 16px; padding: 20px 30px;">
+            <div>
+              <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--primary-light); letter-spacing: 1px; margin-bottom: 6px;">
+                GIẢNG VIÊN HƯỚNG DẪN
+              </div>
+              <div style="font-size: 17px; font-weight: 800; color: #FFFFFF;">
+                ThS. Nguyễn Mạnh Sơn
+              </div>
+              <div style="font-size: 12px; color: var(--text-dim); margin-top: 2px;">
+                Bộ môn Cơ sở Dữ liệu & Công nghệ Phần mềm
+              </div>
+            </div>
+
+            <div>
+              <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--accent-orange); letter-spacing: 1px; margin-bottom: 6px;">
+                SINH VIÊN THỰC HIỆN (NHÓM ĐỀ TÀI)
+              </div>
+              <div style="font-size: 13px; color: #F1F5F9; display: grid; grid-template-columns: 1fr 1fr; gap: 4px;">
+                <div><strong>1. Ngô Phùng Chiến Thắng</strong> <span class="badge badge-amber" style="font-size: 9px;">Nhóm trưởng</span><br><span style="font-size: 11px; color: #64748B;">B24DCCN520</span></div>
+                <div><strong>2. Thiều Đình Hưng</strong><br><span style="font-size: 11px; color: #64748B;">B24DCCN267</span></div>
+                <div><strong>3. Nguyễn Gia Huy</strong></div>
+                <div><strong>4. Nguyễn Bá Hiệu</strong></div>
+                <div style="grid-column: span 2;"><strong>5. Vũ Viết Thành</strong></div>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top: 20px; font-size: 11.5px; color: var(--text-dim);">
+            HÀ NỘI - HỌC KỲ I NĂM HỌC 2026
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ==================== SLIDE 2: MỤC LỤC BÁO CÁO ==================== -->
+      <section class="slide" id="slide-2" data-notes="Nội dung báo cáo gồm 6 phần tương ứng với cấu trúc bài tập lớn chuẩn: Tổng quan đặt vấn đề, Cơ sở công nghệ Spring Boot 3, Phân tích 8 nghiệp vụ cốt lõi, Kỹ thuật cài đặt hướng đối tượng & concurrency, Demo hệ thống và Đánh giá tổng kết.">
+        <div class="slide-header">
+          <div>
+            <div class="slide-category">AGENDA & OUTLINE</div>
+            <div class="slide-heading">Mục Lục <span>Nội Dung Báo Cáo</span></div>
+          </div>
+          <div class="slide-tag">Tổng quan lộ trình</div>
+        </div>
+        <div class="slide-body">
+          <div class="grid-3" style="gap: 16px;">
+            <div class="p-card p-card-primary">
+              <span class="step-pill">PHẦN 01</span>
+              <div class="card-title">Tổng Quan & Đặt Vấn Đề</div>
+              <p class="card-desc">Thực trạng thị trường PT, 5 nỗi đau nhức nhối trong vận hành phòng tập truyền thống và mục tiêu xây dựng nền tảng PT-Connect.</p>
+            </div>
+
+            <div class="p-card p-card-primary">
+              <span class="step-pill">PHẦN 02</span>
+              <div class="card-title">Kiến Trúc & Công Nghệ</div>
+              <p class="card-desc">Lý do chọn Java 17 & Spring Boot 3.3.4, kiến trúc Clean Layered 4 tầng, Spring Security JWT, OpenPDF và CSDL MySQL InnoDB.</p>
+            </div>
+
+            <div class="p-card p-card-primary">
+              <span class="step-pill">PHẦN 03</span>
+              <div class="card-title">Thiết Kế CSDL & 16 Thực Thể</div>
+              <p class="card-desc">Thiết kế chuẩn hóa BCNF, quan hệ ràng buộc toàn vẹn, Database Triggers tự động cập nhật rating sao và view phân tích.</p>
+            </div>
+
+            <div class="p-card p-card-primary">
+              <span class="step-pill">PHẦN 04</span>
+              <div class="card-title">8 Nghiệp Vụ Chuyên Sâu</div>
+              <p class="card-desc">Ký quỹ 90/10, hợp đồng PDF, khóa bi quan chống double-booking, đối soát hủy ca 24h, điểm danh OTP và trọng tài 48h.</p>
+            </div>
+
+            <div class="p-card p-card-primary">
+              <span class="step-pill">PHẦN 05</span>
+              <div class="card-title">OOP, Design Patterns & Locking</div>
+              <p class="card-desc">Áp dụng Strategy Pattern, Factory, Chain of Responsibility, quản trị Transaction ACID và Pessimistic Locking xử lý tranh chấp.</p>
+            </div>
+
+            <div class="p-card p-card-primary">
+              <span class="step-pill">PHẦN 06</span>
+              <div class="card-title">Demo Thực Nghiệm & Kết Luận</div>
+              <p class="card-desc">Thực nghiệm 3 giao diện (Student, PT, Admin), kết quả test chịu tải đa luồng 100 request/slot và hướng phát triển tương lai.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ==================== SLIDE 3: ĐẶT VẤN ĐỀ & 5 NỖI ĐAU ==================== -->
+      <section class="slide" id="slide-3" data-notes="Tại sao nhóm lại chọn đề tài PT-Connect? Vì ngành thể hình cá nhân đang tăng trưởng bùng nổ nhưng vận hành hoàn toàn thủ công, dẫn tới 5 nỗi đau: PT ôm tiền học phí rồi bùng, PT tự ý chấm công khống, hủy lịch vô tội vạ, đặt trùng ca và khi có xích mích thì không ai đứng ra phân xử.">
+        <div class="slide-header">
+          <div>
+            <div class="slide-category">CHƯƠNG 1: TỔNG QUAN ĐỀ TÀI</div>
+            <div class="slide-heading">Đặt Vấn Đề: <span>5 'Nỗi Đau' Trong Mô Hình PT Truyền Thống</span></div>
+          </div>
+          <div class="slide-tag">Thực trạng thị trường</div>
+        </div>
+        <div class="slide-body">
+          <div class="grid-3" style="grid-template-columns: repeat(3, 1fr); gap: 14px;">
+            <div class="p-card p-card-red">
+              <div class="card-title"><div class="card-icon" style="color: #EF4444;">💸</div> 1. Rủi Ro Thu Tiền Cục Bộ</div>
+              <p class="card-desc">Học viên phải đóng trước gói 10 - 30 triệu VNĐ. Nếu PT nghỉ việc hoặc trung tâm phá sản, học viên mất trắng mà không có cơ chế hoàn tiền từng buổi.</p>
+            </div>
+
+            <div class="p-card p-card-red">
+              <div class="card-title"><div class="card-icon" style="color: #EF4444;">✍️</div> 2. Gian Lận Điểm Danh Khống</div>
+              <p class="card-desc">PT nắm quyền tích chữ ký hoặc tự bấm hoàn thành buổi tập mà học viên không hề hay biết, dẫn tới tình trạng 'chấm công ma' để rút tiền.</p>
+            </div>
+
+            <div class="p-card p-card-red">
+              <div class="card-title"><div class="card-icon" style="color: #EF4444;">📜</div> 3. Hợp Đồng Giấy Thiếu Ràng Buộc</div>
+              <p class="card-desc">Thỏa thuận miệng hoặc giấy tờ thất lạc. Không cam kết rõ ràng về địa điểm tập, thời hạn gói và trách nhiệm khi PT đơn phương hủy dạy.</p>
+            </div>
+
+            <div class="p-card p-card-red">
+              <div class="card-title"><div class="card-icon" style="color: #EF4444;">⏰</div> 4. 'Bùng Lịch' Sát Giờ Vô Trách Nhiệm</div>
+              <p class="card-desc">Không có quy định ranh giới hủy lịch công bằng. Học viên hủy sát giờ làm PT mất thu nhập; PT hủy sát giờ làm học viên lỡ dở công việc.</p>
+            </div>
+
+            <div class="p-card p-card-red">
+              <div class="card-title"><div class="card-icon" style="color: #EF4444;">💥</div> 5. Xung Đột Lịch & Tranh Chấp Trống</div>
+              <p class="card-desc">Đặt lịch qua Zalo/Tin nhắn dẫn tới trùng khung giờ (Double booking). Khi xảy ra mâu thuẫn, không có Hội đồng Trọng tài trung gian phân xử.</p>
+            </div>
+
+            <div class="p-card p-card-amber" style="justify-content: center; text-align: center; border-style: dashed;">
+              <div style="font-size: 28px; margin-bottom: 8px;">🎯</div>
+              <div style="font-size: 15px; font-weight: 800; color: #F59E0B; margin-bottom: 6px;">HỆ QUẢ TẤT YẾU</div>
+              <div style="font-size: 12px; color: var(--text-muted); line-height: 1.5;">Mất niềm tin giữa người tập & người dạy; thiếu sự chuyên nghiệp và minh bạch tài chính.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ==================== SLIDE 4: MÔ HÌNH GIẢI PHÁP 5 LÁ CHẮN ==================== -->
+      <section class="slide" id="slide-4" data-notes="Để giải quyết triệt để 5 nỗi đau đó, PT-Connect xây dựng mô hình '5 Lá chắn Kỹ thuật'. Mỗi lá chắn đều được giải quyết bằng mã nguồn Java và database vững chắc chứ không dừng lại ở lời hứa.">
+        <div class="slide-header">
+          <div>
+            <div class="slide-category">CHƯƠNG 1: MÔ HÌNH GIẢI PHÁP</div>
+            <div class="slide-heading">Giải Pháp: <span>'5 Lá Chắn Kỹ Thuật Bảo Vệ Quyền Lợi Hai Chiều'</span></div>
+          </div>
+          <div class="slide-tag">Triết lý thiết kế</div>
+        </div>
+        <div class="slide-body">
+          <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; height: 100%;">
+            <div class="p-card p-card-green" style="padding: 16px 12px; text-align: center; align-items: center;">
+              <div style="font-size: 28px; margin-bottom: 8px;">🛡️</div>
+              <span class="badge badge-green" style="margin-bottom: 8px;">LÁ CHẮN 1</span>
+              <div style="font-size: 13.5px; font-weight: 800; color: white; margin-bottom: 6px;">KÝ QUỸ THÔNG MINH (90/10)</div>
+              <div style="font-size: 11.5px; color: var(--text-muted); line-height: 1.45;">Học phí được giữ an toàn tại ví sàn, chỉ giải ngân từng buổi (90% PT, 10% hoa hồng) sau khi hoàn thành.</div>
+            </div>
+
+            <div class="p-card p-card-green" style="padding: 16px 12px; text-align: center; align-items: center;">
+              <div style="font-size: 28px; margin-bottom: 8px;">📜</div>
+              <span class="badge badge-green" style="margin-bottom: 8px;">LÁ CHẮN 2</span>
+              <div style="font-size: 13.5px; font-weight: 800; color: white; margin-bottom: 6px;">HỢP ĐỒNG ĐIỆN TỬ PDF</div>
+              <div style="font-size: 11.5px; color: var(--text-muted); line-height: 1.45;">Tự động kết xuất hợp đồng pháp lý có mã tra cứu, cam kết cố định phòng gym và thời hạn gói.</div>
+            </div>
+
+            <div class="p-card p-card-green" style="padding: 16px 12px; text-align: center; align-items: center;">
+              <div style="font-size: 28px; margin-bottom: 8px;">🔒</div>
+              <span class="badge badge-green" style="margin-bottom: 8px;">LÁ CHẮN 3</span>
+              <div style="font-size: 13.5px; font-weight: 800; color: white; margin-bottom: 6px;">KHÓA BI QUAN ĐẶT LỊCH</div>
+              <div style="font-size: 11.5px; color: var(--text-muted); line-height: 1.45;">Pessimistic Locking ngăn chặn triệt để lỗi xung đột ca tập (Double Booking) khi hàng trăm người cùng book.</div>
+            </div>
+
+            <div class="p-card p-card-green" style="padding: 16px 12px; text-align: center; align-items: center;">
+              <div style="font-size: 28px; margin-bottom: 8px;">🔢</div>
+              <span class="badge badge-green" style="margin-bottom: 8px;">LÁ CHẮN 4</span>
+              <div style="font-size: 13.5px; font-weight: 800; color: white; margin-bottom: 6px;">ĐIỂM DANH OTP 2 CHIỀU</div>
+              <div style="font-size: 11.5px; color: var(--text-muted); line-height: 1.45;">Quyền sinh OTP do học viên nắm giữ độc quyền. PT phải nhập đúng mã để mở khóa tiền buổi tập.</div>
+            </div>
+
+            <div class="p-card p-card-green" style="padding: 16px 12px; text-align: center; align-items: center;">
+              <div style="font-size: 28px; margin-bottom: 8px;">⚖️</div>
+              <span class="badge badge-green" style="margin-bottom: 8px;">LÁ CHẮN 5</span>
+              <div style="font-size: 13.5px; font-weight: 800; color: white; margin-bottom: 6px;">TRỌNG TÀI 48H TỰ ĐỘNG</div>
+              <div style="font-size: 11.5px; color: var(--text-muted); line-height: 1.45;">Cơ chế đối soát 48 giờ chống phán quyết cảm tính với 5 loại quyết định hoàn trả tiền tức thì.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ==================== SLIDE 5: KIẾN TRÚC HỆ THỐNG & TECH STACK ==================== -->
+      <section class="slide" id="slide-5" data-notes="Về mặt công nghệ, Backend sử dụng Java 17 và Spring Boot 3.3.4 - phiên bản mới nhất, kết hợp Spring Security JJWT để phân quyền 3 Role, OpenPDF xuất hợp đồng, Spring Data JPA với HikariCP kết nối MySQL 8.0 InnoDB. Frontend là React 18 TypeScript hiện đại.">
+        <div class="slide-header">
+          <div>
+            <div class="slide-category">CHƯƠNG 2: CƠ SỞ KỸ THUẬT</div>
+            <div class="slide-heading">Kiến Trúc Hệ Thống & <span>Bộ Công Nghệ (Tech Stack)</span></div>
+          </div>
+          <div class="slide-tag">Clean Layered Architecture</div>
+        </div>
+        <div class="slide-body">
+          <div class="grid-2-3">
+            <!-- Left: Tech Stack cards -->
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <div class="p-card p-card-primary" style="padding: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                  <strong style="color: #60A5FA; font-size: 13.5px;">☕ BACKEND SERVICE</strong>
+                  <span class="badge badge-blue">Java 17 / Spring Boot 3.3.4</span>
+                </div>
+                <div style="font-size: 11.5px; color: var(--text-muted);">Spring Data JPA, Spring Security, JJWT 0.11.5, OpenPDF 1.3.30, Lombok, Validation API.</div>
+              </div>
+
+              <div class="p-card p-card-primary" style="padding: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                  <strong style="color: #38BDF8; font-size: 13.5px;">⚛️ FRONTEND WEB APP</strong>
+                  <span class="badge badge-blue">React 18 / TypeScript 5.7</span>
+                </div>
+                <div style="font-size: 11.5px; color: var(--text-muted);">Vite SPA, Tailwind CSS v3, Lucide React Icons, Axios Client with JWT Interceptors.</div>
+              </div>
+
+              <div class="p-card p-card-primary" style="padding: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                  <strong style="color: #F59E0B; font-size: 13.5px;">🗄️ DATABASE & STORAGE</strong>
+                  <span class="badge badge-amber">MySQL 8.0 InnoDB</span>
+                </div>
+                <div style="font-size: 11.5px; color: var(--text-muted);">utf8mb4_unicode_ci, Hikari Connection Pool, Triggers, Views, Pessimistic Lock Engine.</div>
+              </div>
+
+              <div class="p-card p-card-primary" style="padding: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                  <strong style="color: #A78BFA; font-size: 13.5px;">🐳 DEVOPS & CONTAINER</strong>
+                  <span class="badge badge-purple">Docker & Compose</span>
+                </div>
+                <div style="font-size: 11.5px; color: var(--text-muted);">Multi-stage Maven build -> Alpine JRE 17 runtime, Healthcheck tự động đồng bộ.</div>
+              </div>
+            </div>
+
+            <!-- Right: Clean Layered Diagram -->
+            <div class="p-card" style="background: rgba(10, 15, 29, 0.9); justify-content: space-between; padding: 18px;">
+              <div style="font-size: 12px; font-weight: 800; color: var(--primary-light); letter-spacing: 1px; text-transform: uppercase;">
+                KIẾN TRÚC PHÂN TẦNG SẠCH (4-TIER CLEAN ARCHITECTURE)
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <div style="background: rgba(37, 99, 235, 0.15); border: 1px solid rgba(37, 99, 235, 0.4); border-radius: 8px; padding: 10px 14px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <strong style="font-size: 12.5px; color: #93C5FD;">1. Controller Layer (REST API Endpoints)</strong>
+                    <span style="font-size: 10.5px; color: var(--text-dim);">@RestController, DTO Validation</span>
+                  </div>
+                  <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Tiếp nhận HTTP request, xác thực JWT, phân quyền Security (STUDENT, PT, ADMIN).</div>
+                </div>
+
+                <div style="text-align: center; color: var(--primary-light); font-size: 11px;">⬇️ DTO Data Transfer Objects</div>
+
+                <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 8px; padding: 10px 14px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <strong style="font-size: 12.5px; color: #6EE7B7;">2. Service Layer (Nghiệp Vụ & Giao Dịch ACID)</strong>
+                    <span style="font-size: 10.5px; color: var(--text-dim);">@Service, @Transactional</span>
+                  </div>
+                  <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Thực thi toàn bộ logic tài chính 90/10, đối soát 24h, sinh OTP và rollback tự động khi có lỗi.</div>
+                </div>
+
+                <div style="text-align: center; color: var(--accent-green); font-size: 11px;">⬇️ Entity Domain Model</div>
+
+                <div style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 8px; padding: 10px 14px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <strong style="font-size: 12.5px; color: #FCD34D;">3. Repository Layer (Spring Data JPA)</strong>
+                    <span style="font-size: 10.5px; color: var(--text-dim);">@Repository, PessimisticLock</span>
+                  </div>
+                  <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Truy vấn dữ liệu, triển khai SELECT FOR UPDATE khóa hàng bi quan tại tầng CSDL.</div>
+                </div>
+
+                <div style="text-align: center; color: var(--accent-amber); font-size: 11px;">⬇️ SQL Queries & InnoDB Locks</div>
+
+                <div style="background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.4); border-radius: 8px; padding: 10px 14px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <strong style="font-size: 12.5px; color: #C4B5FD;">4. Persistence & Storage Layer (MySQL 8.0)</strong>
+                    <span style="font-size: 10.5px; color: var(--text-dim);">InnoDB Engine, Isolation Level</span>
+                  </div>
+                  <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Lưu trữ 16 bảng thực thể, thực thi Trigger cập nhật rating sao và khóa row-level locks.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ==================== SLIDE 6: THIẾT KẾ CSDL & 16 THỰC THỂ ==================== -->
+      <section class="slide" id="slide-6" data-notes="CSDL được chuẩn hóa dạng chuẩn BCNF với 16 bảng cốt lõi. Quan hệ giữa User, Wallet, Course, Enrollment, Booking và DisputeCase được liên kết chặt chẽ qua Foreign Key với điều kiện ON DELETE RESTRICT để bảo đảm không bị mất lịch sử giao dịch. Đồng thời có Database Trigger tự động tính rating PT.">
+        <div class="slide-header">
+          <div>
+            <div class="slide-category">CHƯƠNG 3: PHÂN TÍCH & THIẾT KẾ</div>
+            <div class="slide-heading">Thiết Kế CSDL Chuẩn BCNF: <span>16 Thực Thể & Trigger Tự Động</span></div>
+          </div>
+          <div class="slide-tag">Data Architecture</div>
+        </div>
+        <div class="slide-body">
+          <div class="grid-3" style="gap: 16px;">
+            <!-- Column 1 -->
+            <div class="p-card">
+              <div class="card-title"><div class="card-icon" style="color: #60A5FA;">👤</div> Nhóm Định Danh & Ví</div>
+              <ul class="bullet-list">
+                <li><strong>users</strong>: id, email (unique), password_hash, full_name, phone, role, status.</li>
+                <li><strong>pt_profiles</strong>: user_id, bio, experience_years, certificate_url, rating, review_count.</li>
+                <li><strong>wallets</strong>: id, user_id (unique), balance, escrow_balance, status.</li>
+                <li><strong>wallet_transactions</strong>: id, wallet_id, amount, type, reference_id, created_at.</li>
+              </ul>
+            </div>
+
+            <!-- Column 2 -->
+            <div class="p-card">
+              <div class="card-title"><div class="card-icon" style="color: #34D399;">📅</div> Nhóm Khóa Học & Lịch Tập</div>
+              <ul class="bullet-list">
+                <li><strong>courses</strong>: id, pt_id, title, total_sessions, price, duration_days.</li>
+                <li><strong>enrollments</strong>: id, student_id, course_id, remaining_sessions, contract_pdf_url.</li>
+                <li><strong>pt_slots</strong>: id, pt_id, day_of_week, start_time, end_time, is_active.</li>
+                <li><strong>bookings</strong>: id, enrollment_id, slot_id, booking_date, status, otp_code, otp_expires.</li>
+              </ul>
+            </div>
+
+            <!-- Column 3 -->
+            <div class="p-card">
+              <div class="card-title"><div class="card-icon" style="color: #FBBF24;">⚖️</div> Nhóm Trọng Tài & Giáo Án</div>
+              <ul class="bullet-list">
+                <li><strong>dispute_cases</strong>: id, booking_id, reporter_id, reason, status, resolution, admin_note.</li>
+                <li><strong>dispute_evidences</strong>: id, dispute_id, uploader_id, file_url, note.</li>
+                <li><strong>workout_plans</strong>: id, enrollment_id, target, notes, created_at.</li>
+                <li><strong>exercises & sets</strong>: plan_id, exercise_name, sets, reps, weight_kg, video_url.</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Database Trigger highlight box -->
+          <div style="margin-top: 14px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; padding: 10px 18px; display: flex; align-items: center; justify-content: space-between;">
+            <div>
+              <span class="badge badge-green" style="margin-right: 8px;">DATABASE TRIGGER</span>
+              <strong style="color: #E2E8F0; font-size: 12px;">trg_update_pt_rating</strong>: 
+              <span style="color: var(--text-muted); font-size: 11.5px;">Tự động tính trung bình số sao và tổng lượt review ngay khi có đánh giá mới, loại bỏ gánh nặng tính toán phía Backend Java.</span>
+            </div>
+            <code style="font-family: var(--font-mono); font-size: 10px; color: #34D399;">AFTER INSERT ON reviews FOR EACH ROW</code>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ==================== SLIDE 7: NGHIỆP VỤ 1 - KÝ QUỸ DÒNG TIỀN 90/10 ==================== -->
+      <section class="slide" id="slide-7" data-notes="Đây là cốt lõi tài chính của dự án: Mô hình Escrow 90/10. Khi học viên thanh toán gói học, ví dụ 10 buổi trị giá 3 triệu, toàn bộ 3 triệu được giữ ở trạng thái ký quỹ. Mỗi buổi tập hoàn thành, hệ thống chia sẻ 90% tức 270k cho PT và 10% tức 30k vào doanh thu sàn. Nếu học viên hủy hợp đồng, phần tiền chưa học sẽ được hoàn lại an toàn.">
+        <div class="slide-header">
+          <div>
+            <div class="slide-category">CHƯƠNG 3: NGHIỆP VỤ CỐT LÕI</div>
+            <div class="slide-heading">Cơ Chế Ký Quỹ Dòng Tiền: <span>Mô Hình Phân Chia Doanh Thu 90/10</span></div>
+          </div>
+          <div class="slide-tag">Smart Escrow Financial Model</div>
+        </div>
+        <div class="slide-body">
+          <div class="grid-2-3">
+            <!-- Left: Flow Diagram -->
+            <div class="p-card p-card-primary" style="justify-content: space-between; padding: 18px;">
+              <div style="font-size: 13px; font-weight: 800; color: var(--primary-light);">VÒNG ĐỜI DÒNG TIỀN KÝ QUỸ</div>
+              
+              <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div style="background: rgba(255, 255, 255, 0.05); padding: 10px 14px; border-radius: 8px; border-left: 3px solid #38BDF8;">
+                  <strong style="font-size: 12.5px; color: white;">Bước 1: Mua Gói Khóa Học</strong>
+                  <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Trừ số dư khả dụng của Học viên -> Chuyển vào trạng thái <code>escrow_balance</code> (Ký quỹ).</div>
+                </div>
+
+                <div style="background: rgba(255, 255, 255, 0.05); padding: 10px 14px; border-radius: 8px; border-left: 3px solid #F59E0B;">
+                  <strong style="font-size: 12.5px; color: white;">Bước 2: Tập Luyện & Điểm Danh OTP</strong>
+                  <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Sau khi Học viên cung cấp OTP và PT xác nhận thành công ca tập.</div>
+                </div>
+
+                <div style="background: rgba(255, 255, 255, 0.05); padding: 10px 14px; border-radius: 8px; border-left: 3px solid #10B981;">
+                  <strong style="font-size: 12.5px; color: white;">Bước 3: Mở Khóa Dòng Tiền Từng Buổi</strong>
+                  <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Trừ giá trị 1 buổi khỏi escrow: <strong>90% mở khóa vào ví PT</strong>, <strong>10% ghi nhận doanh thu sàn</strong>.</div>
+                </div>
+              </div>
+
+              <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 8px 12px; font-size: 11px; color: #34D399; text-align: center;">
+                ✔ Đảm bảo tính thanh khoản và loại trừ hoàn toàn nguy cơ PT ôm tiền trốn
+              </div>
+            </div>
+
+            <!-- Right: Mathematical formulas & code -->
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+              <div class="p-card" style="padding: 16px;">
+                <div class="card-title"><div class="card-icon" style="color: #60A5FA;">📐</div> Công Thức Đối Soát Tài Chính Chuẩn</div>
+                <div class="code-box" style="margin-top: 6px;">
+<span class="cm">// Giá trị định mức 1 buổi tập</span>
+BigDecimal pricePerSession = totalCoursePrice.divide(BigDecimal.valueOf(totalSessions), 2, RoundingMode.HALF_UP);
+
+<span class="cm">// Phân chia doanh thu sau khi hoàn thành buổi</span>
+BigDecimal ptIncome = pricePerSession.multiply(BigDecimal.valueOf(0.90));   <span class="cm">// 90% cho PT</span>
+BigDecimal platformFee = pricePerSession.multiply(BigDecimal.valueOf(0.10)); <span class="cm">// 10% hoa hồng sàn</span>
+
+ptWallet.credit(ptIncome);
+platformWallet.credit(platformFee);
+enrollment.decrementSession();
+                </div>
+              </div>
+
+              <div class="grid-2" style="gap: 12px;">
+                <div class="p-card p-card-green" style="padding: 12px;">
+                  <strong style="color: #34D399; font-size: 13px;">🛡️ Lợi ích cho Học viên</strong>
+                  <p style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">Tiền vẫn là của học viên cho tới khi buổi tập hoàn thành. Hủy hợp đồng được hoàn tiền các buổi chưa tập.</p>
+                </div>
+                <div class="p-card p-card-amber" style="padding: 12px;">
+                  <strong style="color: #FBBF24; font-size: 13px;">💼 Lợi ích cho PT</strong>
+                  <p style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">Đảm bảo được nhận tiền ngay sau ca dạy, được rút về ngân hàng bất kỳ lúc nào mà không bị giam nợ.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ==================== SLIDE 8: NGHIỆP VỤ 2 - HỢP ĐỒNG ĐIỆN TỬ OPENPDF ==================== -->
+      <section class="slide" id="slide-8" data-notes="Hợp đồng điện tử được sinh tự động bằng thư viện OpenPDF ngay khi học viên thanh toán khóa học. File PDF chứa đầy đủ thông tin pháp lý: Địa điểm phòng gym cố định, thời hạn hoàn thành khóa học, mã hợp đồng hash đối soát và điều khoản hủy ca.">
+        <div class="slide-header">
+          <div>
+            <div class="slide-category">CHƯƠNG 3: NGHIỆP VỤ CỐT LÕI</div>
+            <div class="slide-heading">Hợp Đồng Điện Tử Pháp Lý: <span>Kết Xuất File PDF Động (OpenPDF)</span></div>
+          </div>
+          <div class="slide-tag">Legal Digital Contract</div>
+        </div>
+        <div class="slide-body">
+          <div class="grid-2">
+            <!-- Left: Legal Terms & Rules -->
+            <div class="p-card" style="padding: 20px;">
+              <div class="card-title"><div class="card-icon" style="color: #EF4444;">📜</div> Các Điều Khoản Bắt Buộc Trong Hợp Đồng</div>
+              <ul class="bullet-list" style="margin-top: 10px; gap: 12px;">
+                <li>
+                  <div>
+                    <strong>Cố định địa điểm tập luyện (Fixed Gym Address):</strong>
+                    <div style="font-size: 11.5px; color: var(--text-muted);">Cam kết phòng tập cụ thể, PT không được tự ý đổi địa điểm xa hơn gây khó khăn cho học viên.</div>
+                  </div>
+                </li>
+                <li>
+                  <div>
+                    <strong>Thời hạn hợp đồng (Contract Expiration):</strong>
+                    <div style="font-size: 11.5px; color: var(--text-muted);">Ví dụ gói 12 buổi có hiệu lực 60 ngày. Quá hạn hệ thống sẽ kích hoạt đối soát thanh lý hợp đồng.</div>
+                  </div>
+                </li>
+                <li>
+                  <div>
+                    <strong>Quy tắc học thử duy nhất (Single Trial Rule):</strong>
+                    <div style="font-size: 11.5px; color: var(--text-muted);">Mỗi học viên chỉ được học thử 1 buổi 0đ duy nhất với mỗi PT để tránh hiện tượng 'học thử miễn phí liên tục'.</div>
+                  </div>
+                </li>
+                <li>
+                  <div>
+                    <strong>Mã tra cứu đối soát băm (Contract Verification Hash):</strong>
+                    <div style="font-size: 11.5px; color: var(--text-muted);">Tự động sinh chuỗi mã số duy nhất để đối chiếu khi có khiếu nại tại Trung tâm Trọng tài.</div>
+                  </div>
+                </li>
+              </ul>
+            </div>
+
+            <!-- Right: OpenPDF Java Implementation -->
+            <div class="p-card p-card-primary" style="padding: 20px; justify-content: space-between;">
+              <div>
+                <div class="card-title"><div class="card-icon" style="color: #38BDF8;">☕</div> Triển Khai Kỹ Thuật Java với OpenPDF</div>
+                <div class="code-box" style="margin-top: 10px;">
+<span class="ann">@Service</span>
+<span class="kw">public class</span> <span class="fn">PdfContractGenerator</span> {
+    <span class="kw">public byte</span>[] generateContract(Enrollment enrollment) {
+        Document document = <span class="kw">new</span> Document(PageSize.A4, 36, 36, 54, 54);
+        ByteArrayOutputStream out = <span class="kw">new</span> ByteArrayOutputStream();
+        PdfWriter writer = PdfWriter.getInstance(document, out);
+        
+        document.open();
+        <span class="cm">// Vẽ Header PTIT & PT-Connect</span>
+        addTitle(document, <span class="str">"HỢP ĐỒNG ĐÀO TẠO THỂ HÌNH CÁ NHÂN"</span>);
+        <span class="cm">// Thêm bảng điều khoản & Chữ ký số điện tử</span>
+        addContractMetadata(document, enrollment);
+        document.close();
+        
+        <span class="kw">return</span> out.toByteArray();
+    }
+}
+                </div>
+              </div>
+
+              <div style="background: rgba(37, 99, 235, 0.15); border: 1px solid rgba(37, 99, 235, 0.3); border-radius: 8px; padding: 10px 14px; font-size: 11.5px; color: #93C5FD;">
+                ✔ Hợp đồng được lưu trên máy chủ dưới dạng file tĩnh <code>/contracts/contract_{id}.pdf</code> và gửi link xem trực tiếp cho cả 2 bên.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ==================== SLIDE 9: NGHIỆP VỤ 3 - KHÓA BI QUAN PESSIMISTIC LOCKING ==================== -->
+      <section class="slide" id="slide-9" data-notes="Một trong những điểm sáng kỹ thuật là giải quyết bài toán Concurrency: Khóa bi quan. Khi 2 học viên cùng bấm đặt một khung giờ rảnh của PT vào cùng 1 thời điểm, nếu dùng code CRUD thông thường sẽ bị lỗi Race Condition. Nhóm áp dụng LockModeType.PESSIMISTIC_WRITE để khóa hàng tại CSDL, luồng đến sau sẽ bị từ chối an toàn.">
+        <div class="slide-header">
+          <div>
+            <div class="slide-category">CHƯƠNG 4: KỸ THUẬT NÂNG CAO</div>
+            <div class="slide-heading">Xử Lý Đồng Thời: <span>Khóa Bi Quan (Pessimistic Locking) Chống Trùng Ca</span></div>
+          </div>
+          <div class="slide-tag">Concurrency Control</div>
+        </div>
+        <div class="slide-body">
+          <div class="grid-2">
+            <!-- Left: Problem & Flow -->
+            <div class="p-card" style="padding: 20px; justify-content: space-between;">
+              <div>
+                <div class="card-title"><div class="card-icon" style="color: #EF4444;">⚔️</div> Bài Toán Xung Đột Đồng Thời (Race Condition)</div>
+                <p class="card-desc" style="margin-top: 6px;">
+                  Vào các giờ vàng (18h-20h), nhiều học viên cùng truy cập và nhấn 'Đặt lịch' cho cùng 1 slot của PT nổi tiếng trong cùng 1 mili-giây.
+                </p>
+
+                <div style="margin-top: 14px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 10px; padding: 12px;">
+                  <strong style="color: #F87171; font-size: 12px;">HẬU QUẢ NẾU KHÔNG CÓ KHÓA BI QUAN:</strong>
+                  <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">
+                    Cả 2 giao dịch đọc slot đều thấy trạng thái 'AVAILABLE'. Cả 2 cùng trừ số buổi và tạo 2 Booking trùng giờ -> PT không thể dạy cùng lúc 2 người!
+                  </div>
+                </div>
+              </div>
+
+              <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 10px; padding: 12px;">
+                <strong style="color: #34D399; font-size: 12px;">GIẢI PHÁP PESSIMISTIC LOCK:</strong>
+                <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">
+                  Giao dịch đầu tiên giữ khóa độc quyền (Exclusive Row Lock). Giao dịch thứ hai buộc phải đợi, khi mở ra thấy slot đã 'BOOKED' -> Rollback và báo lỗi thân thiện.
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Java Implementation -->
+            <div class="p-card p-card-primary" style="padding: 20px;">
+              <div class="card-title"><div class="card-icon" style="color: #60A5FA;">💻</div> Cài Đặt Tại Spring Data JPA & Database</div>
+              
+              <div class="code-box" style="margin-top: 10px;">
+<span class="kw">public interface</span> <span class="fn">PTSlotRepository</span> <span class="kw">extends</span> JpaRepository&lt;PTSlot, Long&gt; {
+
+    <span class="ann">@Lock</span>(LockModeType.PESSIMISTIC_WRITE)
+    <span class="ann">@Query</span>(<span class="str">"SELECT s FROM PTSlot s WHERE s.id = :slotId"</span>)
+    Optional&lt;PTSlot&gt; findByIdWithLock(<span class="ann">@Param</span>(<span class="str">"slotId"</span>) Long slotId);
+}
+
+<span class="cm">/* SQL sinh ra dưới tầng MySQL InnoDB:
+   SELECT * FROM pt_slots WHERE id = ? FOR UPDATE;
+*/</span>
+
+<span class="ann">@Transactional</span>
+<span class="kw">public</span> BookingResponse bookSession(BookingRequest req) {
+    PTSlot slot = slotRepo.findByIdWithLock(req.getSlotId())
+        .orElseThrow(() -&gt; <span class="kw">new</span> ResourceNotFoundException());
+        
+    <span class="kw">if</span> (bookingRepo.existsBySlotAndDate(slot, req.getDate())) {
+        <span class="kw">throw new</span> SlotAlreadyBookedException(<span class="str">"Khung giờ đã có người đặt!"</span>);
+    }
+    <span class="cm">// Tạo booking và khóa slot an toàn</span>
+}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ==================== SLIDE 10: NGHIỆP VỤ 4 - QUY TẮC ĐỐI SOÁT HỦY LỊCH MỐC 24H ==================== -->
+      <section class="slide" id="slide-10" data-notes="Để bảo vệ quyền lợi 2 chiều khi có ca tập bị hủy, hệ thống áp dụng Quy tắc Vàng mốc 24 giờ. Ranh giới là 24 tiếng trước giờ tập. Học viên hủy trước 24h được hoàn 100% buổi tập. Nếu hủy sát giờ dưới 24h, học viên bị phạt mất buổi đó, và PT vẫn nhận 90% thù lao để đền bù thời gian chuẩn bị.">
+        <div class="slide-header">
+          <div>
+            <div class="slide-category">CHƯƠNG 3: NGHIỆP VỤ CỐT LÕI</div>
+            <div class="slide-heading">Quy Tắc Vàng Đối Soát Hủy Lịch: <span>Ma Trận Xử Lý Mốc 24 Giờ</span></div>
+          </div>
+          <div class="slide-tag">Cancellation Policy Matrix</div>
+        </div>
+        <div class="slide-body">
+          <table class="p-table" style="background: rgba(15, 23, 42, 0.6); border-radius: 12px; overflow: hidden; border: 1px solid var(--border-card);">
+            <thead>
+              <tr>
+                <th style="width: 18%;">Chủ Thể Hủy</th>
+                <th style="width: 22%;">Thời Điểm Hủy</th>
+                <th style="width: 30%;">Xử Lý Kho Buổi & Tiền Học Viên</th>
+                <th style="width: 30%;">Xử Lý Thù Lao & Uy Tín Của PT</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="badge badge-blue">HỌC VIÊN (Student)</span></td>
+                <td><strong style="color: #34D399;">Trước giờ tập &gt; 24h</strong><br><small style="color: var(--text-dim);">Hủy sớm đúng quy chế</small></td>
+                <td>Hoàn trả 100% buổi học về kho gói hợp đồng (<code>remaining_sessions + 1</code>). Không mất phí.</td>
+                <td>Khung giờ (Slot) được mở lại tự do để học viên khác có thể vào đặt lịch.</td>
+              </tr>
+              <tr>
+                <td><span class="badge badge-blue">HỌC VIÊN (Student)</span></td>
+                <td><strong style="color: #F87171;">Sát giờ tập &lt; 24h</strong><br><small style="color: var(--text-dim);">Hủy muộn gây thiệt hại</small></td>
+                <td>Bị phạt: Trừ 1 buổi học trong gói để bồi thường thời gian chuẩn bị của huấn luyện viên.</td>
+                <td><strong style="color: #34D399;">PT vẫn nhận đủ 90% thù lao</strong> buổi tập như bình thường.</td>
+              </tr>
+              <tr>
+                <td><span class="badge badge-amber">HUẤN LUYỆN VIÊN (PT)</span></td>
+                <td><strong style="color: #34D399;">Trước giờ tập &gt; 24h</strong><br><small style="color: var(--text-dim);">Báo bận hợp lệ</small></td>
+                <td>Hoàn trả 1 buổi về kho cho học viên để học viên chủ động xếp lịch sang buổi khác.</td>
+                <td>Không bị phạt tài chính. Hệ thống tự động mở lại lịch.</td>
+              </tr>
+              <tr>
+                <td><span class="badge badge-amber">HUẤN LUYỆN VIÊN (PT)</span></td>
+                <td><strong style="color: #F87171;">Sát giờ tập &lt; 24h</strong><br><small style="color: var(--text-dim);">Bùng lịch vi phạm nghiêm trọng</small></td>
+                <td>Hoàn buổi tập ngay lập tức + Hệ thống cấp Voucher ưu đãi bồi thường tâm lý.</td>
+                <td>Bị ghi nhận vi phạm tỷ lệ hủy ca (Cancel Rate), cảnh cáo hạ thứ hạng hiển thị.</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div style="margin-top: 14px; display: flex; gap: 14px;">
+            <div class="p-card p-card-primary" style="flex: 1; padding: 12px;">
+              <span class="badge badge-purple" style="margin-bottom: 4px;">DESIGN PATTERN ÁP DỤNG</span>
+              <div style="font-size: 12px; color: var(--text-main);"><strong>Strategy Pattern & Factory</strong>: <code>CancellationPolicyFactory</code> chọn thuật toán xử lý phù hợp dựa trên mốc 24h mà không dùng chuỗi <code>if-else</code> lồng nhau phức tạp.</div>
+            </div>
+            <div class="p-card p-card-green" style="flex: 1; padding: 12px;">
+              <span class="badge badge-green" style="margin-bottom: 4px;">TỰ ĐỘNG HÓA 100%</span>
+              <div style="font-size: 12px; color: var(--text-main);">Tính toán chênh lệch thời gian <code>Duration.between(now, startTime).toHours()</code> chính xác tới từng giây, loại trừ yếu tố can thiệp thủ công.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ==================== SLIDE 11: NGHIỆP VỤ 5 - ĐIỂM DANH OTP HAI CHIỀU ==================== -->
+      <section class="slide" id="slide-11" data-notes="Để chống hoàn toàn tình trạng chấm công khống, quyền sinh mã OTP 6 số do Học viên nắm giữ độc quyền trên giao diện. Khi tập xong, học viên cung cấp mã OTP cho PT nhập vào hệ thống. Đúng mã thì tiền 90/10 mới được giải ngân. Trường hợp học viên bùng ca không đến, PT có tính năng Báo vắng (No-Show) sau 15 phút.">
+        <div class="slide-header">
+          <div>
+            <div class="slide-category">CHƯƠNG 3: NGHIỆP VỤ CỐT LÕI</div>
+            <div class="slide-heading">Điểm Danh Hai Chiều: <span>Xác Thực Mã OTP 6 Số & Báo Vắng (No-Show)</span></div>
+          </div>
+          <div class="slide-tag">Anti-Fraud Two-Way Attendance</div>
+        </div>
+        <div class="slide-body">
+          <div class="grid-2-3">
+            <!-- Left: Flow steps -->
+            <div class="p-card p-card-primary" style="justify-content: space-between; padding: 18px;">
+              <div style="font-size: 13px; font-weight: 800; color: var(--primary-light);">QUY TRÌNH ĐIỂM DANH OTP KHÔNG THỂ GIAN LẬN</div>
+              
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <div style="background: rgba(255,255,255,0.04); padding: 8px 12px; border-radius: 8px;">
+                  <strong style="color: #60A5FA; font-size: 12px;">1. Đến giờ ca tập (Start Time):</strong>
+                  <div style="font-size: 11px; color: var(--text-muted);">Nút 'Tạo mã điểm danh' trên máy học viên sáng lên. Học viên bấm tạo mã 6 số ngẫu nhiên.</div>
+                </div>
+
+                <div style="background: rgba(255,255,255,0.04); padding: 8px 12px; border-radius: 8px;">
+                  <strong style="color: #34D399; font-size: 12px;">2. Thời hạn hiệu lực 15 phút:</strong>
+                  <div style="font-size: 11px; color: var(--text-muted);">Mã OTP lưu tạm và tự hủy sau 15 phút. Học viên trực tiếp đọc mã hoặc gửi qua Chatbox nội bộ.</div>
+                </div>
+
+                <div style="background: rgba(255,255,255,0.04); padding: 8px 12px; border-radius: 8px;">
+                  <strong style="color: #FBBF24; font-size: 12px;">3. PT nhập mã xác nhận:</strong>
+                  <div style="font-size: 11px; color: var(--text-muted);">Backend xác thực mã OTP, chuyển ca tập sang <code>COMPLETED</code> và giải ngân 90% tức thì.</div>
+                </div>
+              </div>
+
+              <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; padding: 8px 12px;">
+                <strong style="color: #F87171; font-size: 12px;">CƠ CHẾ BÁO VẮNG (NO-SHOW):</strong>
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                  Nếu quá 15 phút học viên không đến và không liên lạc, PT bấm 'Báo vắng No-Show'. Hệ thống tự chụp nhật ký, trừ buổi học viên và giải ngân đền bù cho PT.
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Code snippet -->
+            <div class="p-card" style="padding: 18px; justify-content: space-between;">
+              <div>
+                <div class="card-title"><div class="card-icon" style="color: #34D399;">🔐</div> Mã Nguồn Xử Lý OTP Thread-Safe</div>
+                <div class="code-box" style="margin-top: 10px;">
+<span class="ann">@Transactional</span>
+<span class="kw">public void</span> <span class="fn">verifyAttendanceOtp</span>(Long bookingId, String inputOtp, Long ptUserId) {
+    Booking booking = bookingRepo.findById(bookingId)
+        .orElseThrow(() -&gt; <span class="kw">new</span> ResourceNotFoundException());
+
+    <span class="kw">if</span> (booking.isExpiredOtp(LocalDateTime.now())) {
+        <span class="kw">throw new</span> OtpExpiredException(<span class="str">"Mã OTP đã hết hạn sau 15 phút!"</span>);
+    }
+    
+    <span class="kw">if</span> (!booking.getOtpCode().equals(inputOtp)) {
+        <span class="kw">throw new</span> InvalidOtpException(<span class="str">"Mã điểm danh không chính xác!"</span>);
+    }
+
+    <span class="cm">// Đánh dấu hoàn thành & mở khóa giải ngân 90/10</span>
+    booking.setStatus(BookingStatus.COMPLETED);
+    walletService.disburseEscrow(booking);
+}
+                </div>
+              </div>
+
+              <div style="background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; padding: 8px 12px; font-size: 11px; color: #38BDF8;">
+                ✔ Triệt tiêu 100% tình trạng PT gian lận tự chấm công sau lưng học viên.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ==================== SLIDE 12: NGHIỆP VỤ 6 - TRUNG TÂM TRỌNG TÀI 48H ==================== -->
+      <section class="slide" id="slide-12" data-notes="Khi xảy ra mâu thuẫn như PT dạy sai giáo án, PT bỏ về sớm hoặc học viên báo oan, hệ thống kích hoạt Trung tâm Trọng tài. Quy chế yêu cầu chờ 48 giờ đối chất để bên bị khiếu nại nộp ảnh chụp, video chứng minh. Sau 48h, Admin đưa ra 1 trong 5 phán quyết tự động thực thi.">
+        <div class="slide-header">
+          <div>
+            <div class="slide-category">CHƯƠNG 3: NGHIỆP VỤ CỐT LÕI</div>
+            <div class="slide-heading">Trung Tâm Trọng Tài Độc Lập: <span>Quy Chế 48 Giờ & 5 Loại Phán Quyết</span></div>
+          </div>
+          <div class="slide-tag">Dispute Resolution Center</div>
+        </div>
+        <div class="slide-body">
+          <div class="grid-2">
+            <!-- Left: 48h rule -->
+            <div class="p-card" style="padding: 20px; justify-content: space-between;">
+              <div>
+                <div class="card-title"><div class="card-icon" style="color: #F59E0B;">⏳</div> Điều Khoản Chống Phán Quyết Độc Đoán (48 Giờ)</div>
+                <p class="card-desc" style="margin-top: 6px;">
+                  Hệ thống cấm Admin xử lý vội vàng chỉ dựa vào lời nói một phía. Khi một hồ sơ khiếu nại (DisputeCase) được mở:
+                </p>
+
+                <ul class="bullet-list" style="margin-top: 10px; gap: 10px;">
+                  <li><strong>Tạm đóng băng tiền ca tập:</strong> Tiền buổi học đó lập tức bị cô lập, không cho phép PT rút và cũng chưa hoàn về cho học viên.</li>
+                  <li><strong>Bộ đếm lùi 48 giờ (Countdown):</strong> Bên bị tố cáo có đúng 48 giờ để tải lên ảnh chụp, video, lịch sử chat đối chứng.</li>
+                  <li><strong>Công khai minh bạch:</strong> Cả 2 bên đều xem được tài liệu đối chất của nhau trên cổng khiếu nại.</li>
+                </ul>
+              </div>
+
+              <div style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px; padding: 10px 14px; font-size: 11.5px; color: #FCD34D;">
+                ⚖️ Đảm bảo tính pháp lý khách quan, văn minh theo chuẩn các sàn thương mại quốc tế.
+              </div>
+            </div>
+
+            <!-- Right: 5 Verdicts -->
+            <div class="p-card p-card-primary" style="padding: 20px;">
+              <div class="card-title"><div class="card-icon" style="color: #A78BFA;">🔨</div> 5 Loại Phán Quyết Tự Động Thực Thi</div>
+              
+              <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+                <div style="background: rgba(255,255,255,0.04); padding: 7px 10px; border-radius: 6px; font-size: 11.5px;">
+                  <strong style="color: #60A5FA;">1. REFUND_STUDENT_FULL:</strong> Hoàn 100% tiền buổi về ví học viên (PT có lỗi rõ ràng).
+                </div>
+                <div style="background: rgba(255,255,255,0.04); padding: 7px 10px; border-radius: 6px; font-size: 11.5px;">
+                  <strong style="color: #34D399;">2. RELEASE_PAYMENT_PT:</strong> Bác khiếu nại, giải ngân 90% cho PT (Học viên vu khống).
+                </div>
+                <div style="background: rgba(255,255,255,0.04); padding: 7px 10px; border-radius: 6px; font-size: 11.5px;">
+                  <strong style="color: #FBBF24;">3. SPLIT_COMPROMISE:</strong> Hòa giải chia đôi 50 - 50 khi cả 2 bên đều có lỗi khách quan.
+                </div>
+                <div style="background: rgba(255,255,255,0.04); padding: 7px 10px; border-radius: 6px; font-size: 11.5px;">
+                  <strong style="color: #38BDF8;">4. RETURN_SESSION_TO_PACKAGE:</strong> Khôi phục 1 buổi vào gói để xếp lịch học bù.
+                </div>
+                <div style="background: rgba(255,255,255,0.04); padding: 7px 10px; border-radius: 6px; font-size: 11.5px;">
+                  <strong style="color: #F87171;">5. PENALIZE_AND_DISMISS:</strong> Phạt tiền ký quỹ + Khóa vĩnh viễn tài khoản gian lận.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ==================== SLIDE 13: NGHIỆP VỤ 7 & 8 - GIÁO ÁN & CHATBOX ==================== -->
+      <section class="slide" id="slide-13" data-notes="Bên cạnh tài chính, PT-Connect hỗ trợ sâu về chuyên môn: PT soạn giáo án cá nhân hóa gắn liền với hợp đồng của từng học viên. Giáo án có bài tập, số hiệp, số rep, mức tạ và link video kỹ thuật. Đồng thời có Chatbox nội bộ 1-1 để trao đổi an toàn và gửi mã OTP.">
+        <div class="slide-header">
+          <div>
+            <div class="slide-category">CHƯƠNG 3: NGHIỆP VỤ CỐT LÕI</div>
+            <div class="slide-heading">Hỗ Trợ Tập Luyện: <span>Giáo Án Cá Nhân Hóa & Chatbox Nội Bộ</span></div>
+          </div>
+          <div class="slide-tag">Personalized Training & Chat</div>
+        </div>
+        <div class="slide-body">
+          <div class="grid-2">
+            <!-- Left: Workout plan -->
+            <div class="p-card" style="padding: 20px;">
+              <div class="card-title"><div class="card-icon" style="color: #34D399;">📋</div> Giáo Án Huấn Luyện Gắn Với Hợp Đồng</div>
+              <p class="card-desc" style="margin-top: 6px;">
+                Mỗi hợp đồng ký kết sẽ sinh ra một hồ sơ giáo án riêng biệt (WorkoutPlan) theo sát thể trạng của từng học viên:
+              </p>
+
+              <div style="margin-top: 12px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 10px; padding: 12px;">
+                <div style="font-size: 12px; font-weight: 700; color: #6EE7B7; margin-bottom: 6px;">CẤU TRÚC 1 BÀI TẬP CHI TIẾT:</div>
+                <div style="font-size: 11.5px; color: var(--text-muted); line-height: 1.6;">
+                  • <strong>Tên bài tập:</strong> Bench Press, Barbell Squat, Deadlift...<br>
+                  • <strong>Thông số tải trọng:</strong> Sets (Hiệp), Reps (Lần lặp), Mức tạ (Kg).<br>
+                  • <strong>Thời gian nghỉ (Rest):</strong> Đếm lùi 60s - 90s giữa các hiệp.<br>
+                  • <strong>Video kỹ thuật:</strong> Nhúng link hướng dẫn chuẩn tư thế an toàn.
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Chatbox -->
+            <div class="p-card p-card-primary" style="padding: 20px;">
+              <div class="card-title"><div class="card-icon" style="color: #60A5FA;">💬</div> Kênh Chatbox Trao Đổi 1-1 Nội Bộ</div>
+              <p class="card-desc" style="margin-top: 6px;">
+                Học viên và Huấn luyện viên trao đổi trực tiếp trên nền tảng mà không cần kết bạn mạng xã hội cá nhân:
+              </p>
+
+              <ul class="bullet-list" style="margin-top: 12px; gap: 10px;">
+                <li><strong>Gửi mã OTP nhanh chóng:</strong> Khi tập trực tuyến hoặc tập tại nhà, học viên bấm 'Chia sẻ OTP' thẳng vào khung chat.</li>
+                <li><strong>Gửi ảnh đối soát:</strong> PT gửi ảnh chụp lịch tập, thực đơn dinh dưỡng hoặc ảnh máy tập để hướng dẫn.</li>
+                <li><strong>Bằng chứng trọng tài:</strong> Lịch sử chat được lưu trữ nguyên vẹn để làm cơ sở phân xử khi phát sinh tranh chấp.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ==================== SLIDE 14: ÁP DỤNG OOP & DESIGN PATTERNS ==================== -->
+      <section class="slide" id="slide-14" data-notes="Về mặt kỹ thuật Java, nhóm thể hiện tư duy thiết kế phần mềm vững chắc qua 4 yếu tố: Strategy & Factory Pattern trong chính sách hủy lịch, Chain of Responsibility trong chuỗi kiểm tra đăng ký đa vai trò, Domain-Driven Design bao gói bất biến dữ liệu, và quản trị Transaction ACID bằng @Transactional.">
+        <div class="slide-header">
+          <div>
+            <div class="slide-category">CHƯƠNG 4: TRIỂN KHAI KỸ THUẬT</div>
+            <div class="slide-heading">Vận Dụng Lập Trình Java: <span>OOP, Design Patterns & Quản Trị ACID</span></div>
+          </div>
+          <div class="slide-tag">Software Engineering Standards</div>
+        </div>
+        <div class="slide-body">
+          <div class="grid-4">
+            <div class="p-card">
+              <span class="badge badge-purple" style="margin-bottom: 6px;">PATTERN 1</span>
+              <div class="card-title" style="font-size: 13.5px;">Strategy & Factory</div>
+              <div style="font-size: 11.5px; color: var(--text-muted); line-height: 1.5; margin-top: 4px;">
+                Đóng gói giải thuật tính phạt hủy lịch vào các Strategy riêng biệt (<code>EarlyCancelStrategy</code>, <code>LateCancelStrategy</code>). Tuân thủ nguyên lý Open-Closed (OCP).
+              </div>
+            </div>
+
+            <div class="p-card">
+              <span class="badge badge-blue" style="margin-bottom: 6px;">PATTERN 2</span>
+              <div class="card-title" style="font-size: 13.5px;">Chain of Responsibility</div>
+              <div style="font-size: 11.5px; color: var(--text-muted); line-height: 1.5; margin-top: 4px;">
+                Chuỗi xử lý thẩm định hồ sơ: Kiểm tra email trùng -> Validate SĐT -> Thẩm định bằng cấp PT -> Băm mật khẩu BCrypt -> Khởi tạo Ví điện tử.
+              </div>
+            </div>
+
+            <div class="p-card">
+              <span class="badge badge-green" style="margin-bottom: 6px;">TƯ DUY THIẾT KẾ</span>
+              <div class="card-title" style="font-size: 13.5px;">Domain-Driven Design</div>
+              <div style="font-size: 11.5px; color: var(--text-muted); line-height: 1.5; margin-top: 4px;">
+                Các phương thức biến đổi nghiệp vụ được đặt ngay trong Entity: <code>booking.verifyOtp()</code>, <code>wallet.deductEscrow()</code>, ngăn chặn Anemic Domain Model.
+              </div>
+            </div>
+
+            <div class="p-card">
+              <span class="badge badge-amber" style="margin-bottom: 6px;">TÍNH TOÀN VẸN</span>
+              <div class="card-title" style="font-size: 13.5px;">Giao Dịch ACID</div>
+              <div style="font-size: 11.5px; color: var(--text-muted); line-height: 1.5; margin-top: 4px;">
+                Sử dụng <code>@Transactional(rollbackFor = Exception.class)</code> đảm bảo: Trừ tiền ví + Tạo hợp đồng PDF + Giảm buổi hoặc thành công 100%, hoặc Rollback sạch sẽ.
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top: 14px; background: rgba(11, 15, 25, 0.9); border: 1px solid var(--border-card); border-radius: 12px; padding: 12px 18px; display: flex; align-items: center; justify-content: space-between;">
+            <div style="font-size: 12px; color: #CBD5E1;">
+              💡 <em>"Không biến Java thành ngôn ngữ viết script CRUD, mà khai thác tối đa sức mạnh của Đa hình (Polymorphism), Đóng gói (Encapsulation) và Trừu tượng hóa (Abstraction)."</em>
+            </div>
+            <span class="badge badge-blue">Java 17 OOP Standard</span>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ==================== SLIDE 15: DEMO HỆ THỐNG & KẾT QUẢ THỰC NGHIỆM ==================== -->
+      <section class="slide" id="slide-15" data-notes="Nhóm đã triển khai hoàn thiện và kiểm thử thành công hệ thống trên cả 3 giao diện: Cổng Học viên, Cổng Huấn luyện viên và Cổng Quản trị viên. Test kịch bản 100 request đồng thời đặt 1 slot cho thấy CSDL xử lý hoàn hảo, không có bất kỳ ca tập nào bị trùng.">
+        <div class="slide-header">
+          <div>
+            <div class="slide-category">CHƯƠNG 5: THỰC NGHIỆM & KẾT QUẢ</div>
+            <div class="slide-heading">Demo Thực Nghiệm: <span>3 Cổng Giao Diện & Test Chịu Tải Đa Luồng</span></div>
+          </div>
+          <div class="slide-tag">System Demonstration</div>
+        </div>
+        <div class="slide-body">
+          <div class="grid-3" style="gap: 16px;">
+            <!-- Column 1: Student -->
+            <div class="p-card p-card-primary">
+              <div class="card-title"><div class="card-icon" style="color: #60A5FA;">🏃</div> Phân Hệ Học Viên (Student)</div>
+              <ul class="bullet-list" style="margin-top: 8px;">
+                <li>Tìm kiếm PT theo bộ lọc: Chuyên môn, Quận/Huyện, Giá gói.</li>
+                <li>Nạp tiền ví điện tử qua mã QR.</li>
+                <li>Ký hợp đồng điện tử tải trực tiếp file PDF.</li>
+                <li>Đặt lịch theo khung giờ rảnh & Học thử 0đ.</li>
+                <li>Sinh mã OTP điểm danh 15 phút & Đánh giá sao.</li>
+              </ul>
+            </div>
+
+            <!-- Column 2: PT -->
+            <div class="p-card p-card-green">
+              <div class="card-title"><div class="card-icon" style="color: #34D399;">🏋️</div> Phân Hệ Huấn Luyện Viên (PT)</div>
+              <ul class="bullet-list" style="margin-top: 8px;">
+                <li>Đăng ký tải chứng chỉ chuyên môn chờ duyệt.</li>
+                <li>Cấu hình lịch rảnh tuần linh hoạt (Slot Management).</li>
+                <li>Nhập mã OTP xác thực ca tập để nhận ví 90%.</li>
+                <li>Biên soạn giáo án bài tập cá nhân hóa.</li>
+                <li>Xem báo cáo thu nhập và rút tiền ngân hàng.</li>
+              </ul>
+            </div>
+
+            <!-- Column 3: Admin -->
+            <div class="p-card p-card-amber">
+              <div class="card-title"><div class="card-icon" style="color: #FBBF24;">🛡️</div> Phân Hệ Quản Trị Viên (Admin)</div>
+              <ul class="bullet-list" style="margin-top: 8px;">
+                <li>Thẩm định bằng cấp & Cấp phép tài khoản PT.</li>
+                <li>Bảng điều khiển (Dashboard) giám sát dòng tiền ký quỹ.</li>
+                <li>Thu 10% hoa hồng nền tảng tự động.</li>
+                <li>Trung tâm trọng tài phân xử tranh chấp 48 giờ.</li>
+                <li>Giám sát tỷ lệ hủy ca và khóa tài khoản vi phạm.</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Concurrency Test Results Box -->
+          <div style="margin-top: 14px; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 12px; padding: 10px 18px; display: flex; align-items: center; justify-content: space-between;">
+            <div>
+              <span class="badge badge-blue" style="margin-right: 8px;">KẾT QUẢ TEST ĐỒNG THỜI (CONCURRENCY)</span>
+              <strong style="color: white; font-size: 12px;">100 Luồng đồng thời đặt 1 slot duy nhất</strong> ➜ 
+              <span style="color: #34D399; font-weight: 700; font-size: 12px;">1 request thành công, 99 request rollback an toàn</span>, thời gian phản hồi trung bình <strong>42ms</strong>.
+            </div>
+            <span class="badge badge-green">Pessimistic Lock Pass 100%</span>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ==================== SLIDE 16: ĐÁNH GIÁ & ĐIỂM ĐỘT PHÁ ==================== -->
+      <section class="slide" id="slide-16" data-notes="Nhìn lại toàn bộ bài tập lớn, dự án đạt được 3 điểm đột phá chính: Thứ nhất, giải quyết trọn vẹn nghiệp vụ kinh tế gai góc; Thứ hai, áp dụng đúng chuẩn kiến trúc công nghệ Clean Layered; Thứ ba, bảo đảm an toàn dữ liệu tuyệt đối nhờ khóa CSDL và giao dịch ACID.">
+        <div class="slide-header">
+          <div>
+            <div class="slide-category">CHƯƠNG 6: TỔNG KẾT & ĐÁNH GIÁ</div>
+            <div class="slide-heading">Đánh Giá Kết Quả: <span>Những Điểm Đột Phá Của Đề Tài</span></div>
+          </div>
+          <div class="slide-tag">Project Evaluation</div>
+        </div>
+        <div class="slide-body">
+          <div class="grid-3" style="gap: 16px;">
+            <div class="p-card p-card-primary" style="padding: 20px;">
+              <div style="font-size: 32px; margin-bottom: 8px;">💡</div>
+              <div class="card-title" style="font-size: 15px;">1. Tính Ứng Dụng Thực Tiễn Cao</div>
+              <p class="card-desc" style="margin-top: 6px;">
+                Đề tài không đi theo lối mòn của các ứng dụng CRUD đơn giản, mà dấn thân giải quyết bài toán nhức nhối thực tế của ngành thể hình: <strong>Bảo vệ dòng tiền ký quỹ</strong> và <strong>ngăn ngừa gian lận chấm công</strong>.
+              </p>
+            </div>
+
+            <div class="p-card p-card-green" style="padding: 20px;">
+              <div style="font-size: 32px; margin-bottom: 8px;">🏗️</div>
+              <div class="card-title" style="font-size: 15px;">2. Kiến Trúc Chuẩn Doanh Nghiệp</div>
+              <p class="card-desc" style="margin-top: 6px;">
+                Backend tổ chức theo <strong>Clean Layered Architecture</strong> chuẩn mực. Tách biệt rành mạch giữa Controller, Service, DTO, Entity và Exception Handler. Dễ bảo trì và mở rộng trong tương lai.
+              </p>
+            </div>
+
+            <div class="p-card p-card-amber" style="padding: 20px;">
+              <div style="font-size: 32px; margin-bottom: 8px;">🔒</div>
+              <div class="card-title" style="font-size: 15px;">3. Kiểm Soát Dữ Liệu Chặt Chẽ</div>
+              <p class="card-desc" style="margin-top: 6px;">
+                Vận dụng thành công các kỹ thuật chuyên sâu của Java: <strong>Pessimistic Locking</strong>, <strong>Spring Transaction ACID</strong>, mã hóa <strong>BCrypt</strong> và <strong>Trigger Database</strong> tự động.
+              </p>
+            </div>
+          </div>
+
+          <div style="margin-top: 16px; background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border-card); border-radius: 14px; padding: 14px 24px; display: flex; align-items: center; justify-content: space-around;">
+            <div style="text-align: center;">
+              <div style="font-size: 24px; font-weight: 800; color: #38BDF8;">100%</div>
+              <div style="font-size: 11px; color: var(--text-dim); text-transform: uppercase;">Nghiệp vụ được giải quyết</div>
+            </div>
+            <div style="width: 1px; height: 35px; background: var(--border-card);"></div>
+            <div style="text-align: center;">
+              <div style="font-size: 24px; font-weight: 800; color: #34D399;">16 Bảng</div>
+              <div style="font-size: 11px; color: var(--text-dim); text-transform: uppercase;">CSDL Chuẩn hóa BCNF</div>
+            </div>
+            <div style="width: 1px; height: 35px; background: var(--border-card);"></div>
+            <div style="text-align: center;">
+              <div style="font-size: 24px; font-weight: 800; color: #FBBF24;">0 Lỗi Trùng</div>
+              <div style="font-size: 11px; color: var(--text-dim); text-transform: uppercase;">Pessimistic Locking Test</div>
+            </div>
+            <div style="width: 1px; height: 35px; background: var(--border-card);"></div>
+            <div style="text-align: center;">
+              <div style="font-size: 24px; font-weight: 800; color: #C4B5FD;">3 Phân Hệ</div>
+              <div style="font-size: 11px; color: var(--text-dim); text-transform: uppercase;">Student, PT & Admin Cổng</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ==================== SLIDE 17: KẾT LUẬN & HƯỚNG PHÁT TRIỂN ==================== -->
+      <section class="slide" id="slide-17" data-notes="Trong tương lai, nhóm dự kiến phát triển thêm 3 hướng: Tích hợp cổng thanh toán thực tế VNPAY/MoMo, ứng dụng AI Gemini để gợi ý PT và thực đơn dinh dưỡng, và phát triển Mobile App. Nhóm xin trân trọng cảm ơn ThS. Nguyễn Mạnh Sơn và Hội đồng đã chú ý lắng nghe. Nhóm sẵn sàng tiếp thu các câu hỏi phản biện.">
+        <div class="slide-header">
+          <div>
+            <div class="slide-category">CHƯƠNG 6: TƯƠNG LAI & KẾT LUẬN</div>
+            <div class="slide-heading">Hướng Phát Triển Tiếp Theo & <span>Lời Cảm Ơn (Q&A)</span></div>
+          </div>
+          <div class="slide-tag">Thank You & Questions</div>
+        </div>
+        <div class="slide-body">
+          <div class="grid-2" style="margin-bottom: 16px;">
+            <div class="p-card" style="padding: 16px;">
+              <div class="card-title"><div class="card-icon" style="color: #60A5FA;">🚀</div> 3 Định Hướng Phát Triển Tương Lai</div>
+              <ul class="bullet-list" style="margin-top: 6px;">
+                <li><strong>Cổng Thanh Toán Thực Tế:</strong> Tích hợp VNPAY, MoMo hoặc VietQR tự động khớp tiền nạp ví qua Webhook.</li>
+                <li><strong>Trí Tuệ Nhân Tạo (AI Support):</strong> Tích hợp Gemini AI đề xuất huấn luyện viên phù hợp theo chỉ số BMI và tự động sinh thực đơn dinh dưỡng.</li>
+                <li><strong>Ứng Dụng Di Động (Mobile App):</strong> Phát triển app React Native cho iOS & Android để học viên nhận thông báo đẩy (Push Notification) sát giờ tập.</li>
+              </ul>
+            </div>
+
+            <div class="p-card p-card-primary" style="padding: 16px; justify-content: center; text-align: center;">
+              <div style="font-size: 32px; margin-bottom: 6px;">🎓</div>
+              <h3 style="font-size: 20px; font-weight: 800; color: white; margin-bottom: 6px;">
+                XIN TRÂN TRỌNG CẢM ƠN THẦY CÔ & HỘI ĐỒNG!
+              </h3>
+              <p style="font-size: 12.5px; color: var(--text-muted); max-width: 480px; margin: 0 auto; line-height: 1.5;">
+                Nhóm tác giả xin chân thành cảm ơn sự hướng dẫn tận tình của <strong>ThS. Nguyễn Mạnh Sơn</strong>. Nhóm rất mong nhận được những nhận xét quý báu để hoàn thiện hệ thống hơn nữa.
+              </p>
+            </div>
+          </div>
+
+          <!-- Q&A Box -->
+          <div style="background: linear-gradient(135deg, rgba(37, 99, 235, 0.2) 0%, rgba(14, 165, 233, 0.1) 100%); border: 1px solid rgba(56, 189, 248, 0.4); border-radius: 14px; padding: 14px 24px; text-align: center;">
+            <div style="font-size: 15px; font-weight: 800; color: #38BDF8; letter-spacing: 0.5px;">
+              💬 PHẦN HỎI ĐÁP & PHẢN BIỆN (Q&A SESSION)
+            </div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+              Kính mời Quý Thầy Cô và các bạn sinh viên đặt câu hỏi cho nhóm!
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Presenter Notes Drawer -->
+  <aside class="notes-drawer" id="notesDrawer">
+    <div class="notes-header">
+      <span>📝 GHI CHÚ THUYẾT TRÌNH (SPEAKER NOTES - DÀNH CHO NGƯỜI BÁO CÁO)</span>
+      <span style="cursor: pointer; color: var(--text-dim);" id="btnCloseNotes">✕ Đóng</span>
+    </div>
+    <div class="notes-content" id="notesContent">
+      <!-- Injected dynamically via JS -->
+    </div>
+  </aside>
+
+  <!-- Slide Grid Modal / Overview -->
+  <div class="grid-modal" id="gridModal">
+    <div class="grid-modal-header">
+      <div class="grid-modal-title">📑 Danh Sách Toàn Bộ Slide Báo Cáo (17 Slides)</div>
+      <button class="action-btn" id="btnCloseGrid">✕ Đóng danh sách (Esc)</button>
+    </div>
+    <div class="grid-cards" id="gridCardsContainer">
+      <!-- Injected dynamically via JS -->
+    </div>
+  </div>
+
+  <!-- Bottom Control Bar -->
+  <footer class="bottom-bar">
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div class="slide-counter">
+      Slide <strong id="currentSlideNum">1</strong> / <span id="totalSlideNum">17</span>
+    </div>
+    <div class="nav-controls">
+      <button class="ctrl-btn" id="btnPrev" title="Phím tắt: Mũi tên trái (←)" disabled>◀</button>
+      <button class="ctrl-btn" id="btnNext" title="Phím tắt: Mũi tên phải (→) hoặc Phím cách (Space)">▶</button>
+    </div>
+  </footer>
+
+  <script>
+    // Slide Presentation Logic
+    const slides = Array.from(document.querySelectorAll('.slide'));
+    const totalSlides = slides.length;
+    let currentIdx = 0;
+
+    const currentSlideNumEl = document.getElementById('currentSlideNum');
+    const totalSlideNumEl = document.getElementById('totalSlideNum');
+    const progressFillEl = document.getElementById('progressFill');
+    const btnPrev = document.getElementById('btnPrev');
+    const btnNext = document.getElementById('btnNext');
+    const notesDrawer = document.getElementById('notesDrawer');
+    const notesContent = document.getElementById('notesContent');
+    const btnNotes = document.getElementById('btnNotes');
+    const btnCloseNotes = document.getElementById('btnCloseNotes');
+    const gridModal = document.getElementById('gridModal');
+    const btnGrid = document.getElementById('btnGrid');
+    const btnCloseGrid = document.getElementById('btnCloseGrid');
+    const gridCardsContainer = document.getElementById('gridCardsContainer');
+    const btnFullscreen = document.getElementById('btnFullscreen');
+    const btnPrint = document.getElementById('btnPrint');
+
+    totalSlideNumEl.textContent = totalSlides;
+
+    // Generate Mini Cards in Grid Modal
+    slides.forEach((slide, idx) => {
+      const card = document.createElement('div');
+      card.className = `mini-slide-card ${idx === 0 ? 'current' : ''}`;
+      card.id = `mini-card-${idx}`;
+      
+      const heading = slide.querySelector('.slide-heading')?.innerText || 'Trang Bìa Báo Cáo';
+      const category = slide.querySelector('.slide-category')?.innerText || 'PTIT - JAVA BTL';
+
+      card.innerHTML = `
+        <div class="mini-num">SLIDE ${String(idx + 1).padStart(2, '0')} - ${category}</div>
+        <div class="mini-title">${heading.replace(/\n/g, ' ')}</div>
+      `;
+      card.addEventListener('click', () => {
+        goToSlide(idx);
+        gridModal.classList.remove('open');
+      });
+      gridCardsContainer.appendChild(card);
+    });
+
+    function updateSlide() {
+      slides.forEach((slide, idx) => {
+        slide.classList.toggle('active', idx === currentIdx);
+      });
+
+      // Update counters & progress
+      currentSlideNumEl.textContent = currentIdx + 1;
+      const progressPercent = ((currentIdx + 1) / totalSlides) * 100;
+      progressFillEl.style.width = `${progressPercent}%`;
+
+      btnPrev.disabled = currentIdx === 0;
+      btnNext.disabled = currentIdx === totalSlides - 1;
+
+      // Update speaker notes
+      const activeSlide = slides[currentIdx];
+      const notes = activeSlide.getAttribute('data-notes') || 'Chưa có ghi chú cho slide này.';
+      notesContent.innerHTML = `<strong>Kịch bản nói:</strong> ${notes}`;
+
+      // Update mini cards in modal
+      document.querySelectorAll('.mini-slide-card').forEach((card, idx) => {
+        card.classList.toggle('current', idx === currentIdx);
+      });
+    }
+
+    function goToSlide(idx) {
+      if (idx >= 0 && idx < totalSlides) {
+        currentIdx = idx;
+        updateSlide();
+      }
+    }
+
+    function nextSlide() {
+      if (currentIdx < totalSlides - 1) {
+        currentIdx++;
+        updateSlide();
+      }
+    }
+
+    function prevSlide() {
+      if (currentIdx > 0) {
+        currentIdx--;
+        updateSlide();
+      }
+    }
+
+    // Event Listeners
+    btnNext.addEventListener('click', nextSlide);
+    btnPrev.addEventListener('click', prevSlide);
+
+    // Keyboard Shortcuts
+    window.addEventListener('keydown', (e) => {
+      if (gridModal.classList.contains('open')) {
+        if (e.key === 'Escape') gridModal.classList.remove('open');
+        return;
+      }
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        e.preventDefault();
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        prevSlide();
+      } else if (e.key === 'n' || e.key === 'N') {
+        toggleNotes();
+      } else if (e.key === 'g' || e.key === 'G') {
+        toggleGrid();
+      } else if (e.key === 'f' || e.key === 'F') {
+        toggleFullscreen();
+      } else if (e.key === 'Home') {
+        goToSlide(0);
+      } else if (e.key === 'End') {
+        goToSlide(totalSlides - 1);
+      }
+    });
+
+    // Toggle Notes
+    function toggleNotes() {
+      notesDrawer.classList.toggle('open');
+      btnNotes.classList.toggle('active');
+    }
+    btnNotes.addEventListener('click', toggleNotes);
+    btnCloseNotes.addEventListener('click', toggleNotes);
+
+    // Toggle Grid
+    function toggleGrid() {
+      gridModal.classList.toggle('open');
+    }
+    btnGrid.addEventListener('click', toggleGrid);
+    btnCloseGrid.addEventListener('click', toggleGrid);
+
+    // Fullscreen
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+    btnFullscreen.addEventListener('click', toggleFullscreen);
+
+    // Print to PDF
+    btnPrint.addEventListener('click', () => {
+      window.print();
+    });
+
+    // Initialize
+    updateSlide();
+  </script>
+</body>
+</html>

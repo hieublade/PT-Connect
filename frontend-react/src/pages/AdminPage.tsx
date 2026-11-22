@@ -7,6 +7,7 @@ import {
   AdminStatistics,
   AdminBookingAnalytics,
   AdminPaymentAnalytics,
+  Review,
 } from '../types/api';
 import { isHttpUrl, resolveCertificateUrl } from '../lib/certificate';
 import { parseEvidence, EvidenceAttachmentList, isEvidenceSubmitted } from '../lib/evidence';
@@ -51,6 +52,7 @@ import {
   Percent,
   Landmark,
   Send,
+  Star,
 } from 'lucide-react';
 
 export interface DisputeCase {
@@ -165,6 +167,12 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLogout }) => {
   const [pendingPts, setPendingPts] = useState<PtProfile[]>([]);
   const [bookings, setBookings] = useState<AdminBookingAnalytics[]>([]);
   const [payments, setPayments] = useState<AdminPaymentAnalytics[]>([]);
+  const [moderationReviews, setModerationReviews] = useState<Review[]>([]);
+  const [reviewStatusFilter, setReviewStatusFilter] = useState<string>('ALL');
+  const [verdictModalReview, setVerdictModalReview] = useState<Review | null>(null);
+  const [verdictDecision, setVerdictDecision] = useState<'REMOVE' | 'KEEP' | 'REQUEST_EVIDENCE'>('KEEP');
+  const [adminVerdictNote, setAdminVerdictNote] = useState('');
+  const [verdictSubmitting, setVerdictSubmitting] = useState(false);
 
   // UI state
   const [loading, setLoading] = useState(false);
@@ -443,11 +451,21 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLogout }) => {
     setLoading(true);
     try {
       // 1. Pending PTs & All PTs
-      const pendingData: any = await api.get('/admin/pt/pending').catch(() => []);
-      setPendingPts(pendingData || []);
+      let pendingData: any = [];
+      try {
+        pendingData = await api.get('/admin/pt/pending');
+        setPendingPts(Array.isArray(pendingData) ? pendingData : []);
+      } catch (err: any) {
+        console.error('Lỗi khi tải danh sách PT chờ duyệt:', err);
+      }
 
-      const allPtsData: any = await api.get('/admin/pt').catch(() => pendingData || []);
-      setPtsList(allPtsData || pendingData || []);
+      let allPtsData: any = [];
+      try {
+        allPtsData = await api.get('/admin/pt');
+        setPtsList(Array.isArray(allPtsData) && allPtsData.length > 0 ? allPtsData : (pendingData || []));
+      } catch (err: any) {
+        console.error('Lỗi khi tải danh sách tất cả HLV:', err);
+      }
 
       // 2. Users
       const uData: any = await api.get('/admin/users').catch(() => []);
@@ -501,6 +519,14 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLogout }) => {
       } catch (wErr) {
         console.warn('Ví Admin chưa sẵn sàng từ server, dùng ví mặc định:', wErr);
       }
+
+      // 8. Đánh giá tiêu cực cần kiểm duyệt (1-3 sao)
+      try {
+        const rData: any = await api.get('/reviews/moderation');
+        setModerationReviews(Array.isArray(rData) ? rData : []);
+      } catch (rErr) {
+        console.warn('Lỗi tải đánh giá cần kiểm duyệt:', rErr);
+      }
     } catch (e) {
       console.error('Error fetching admin data:', e);
       showToast('Có lỗi xảy ra khi tải dữ liệu quản trị.');
@@ -530,6 +556,36 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLogout }) => {
       fetchAdminData();
     } catch (err: any) {
       showToast(err.message || 'Lỗi từ chối PT.');
+    }
+  };
+
+  const handleAdminVerdict = async () => {
+    if (!verdictModalReview) return;
+    if (!adminVerdictNote.trim()) {
+      showToast('Vui lòng nhập lý do / căn cứ phán quyết của Quản trị viên');
+      return;
+    }
+    setVerdictSubmitting(true);
+    try {
+      await api.post(`/reviews/${verdictModalReview.id}/verdict`, {
+        decision: verdictDecision,
+        adminNote: adminVerdictNote.trim(),
+      });
+      showToast(
+        verdictDecision === 'REMOVE'
+          ? '✓ Đã xóa bỏ đánh giá xấu khỏi hệ thống & cập nhật lại sao của HLV!'
+          : verdictDecision === 'KEEP'
+          ? '✓ Đã phê duyệt giữ lại đánh giá và công khai trên hồ sơ HLV!'
+          : '✓ Đã gửi yêu cầu bổ sung bằng chứng tới HLV & Học viên!'
+      );
+      setVerdictModalReview(null);
+      setAdminVerdictNote('');
+      const rData: any = await api.get('/reviews/moderation');
+      setModerationReviews(Array.isArray(rData) ? rData : []);
+    } catch (err: any) {
+      showToast(err.response?.data?.message || err.message || 'Lỗi khi đưa ra phán quyết');
+    } finally {
+      setVerdictSubmitting(false);
     }
   };
 
@@ -670,9 +726,14 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLogout }) => {
     }
   };
 
+  const pendingModerationReviewsCount = moderationReviews.filter(
+    (r) => r.status === 'FLAGGED' || r.status === 'APPEALED' || r.status === 'EVIDENCE_REQUESTED'
+  ).length;
+
   const tabs = [
     { label: `Phê Duyệt HLV (${pendingPts.length})`, icon: Shield, id: 0 },
     { label: `Xử Lý Tranh Chấp (${pendingDisputesCount})`, icon: Scale, id: 5 },
+    { label: `Kiểm Duyệt Đánh Giá (${pendingModerationReviewsCount})`, icon: Star, id: 6 },
     { label: 'Thống Kê & Điều Tra', icon: BarChart2, id: 4 },
     { label: `Quản Lý Người Dùng (${allUsers.length})`, icon: Users, id: 1 },
     { label: `Lịch Tập & Booking (${bookings.length})`, icon: Calendar, id: 2 },
@@ -915,6 +976,13 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLogout }) => {
                       isCur ? 'bg-white text-indigo-700' : 'bg-red-600 text-white animate-pulse'
                     }`}>
                       {pendingDisputesCount}
+                    </span>
+                  )}
+                  {t.id === 6 && pendingModerationReviewsCount > 0 && (
+                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                      isCur ? 'bg-white text-indigo-700' : 'bg-rose-500 text-white animate-pulse'
+                    }`}>
+                      {pendingModerationReviewsCount}
                     </span>
                   )}
                   {t.id === 0 && pendingPts.length > 0 && (
@@ -1626,6 +1694,279 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLogout }) => {
           </div>
         )}
 
+        {/* ==================== TAB 6: KIỂM DUYỆT ĐÁNH GIÁ (1 - 3 SAO) ==================== */}
+        {activeTab === 6 && (
+          <div className="space-y-6">
+            {/* Header Banner */}
+            <div className="bg-gradient-to-r from-slate-900 via-rose-950 to-slate-900 text-white p-6 rounded-2xl border border-rose-900/40 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="space-y-2 max-w-2xl">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs font-bold uppercase tracking-wider">
+                  <Star className="w-3.5 h-3.5 fill-rose-400 text-rose-400" />
+                  HỘI ĐỒNG KIỂM DUYỆT &amp; BẢO VỆ UY TÍN
+                </div>
+                <h3 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-white">
+                  Kiểm Duyệt &amp; Phân Xử Đánh Giá Tiêu Cực (1 - 3 Sao)
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                  Đảm bảo môi trường khách quan, bảo vệ Huấn luyện viên trước các phản ánh sai lệch và học viên trước dịch vụ kém chất lượng. Quản trị viên thẩm định giải trình của PT để: <b>Xóa bỏ</b> đánh giá ác ý, <b>Giữ lại</b> đánh giá đúng thực tế, hoặc <b>Yêu cầu bổ sung chứng cứ</b>.
+                </p>
+              </div>
+
+              {/* Status Badges */}
+              <div className="grid grid-cols-3 gap-2.5 shrink-0 text-center">
+                <div className="bg-white/5 border border-white/10 p-3 rounded-xl backdrop-blur-md">
+                  <span className="text-[10px] text-amber-300 font-bold uppercase block">Chờ HLV phản biện</span>
+                  <span className="text-2xl font-black text-amber-400 mt-0.5 block">
+                    {moderationReviews.filter(r => r.status === 'FLAGGED').length}
+                  </span>
+                  <span className="text-[10px] text-slate-400">đánh giá</span>
+                </div>
+                <div className="bg-white/5 border border-white/10 p-3 rounded-xl backdrop-blur-md">
+                  <span className="text-[10px] text-sky-300 font-bold uppercase block">Đã có giải trình</span>
+                  <span className="text-2xl font-black text-sky-400 mt-0.5 block">
+                    {moderationReviews.filter(r => r.status === 'APPEALED').length}
+                  </span>
+                  <span className="text-[10px] text-slate-400">cần phán quyết</span>
+                </div>
+                <div className="bg-white/5 border border-white/10 p-3 rounded-xl backdrop-blur-md">
+                  <span className="text-[10px] text-emerald-300 font-bold uppercase block">Đã giải quyết</span>
+                  <span className="text-2xl font-black text-emerald-400 mt-0.5 block">
+                    {moderationReviews.filter(r => r.status === 'PUBLISHED' || r.status === 'REMOVED').length}
+                  </span>
+                  <span className="text-[10px] text-slate-400">xong</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Filter Tabs */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-2">
+              {[
+                { key: 'ALL', label: 'Tất Cả' },
+                { key: 'NEED_ACTION', label: 'Cần Phán Quyết (HLV đã phản biện / Chờ xét)' },
+                { key: 'FLAGGED', label: 'Chờ HLV Phản Biện' },
+                { key: 'APPEALED', label: 'HLV Đã Phản Biện' },
+                { key: 'EVIDENCE_REQUESTED', label: 'Đang Chờ Bổ Sung Chứng Cứ' },
+                { key: 'PUBLISHED', label: 'Đã Giữ Lại (Công Khai)' },
+                { key: 'REMOVED', label: 'Đã Xóa Bỏ' },
+              ].map(f => (
+                <button
+                  key={f.key}
+                  onClick={() => setReviewStatusFilter(f.key)}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition ${
+                    reviewStatusFilter === f.key
+                      ? 'bg-rose-600 text-white shadow-sm'
+                      : isDark
+                      ? 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                      : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Reviews List */}
+            {moderationReviews.length === 0 ? (
+              <div className="bg-white dark:bg-slate-900 p-12 rounded-2xl border border-slate-200 dark:border-slate-800 text-center">
+                <CheckCircle className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
+                <h4 className="text-base font-bold text-slate-900 dark:text-white">Không có đánh giá nào cần kiểm duyệt</h4>
+                <p className="text-xs text-slate-500 mt-1">Tất cả các đánh giá của học viên đều từ 4-5 sao hoặc đã được xử lý thỏa đáng.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {moderationReviews
+                  .filter(r => {
+                    if (reviewStatusFilter === 'ALL') return true;
+                    if (reviewStatusFilter === 'NEED_ACTION') return r.status === 'APPEALED' || r.status === 'FLAGGED';
+                    return r.status === reviewStatusFilter;
+                  })
+                  .map(r => (
+                    <div
+                      key={r.id}
+                      className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-4"
+                    >
+                      {/* Review Card Header */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="px-2.5 py-1 rounded-lg text-xs font-black bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                            Ca #{r.bookingId}
+                          </span>
+                          <span className="text-xs text-slate-500">
+                            Khóa: <b className="text-slate-700 dark:text-slate-300">{r.courseTitle || 'Tập luyện cùng PT'}</b> • Giờ: {r.slotTime || '—'}
+                          </span>
+                        </div>
+                        {/* Status Badge */}
+                        <div>
+                          {r.status === 'FLAGGED' && (
+                            <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                              ⚠️ Chờ HLV phản biện (FLAGGED)
+                            </span>
+                          )}
+                          {r.status === 'APPEALED' && (
+                            <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-sky-100 text-sky-800 border border-sky-300 animate-pulse">
+                              💬 HLV đã gửi giải trình (APPEALED)
+                            </span>
+                          )}
+                          {r.status === 'EVIDENCE_REQUESTED' && (
+                            <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-100 text-purple-800 border border-purple-300">
+                              🔍 Đang yêu cầu thêm chứng cứ
+                            </span>
+                          )}
+                          {r.status === 'PUBLISHED' && (
+                            <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                              ✓ Đã giữ lại &amp; công khai (KEPT)
+                            </span>
+                          )}
+                          {r.status === 'REMOVED' && (
+                            <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800 border border-rose-300 line-through">
+                              ✕ Đã xóa bỏ (REMOVED)
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Content Grid: Học viên vs HLV */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Cột Học viên */}
+                        <div className="p-3.5 bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                              👤 Học viên: {r.studentName || 'Ẩn danh'} ({r.studentEmail})
+                            </span>
+                            <span className="font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+                              {'⭐'.repeat(r.rating)} ({r.rating}/5 sao)
+                            </span>
+                          </div>
+                          <div className="text-xs text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800">
+                            <b>Ý kiến đánh giá:</b> {r.comment || 'Không có bình luận'}
+                          </div>
+                          {r.studentEvidence && (() => {
+                            const parsed = parseEvidence(r.studentEvidence);
+                            return (
+                              <div className="text-xs text-slate-600 dark:text-slate-400 bg-amber-50/50 dark:bg-slate-900/40 p-2.5 rounded-lg border border-amber-200/50 space-y-1.5">
+                                <b className="text-amber-900 dark:text-amber-300">Chứng cứ học viên:</b>
+                                {parsed.cleanText && (
+                                  <p className="mt-0.5 whitespace-pre-line text-slate-700 dark:text-slate-300">
+                                    {parsed.cleanText}
+                                  </p>
+                                )}
+                                {parsed.items.length > 0 && (
+                                  <div className="pt-1">
+                                    <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase block mb-1">
+                                      Ảnh bằng chứng ({parsed.items.length} ảnh) — Bấm để phóng to xem chi tiết:
+                                    </span>
+                                    <EvidenceAttachmentList
+                                      items={parsed.items}
+                                      onPreviewImage={(url, name) => setPreviewCert({ name: `Học viên (${r.studentName}) - ${name}`, url })}
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
+                        </div>
+
+                        {/* Cột Huấn luyện viên */}
+                        <div className="p-3.5 bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                              🏋️ HLV: {r.ptName || 'HLV'} ({r.ptEmail})
+                            </span>
+                            <span className="text-[11px] text-slate-400">
+                              {r.ptAppealedAt ? `Phản biện lúc ${r.ptAppealedAt.slice(0, 10)}` : 'Chưa có phản biện'}
+                            </span>
+                          </div>
+                          {r.ptAppeal ? (
+                            <div className="text-xs text-slate-700 dark:text-slate-300 bg-sky-50 dark:bg-slate-900 p-2.5 rounded-lg border border-sky-200 dark:border-slate-800 space-y-1.5">
+                              <b className="text-sky-900 dark:text-sky-300">Nội dung phản biện của HLV:</b>
+                              <p className="italic text-slate-700 dark:text-slate-300">"{r.ptAppeal}"</p>
+                              {r.ptEvidence && (() => {
+                                const parsedPt = parseEvidence(r.ptEvidence);
+                                return (
+                                  <div className="mt-1.5 pt-1.5 border-t border-sky-100 dark:border-slate-800 text-[11px] text-slate-500 space-y-1">
+                                    <b className="text-sky-900 dark:text-sky-300">Bằng chứng đối chứng:</b>
+                                    {parsedPt.cleanText && (
+                                      <p className="italic text-slate-700 dark:text-slate-300">
+                                        {parsedPt.cleanText}
+                                      </p>
+                                    )}
+                                    {parsedPt.items.length > 0 && (
+                                      <div className="pt-1">
+                                        <span className="text-[10px] font-bold text-sky-700 dark:text-sky-400 uppercase block mb-1">
+                                          Ảnh đối chứng ({parsedPt.items.length} ảnh):
+                                        </span>
+                                        <EvidenceAttachmentList
+                                          items={parsedPt.items}
+                                          onPreviewImage={(url, name) => setPreviewCert({ name: `HLV (${r.ptName}) - ${name}`, url })}
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })()}
+                            </div>
+                          ) : (
+                            <div className="text-xs text-slate-400 italic p-3 text-center border border-dashed border-slate-200 dark:border-slate-800 rounded-lg">
+                              HLV chưa gửi bản giải trình / phản biện cho đánh giá này.
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Phán quyết của Admin nếu đã xử lý */}
+                      {r.adminNote && (
+                        <div className="p-3 bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-900 rounded-xl text-xs space-y-1">
+                          <div className="font-bold text-purple-900 dark:text-purple-300 flex items-center gap-1.5">
+                            <Gavel className="w-3.5 h-3.5" />
+                            Ghi chú phán quyết của Quản trị viên:
+                            <span className="font-normal text-slate-500 text-[10px] ml-auto">
+                              {r.resolvedAt ? r.resolvedAt.slice(0, 10) : ''}
+                            </span>
+                          </div>
+                          <p className="text-purple-800 dark:text-purple-200">{r.adminNote}</p>
+                        </div>
+                      )}
+
+                      {/* 3 Action Buttons */}
+                      <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                        <button
+                          onClick={() => {
+                            setVerdictModalReview(r);
+                            setVerdictDecision('REMOVE');
+                            setAdminVerdictNote(r.adminNote || '');
+                          }}
+                          className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-xs transition flex items-center gap-1"
+                        >
+                          ✕ Xóa Bỏ Đánh Giá Xấu
+                        </button>
+                        <button
+                          onClick={() => {
+                            setVerdictModalReview(r);
+                            setVerdictDecision('KEEP');
+                            setAdminVerdictNote(r.adminNote || '');
+                          }}
+                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-xs transition flex items-center gap-1"
+                        >
+                          ✓ Giữ Lại Đánh Giá (Công Khai)
+                        </button>
+                        <button
+                          onClick={() => {
+                            setVerdictModalReview(r);
+                            setVerdictDecision('REQUEST_EVIDENCE');
+                            setAdminVerdictNote(r.adminNote || '');
+                          }}
+                          className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-xs transition flex items-center gap-1"
+                        >
+                          🔍 Yêu Cầu Thêm Bằng Chứng
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ==================== TAB 0: PHÊ DUYỆT HUẤN LUYỆN VIÊN ==================== */}
         {activeTab === 0 && (
           <div className="space-y-6">
@@ -1637,8 +1978,23 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLogout }) => {
                 </p>
               </div>
 
-              {/* Status filter pills */}
-              <div className="flex items-center bg-white border border-slate-200 p-1 rounded-xl shadow-xs text-xs font-semibold">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    fetchAdminData();
+                    showToast('Đang làm mới danh sách hồ sơ HLV...');
+                  }}
+                  disabled={loading}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-semibold shadow-xs transition cursor-pointer"
+                  title="Làm mới danh sách hồ sơ PT"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-purple-600' : 'text-slate-500'}`} />
+                  <span>Làm mới</span>
+                </button>
+
+                {/* Status filter pills */}
+                <div className="flex items-center bg-white border border-slate-200 p-1 rounded-xl shadow-xs text-xs font-semibold">
                 <button
                   onClick={() => setPtFilter('PENDING')}
                   className={`px-3 py-1.5 rounded-lg transition ${
@@ -1681,6 +2037,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLogout }) => {
                 </button>
               </div>
             </div>
+          </div>
 
             {displayedPts.length === 0 ? (
               <div className="bg-white dark:bg-slate-900 p-12 rounded-2xl border border-slate-200 dark:border-slate-800 text-center shadow-xs">
@@ -2696,8 +3053,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLogout }) => {
 
             {/* ==================== MODAL XÁC NHẬN PHÁN QUYẾT TRỌNG TÀI ==================== */}
       {selectedDisputeForVerdict && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 animate-scale-up text-slate-900 dark:text-slate-100 space-y-4">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 animate-scale-up text-slate-900 dark:text-slate-100 space-y-4 my-auto max-h-[92vh] overflow-y-auto">
             <div className="flex items-center gap-3 text-indigo-600 pb-3 border-b border-slate-100">
               <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
                 <Gavel className="w-5 h-5 text-indigo-600" />
@@ -2823,8 +3180,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLogout }) => {
 
       {/* ==================== MODAL YÊU CẦU BỔ SUNG BẰNG CHỨNG ==================== */}
       {requestEvidenceModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 animate-scale-up text-slate-900 dark:text-slate-100 space-y-4">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 animate-scale-up text-slate-900 dark:text-slate-100 space-y-4 my-auto max-h-[92vh] overflow-y-auto">
             <div className="flex items-center gap-3 text-amber-600 pb-3 border-b border-slate-100 dark:border-slate-800">
               <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 flex items-center justify-center font-bold">
                 <HelpCircle className="w-5 h-5 text-amber-600" />
@@ -3167,6 +3524,124 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onLogout }) => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== MODAL PHÁN QUYẾT KIỂM DUYỆT ĐÁNH GIÁ ==================== */}
+      {verdictModalReview && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 animate-scale-up space-y-4 my-auto max-h-[92vh] overflow-y-auto">
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                verdictDecision === 'REMOVE'
+                  ? 'bg-rose-100 text-rose-600'
+                  : verdictDecision === 'KEEP'
+                  ? 'bg-emerald-100 text-emerald-600'
+                  : 'bg-indigo-100 text-indigo-600'
+              }`}>
+                <Gavel className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-base font-bold text-slate-900 dark:text-white">
+                  Phán Quyết Kiểm Duyệt Đánh Giá #{verdictModalReview.id}
+                </h4>
+                <p className="text-xs text-slate-500">
+                  Ca #{verdictModalReview.bookingId} • HLV: {verdictModalReview.ptName} • Học viên: {verdictModalReview.studentName}
+                </p>
+              </div>
+            </div>
+
+            {/* Quyết định option pills */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Chọn quyết định xử lý:</label>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setVerdictDecision('REMOVE')}
+                  className={`p-2.5 rounded-xl border text-xs font-bold transition flex flex-col items-center gap-1 text-center ${
+                    verdictDecision === 'REMOVE'
+                      ? 'border-rose-500 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 ring-1 ring-rose-500'
+                      : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+                  }`}
+                >
+                  <span className="text-base">✕</span>
+                  <span>Xóa Bỏ</span>
+                  <span className="text-[10px] font-normal opacity-75">Ẩn đánh giá & hoàn lại sao HLV</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setVerdictDecision('KEEP')}
+                  className={`p-2.5 rounded-xl border text-xs font-bold transition flex flex-col items-center gap-1 text-center ${
+                    verdictDecision === 'KEEP'
+                      ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-500'
+                      : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+                  }`}
+                >
+                  <span className="text-base">✓</span>
+                  <span>Giữ Lại</span>
+                  <span className="text-[10px] font-normal opacity-75">Công khai kèm phản hồi HLV</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setVerdictDecision('REQUEST_EVIDENCE')}
+                  className={`p-2.5 rounded-xl border text-xs font-bold transition flex flex-col items-center gap-1 text-center ${
+                    verdictDecision === 'REQUEST_EVIDENCE'
+                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 ring-1 ring-indigo-500'
+                      : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+                  }`}
+                >
+                  <span className="text-base">🔍</span>
+                  <span>Yêu Cầu Chứng Cứ</span>
+                  <span className="text-[10px] font-normal opacity-75">Yêu cầu 2 bên nộp ảnh/bằng chứng</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Lý do / Ghi chú của Admin */}
+            <div>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                Lý do / Căn cứ phán quyết của Quản trị viên <span className="text-rose-500">*</span>
+              </label>
+              <textarea
+                rows={3}
+                value={adminVerdictNote}
+                onChange={(e) => setAdminVerdictNote(e.target.value)}
+                placeholder={
+                  verdictDecision === 'REMOVE'
+                    ? 'Nhập lý do xóa (ví dụ: Học viên vu khống, vi phạm quy tắc, PT cung cấp bằng chứng hoàn thành tốt ca tập)...'
+                    : verdictDecision === 'KEEP'
+                    ? 'Nhập lý do giữ lại (ví dụ: Phản ánh đúng thực tế buổi tập bị trễ/sai cam kết, công khai đánh giá cùng giải trình PT)...'
+                    : 'Nhập yêu cầu bằng chứng cụ thể (ví dụ: Yêu cầu PT gửi ảnh chụp lịch tập, yêu cầu học viên gửi ảnh tin nhắn)...'
+                }
+                className="w-full p-3 text-xs border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setVerdictModalReview(null)}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={handleAdminVerdict}
+                disabled={verdictSubmitting}
+                className={`px-4 py-2 text-white text-xs font-bold rounded-lg shadow-xs transition flex items-center gap-1.5 ${
+                  verdictDecision === 'REMOVE'
+                    ? 'bg-rose-600 hover:bg-rose-700'
+                    : verdictDecision === 'KEEP'
+                    ? 'bg-emerald-600 hover:bg-emerald-700'
+                    : 'bg-indigo-600 hover:bg-indigo-700'
+                }`}
+              >
+                <Gavel className="w-3.5 h-3.5" />
+                {verdictSubmitting ? 'Đang cập nhật...' : 'Ban hành phán quyết'}
+              </button>
+            </div>
           </div>
         </div>
       )}

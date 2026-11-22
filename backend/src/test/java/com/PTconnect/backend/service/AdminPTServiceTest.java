@@ -42,7 +42,7 @@ class AdminPTServiceTest {
         PT pt = PT.builder().id(1L).fullName("PT Test").email("pt@test.com").status(UserStatus.PENDING).build();
         PTProfile profile = PTProfile.builder().id(10L).pt(pt).verificationStatus(VerificationStatus.PENDING).build();
 
-        when(ptProfileRepository.findByVerificationStatus(VerificationStatus.PENDING)).thenReturn(List.of(profile));
+        when(ptProfileRepository.findByVerificationStatusWithDetails(VerificationStatus.PENDING)).thenReturn(List.of(profile));
 
         List<PendingPTResponse> result = adminPTService.getPendingPTs();
         assertEquals(1, result.size());

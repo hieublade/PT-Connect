@@ -25,10 +25,12 @@ public class DisputeCase {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "booking_id")
+    @org.hibernate.annotations.NotFound(action = org.hibernate.annotations.NotFoundAction.IGNORE)
     private Booking booking;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "enrollment_id")
+    @org.hibernate.annotations.NotFound(action = org.hibernate.annotations.NotFoundAction.IGNORE)
     private Enrollment enrollment;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -41,6 +43,7 @@ public class DisputeCase {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "defendant_id")
+    @org.hibernate.annotations.NotFound(action = org.hibernate.annotations.NotFoundAction.IGNORE)
     private User defendant;
 
     @Column(name = "dispute_type", nullable = false)

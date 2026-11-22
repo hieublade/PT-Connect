@@ -104,27 +104,30 @@ export function parseEvidence(rawText?: string | null): ParsedEvidence {
   }
   text = text.replace(bracketRegex, '').replace(/\|\s*$/, '').trim();
 
-  // 2. Tìm các URL hoặc tên file ảnh cách nhau bằng dấu ' | '
-  const parts = text.split(' | ');
+  // 2. Tìm các URL hoặc tên file ảnh (tách theo xuống dòng hoặc dấu ' | ')
+  const lines = text.split(/\r?\n| \| /);
   const remainingParts: string[] = [];
-  for (const part of parts) {
-    const trimmed = part.trim();
-    const isUrl = trimmed.startsWith('/uploads/') || trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:image/');
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    const isDataUrl = trimmed.startsWith('data:image/');
+    const isHttpUrl = trimmed.startsWith('/uploads/') || trimmed.startsWith('http://') || trimmed.startsWith('https://');
     const isImageFile = /\.(png|jpe?g|webp|gif|bmp|svg)$/i.test(trimmed);
 
     let cachedDataUrl: string | null = null;
-    if (!isUrl && isImageFile) {
+    if (!isDataUrl && !isHttpUrl && isImageFile) {
       try {
         cachedDataUrl = localStorage.getItem('evidence_img_' + trimmed);
       } catch {}
     }
 
-    if (isUrl || isImageFile || cachedDataUrl) {
-      const resolvedUrl = isUrl ? trimmed : (cachedDataUrl || `/uploads/disputes/${encodeURI(trimmed)}`);
+    if (isDataUrl || isHttpUrl || isImageFile || cachedDataUrl) {
+      const resolvedUrl = (isDataUrl || isHttpUrl) ? trimmed : (cachedDataUrl || `/uploads/disputes/${encodeURI(trimmed)}`);
       if (!items.some(it => it.url === resolvedUrl || it.name === trimmed)) {
         items.push({
           url: resolvedUrl,
-          name: trimmed.startsWith('data:image/') ? 'Ảnh đối chứng' : (trimmed.split('/').pop() || 'Ảnh bằng chứng'),
+          name: isDataUrl ? 'Ảnh đối chứng' : (trimmed.split('/').pop()?.split('?')[0] || 'Ảnh bằng chứng'),
           isRealUrl: true,
         });
       }
@@ -133,7 +136,7 @@ export function parseEvidence(rawText?: string | null): ParsedEvidence {
     }
   }
 
-  text = remainingParts.join(' | ').trim();
+  text = remainingParts.join('\n').trim();
   text = text.replace(/^["“”']+|["“”']+$/g, '').trim();
 
   return { cleanText: text, items };
@@ -383,6 +386,8 @@ export const MultiImageUploader: React.FC<{
     </div>
   );
 };
+
+export const EvidenceUploadPicker = MultiImageUploader;
 
 /**
  * Xử lý tải lên danh sách nhiều ảnh: nén Base64 Data URL và gửi lên máy chủ

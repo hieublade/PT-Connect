@@ -32,19 +32,38 @@ export const ReviewList: React.FC<Props> = ({ ptProfileId, reloadKey = 0 }) => {
   return (
     <ul className="space-y-3">
       {reviews.map((r) => (
-        <li key={r.id} className="bg-white p-4 rounded-xl border border-slate-200 flex gap-3">
+        <li key={r.id} className="bg-white p-4 rounded-xl border border-slate-200 flex gap-3 shadow-xs">
           <img
             src={getAvatarUrl(r.studentName ?? 'Học viên', r.studentAvatarUrl ?? undefined)}
             alt={r.studentName ?? 'Học viên'}
-            className="w-10 h-10 rounded-full object-cover border border-slate-200"
+            className="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0"
           />
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between">
               <span className="text-sm font-semibold text-slate-900">{r.studentName ?? 'Học viên ẩn danh'}</span>
               <span className="text-xs text-slate-400">{r.createdAt ? r.createdAt.slice(0, 10) : ''}</span>
             </div>
-            <StarRating value={r.rating} size={14} />
-            {r.comment && <p className="text-sm text-slate-600 mt-1">{r.comment}</p>}
+            <div className="flex items-center gap-2 mt-0.5">
+              <StarRating value={r.rating} size={14} />
+              <span className="text-xs font-bold text-amber-500">{r.rating}/5 sao</span>
+            </div>
+            {r.comment && <p className="text-sm text-slate-600 mt-1.5 break-words">{r.comment}</p>}
+
+            {/* Khung phản hồi/giải trình của Huấn luyện viên (nếu có) */}
+            {r.ptAppeal && (
+              <div className="mt-3 p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700">
+                <div className="font-bold text-slate-800 flex items-center gap-1.5 mb-1">
+                  <span className="w-2 h-2 rounded-full bg-blue-600"></span>
+                  Phản hồi từ Huấn luyện viên:
+                  {r.ptAppealedAt && (
+                    <span className="font-normal text-slate-400 text-[10px] ml-auto">
+                      {r.ptAppealedAt.slice(0, 10)}
+                    </span>
+                  )}
+                </div>
+                <p className="text-slate-600 italic">"{r.ptAppeal}"</p>
+              </div>
+            )}
           </div>
         </li>
       ))}

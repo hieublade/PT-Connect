@@ -24,6 +24,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -151,7 +152,15 @@ public class DisputeServiceImpl implements IDisputeService {
     @Transactional(readOnly = true)
     public List<DisputeResponse> getAllDisputes() {
         return disputeRepository.findAllWithDetails().stream()
-                .map(DisputeResponse::fromEntity)
+                .map(d -> {
+                    try {
+                        return DisputeResponse.fromEntity(d);
+                    } catch (Exception ex) {
+                        log.error("Lỗi khi chuyển đổi DisputeCase #{}: {}", d.getId(), ex.getMessage(), ex);
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
 
@@ -162,7 +171,15 @@ public class DisputeServiceImpl implements IDisputeService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài khoản: " + callerEmail));
 
         return disputeRepository.findByUserInvolved(caller.getId()).stream()
-                .map(DisputeResponse::fromEntity)
+                .map(d -> {
+                    try {
+                        return DisputeResponse.fromEntity(d);
+                    } catch (Exception ex) {
+                        log.error("Lỗi khi chuyển đổi DisputeCase #{}: {}", d.getId(), ex.getMessage(), ex);
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
 
@@ -280,8 +297,14 @@ public class DisputeServiceImpl implements IDisputeService {
                 bookingRepository.save(booking);
             }
             if (enr != null && enr.getStatus() == EnrollmentStatus.ACTIVE) {
-                enr.restoreSession();
-                enrollmentRepository.save(enr);
+                if (enr.getRemainingSessions() != null && enr.getTotalSessions() != null
+                        && enr.getRemainingSessions() < enr.getTotalSessions()) {
+                    enr.restoreSession();
+                    enrollmentRepository.save(enr);
+                } else {
+                    log.info("Hợp đồng #{} đã đạt tối đa số buổi ({}/{}), không cộng thêm buổi tập vượt quá giới hạn",
+                            enr.getId(), enr.getRemainingSessions(), enr.getTotalSessions());
+                }
             }
         } else if ("PAID_PT".equalsIgnoreCase(vType)) {
             statusVal = "RESOLVED_PAID_PT";
@@ -304,8 +327,14 @@ public class DisputeServiceImpl implements IDisputeService {
                 bookingRepository.save(booking);
             }
             if (enr != null && enr.getStatus() == EnrollmentStatus.ACTIVE) {
-                enr.restoreSession();
-                enrollmentRepository.save(enr);
+                if (enr.getRemainingSessions() != null && enr.getTotalSessions() != null
+                        && enr.getRemainingSessions() < enr.getTotalSessions()) {
+                    enr.restoreSession();
+                    enrollmentRepository.save(enr);
+                } else {
+                    log.info("Hợp đồng #{} đã đạt tối đa số buổi ({}/{}), không cộng thêm buổi tập vượt quá giới hạn",
+                            enr.getId(), enr.getRemainingSessions(), enr.getTotalSessions());
+                }
             }
         }
 

@@ -44,6 +44,10 @@ SECURITY_AND_SECRETS_AUDIT.md
 .agents/
 .archify/
 scratch/
+scratch_dump.txt
+builder.py
+dump_docx.py
+*Backup*
 BACKEND_STUDY_GUIDE.md
 DAY_28_STUDY_NOTES.md
 

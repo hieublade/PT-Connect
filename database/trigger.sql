@@ -24,18 +24,18 @@ BEGIN
     UPDATE `pt_profiles`
     SET 
       `average_rating` = (
-        SELECT ROUND(COALESCE(AVG(r.rating), 0), 2)
+        SELECT ROUND(COALESCE(AVG(r.rating), 5.0), 2)
         FROM `reviews` r
         JOIN `bookings` b ON r.`booking_id` = b.`id`
         JOIN `availability_slots` s ON b.`slot_id` = s.`id`
-        WHERE s.`pt_id` = v_pt_id
+        WHERE s.`pt_id` = v_pt_id AND (r.`status` = 'PUBLISHED' OR r.`status` IS NULL)
       ),
       `total_reviews` = (
         SELECT COUNT(*) 
         FROM `reviews` r 
         JOIN `bookings` b ON r.`booking_id` = b.`id` 
         JOIN `availability_slots` s ON b.`slot_id` = s.`id`
-        WHERE s.`pt_id` = v_pt_id
+        WHERE s.`pt_id` = v_pt_id AND (r.`status` = 'PUBLISHED' OR r.`status` IS NULL)
       )
     WHERE `id` = v_pt_id;
   END IF;

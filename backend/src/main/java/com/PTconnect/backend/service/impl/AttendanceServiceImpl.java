@@ -85,10 +85,10 @@ public class AttendanceServiceImpl implements IAttendanceService {
 
         AttendanceStatus status = isLate ? AttendanceStatus.LATE : AttendanceStatus.PRESENT;
 
-        // Sinh mã OTP 6 số
-        String otpCode = otpUtil.generateOtp(bookingId, 30);
+        // Sinh mã OTP 6 số có hiệu lực trong 15 phút
+        String otpCode = otpUtil.generateOtp(bookingId, 15);
         OtpUtil.OtpEntry otpEntry = otpUtil.getActiveOtp(bookingId);
-        LocalDateTime expiresAt = otpEntry != null ? otpEntry.expiresAt() : now.plusMinutes(30);
+        LocalDateTime expiresAt = otpEntry != null ? otpEntry.expiresAt() : now.plusMinutes(15);
 
         Attendance attendance = attendanceRepository.findByBookingId(bookingId)
                 .orElse(Attendance.builder()

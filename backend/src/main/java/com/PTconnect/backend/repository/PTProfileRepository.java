@@ -37,6 +37,12 @@ public interface PTProfileRepository extends JpaRepository<PTProfile, Long> {
 
     List<PTProfile> findByVerificationStatus(VerificationStatus status);
 
+    @Query("SELECT DISTINCT p FROM PTProfile p JOIN FETCH p.pt LEFT JOIN FETCH p.locations WHERE p.verificationStatus = :status ORDER BY p.id DESC")
+    List<PTProfile> findByVerificationStatusWithDetails(@Param("status") VerificationStatus status);
+
+    @Query("SELECT DISTINCT p FROM PTProfile p JOIN FETCH p.pt LEFT JOIN FETCH p.locations ORDER BY p.id DESC")
+    List<PTProfile> findAllWithDetails();
+
     Optional<PTProfile> findByPtId(Long userId);
 
     @Query("SELECT p FROM PTProfile p WHERE p.pt.email = :email")

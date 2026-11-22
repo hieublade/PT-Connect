@@ -14,7 +14,8 @@ import {
   PhoneCall,
   Calendar,
   KeyRound,
-  FileText
+  FileText,
+  Star,
 } from 'lucide-react';
 
 interface PolicyModalProps {
@@ -555,6 +556,19 @@ export const PolicyModal: React.FC<PolicyModalProps> = ({
                 <p className="text-slate-600 dark:text-slate-400">
                   Nếu xảy ra mâu thuẫn (như HLV vắng mặt không lý do, hủy lịch sai quy định, thái độ không đạt chuẩn), bạn có quyền bấm nút <b>"Khiếu nại"</b> tại bảng ca tập.
                   Ban Quản Trị Hệ Thống sẽ đối soát log điện tử, bằng chứng kèm theo và ra phán quyết hoàn tiền / xử phạt trong vòng tối đa <b>48 giờ làm việc</b>.
+                </p>
+              </div>
+
+              {/* Review & Counter-argument (1 - 3 stars) */}
+              <div className="p-4 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/40 dark:bg-rose-950/20 text-xs space-y-2">
+                <h4 className="font-bold text-rose-900 dark:text-rose-300 flex items-center gap-2">
+                  <Star className="w-4 h-4 fill-rose-500 text-rose-500" />
+                  <span>Quy chế Đánh Giá & Quyền Phản Biện Của HLV (1 - 3 Sao):</span>
+                </h4>
+                <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
+                  • <b>Đánh giá 4 - 5 sao:</b> Được hệ thống tự động ghi nhận và công khai ngay lập tức trên hồ sơ công khai của Huấn luyện viên.<br />
+                  • <b>Đánh giá 1 - 3 sao (tiêu cực):</b> Hệ thống sẽ chuyển vào quy trình bảo vệ uy tín (FLAGGED). Huấn luyện viên có toàn quyền gửi phản biện, giải trình và bằng chứng đối chứng (APPEALED).<br />
+                  • <b>Thẩm quyền của Quản trị viên (Admin):</b> Căn cứ theo ý kiến hai bên, Admin sẽ ra phán quyết: <b>Xóa bỏ đánh giá</b> (nếu học viên vu khống, đánh giá ác ý sai sự thật - không tính điểm sao cho PT), <b>Giữ lại đánh giá</b> (nếu phản ánh đúng thực tế dịch vụ - công khai kèm phản hồi giải trình của PT), hoặc <b>Yêu cầu hai bên bổ sung thêm bằng chứng</b>.
                 </p>
               </div>
             </div>

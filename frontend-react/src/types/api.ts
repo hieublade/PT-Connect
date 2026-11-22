@@ -76,11 +76,23 @@ export interface Review {
   bookingId: number;
   studentId?: number | null;
   studentName?: string | null;
+  studentEmail?: string | null;
   studentAvatarUrl?: string | null;
   ptId?: number | null;
   ptName?: string | null;
+  ptEmail?: string | null;
+  courseTitle?: string | null;
+  slotTime?: string | null;
   rating: number;
   comment?: string | null;
+  status?: 'PUBLISHED' | 'FLAGGED' | 'APPEALED' | 'EVIDENCE_REQUESTED' | 'REMOVED' | string;
+  ptAppeal?: string | null;
+  ptEvidence?: string | null;
+  ptAppealedAt?: string | null;
+  studentEvidence?: string | null;
+  adminDecision?: string | null;
+  adminNote?: string | null;
+  resolvedAt?: string | null;
   createdAt?: string | null;
 }
 
@@ -88,6 +100,21 @@ export interface CreateReviewPayload {
   bookingId: number;
   rating: number;
   comment?: string;
+  studentEvidence?: string;
+}
+
+export interface ReviewAppealPayload {
+  ptAppeal: string;
+  ptEvidence?: string;
+}
+
+export interface ReviewVerdictPayload {
+  decision: 'REMOVE' | 'KEEP' | 'REQUEST_EVIDENCE';
+  adminNote: string;
+}
+
+export interface ReviewStudentEvidencePayload {
+  studentEvidence: string;
 }
 
 export interface UpdatePtProfilePayload {
@@ -168,14 +195,12 @@ export interface WorkoutPlan {
   workouts?: Workout[];
 }
 
-
 export interface WithdrawPayload {
   amount: number;
   bankName: string;
   accountNumber: string;
   accountHolderName: string;
 }
-
 
 export interface AdminStatistics {
   totalStudents: number;
@@ -290,5 +315,3 @@ export interface CreateDisputePayload {
   statement: string;
   evidenceNote?: string;
 }
-
-

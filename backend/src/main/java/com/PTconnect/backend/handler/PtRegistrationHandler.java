@@ -13,11 +13,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 public class PtRegistrationHandler implements UserRegistrationHandler {
 
     private final PTRepository ptRepository;
     private final PTProfileRepository profileRepository;
+
+    public PtRegistrationHandler(PTRepository ptRepository, PTProfileRepository profileRepository) {
+        this.ptRepository = ptRepository;
+        this.profileRepository = profileRepository;
+    }
 
     @Override
     public boolean supports(Role role) {

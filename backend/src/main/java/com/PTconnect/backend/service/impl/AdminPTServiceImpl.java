@@ -31,8 +31,8 @@ public class AdminPTServiceImpl implements IAdminPTService {
     @Transactional(readOnly = true)
     public List<PendingPTResponse> getAllPTs(VerificationStatus status) {
         List<PTProfile> list = (status != null)
-                ? ptProfileRepository.findByVerificationStatus(status)
-                : ptProfileRepository.findAll();
+                ? ptProfileRepository.findByVerificationStatusWithDetails(status)
+                : ptProfileRepository.findAllWithDetails();
         return list.stream()
                 .map(PendingPTResponse::fromEntity)
                 .toList();

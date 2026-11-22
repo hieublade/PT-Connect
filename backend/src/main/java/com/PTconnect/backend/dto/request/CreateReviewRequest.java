@@ -24,4 +24,7 @@ public class CreateReviewRequest {
     private Integer rating;
 
     private String comment;
+
+    // Bằng chứng ban đầu đính kèm (nếu học viên đánh giá xấu 1-3 sao)
+    private String studentEvidence;
 }

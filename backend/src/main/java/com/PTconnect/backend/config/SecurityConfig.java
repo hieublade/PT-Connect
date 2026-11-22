@@ -110,8 +110,15 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/users/**").authenticated()
 
                         // 7. Milestone 7: Chuc nang Diem danh, Huy lich va Danh gia (Review)
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/reviews/moderation").hasRole("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/reviews/*/verdict").hasRole("ADMIN")
+                        .requestMatchers("/api/v1/reviews/pt/my").hasRole("PT")
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/reviews/*/appeal").hasRole("PT")
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/reviews/*/student-evidence").hasRole("STUDENT")
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/reviews").hasRole("STUDENT")
-                        .requestMatchers("/api/v1/reviews/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/reviews/my").hasRole("STUDENT")
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/reviews/pt/**").permitAll()
+                        .requestMatchers("/api/v1/reviews/**").authenticated()
                         .requestMatchers("/api/v1/attendance/**").authenticated()
 
                         // 8. Chuc nang Chat truc tiep 1-1 giua HLV va Hoc vien

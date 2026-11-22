@@ -9,8 +9,8 @@ if exist "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" (
     set "MYSQL_BIN=C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe"
 )
 
-echo 1. Tao Database ptconnect...
-"%MYSQL_BIN%" -u root -p123 -e "CREATE DATABASE IF NOT EXISTS ptconnect CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+echo 1. Lam sach va tao moi Database ptconnect...
+"%MYSQL_BIN%" -u root -p123 -e "DROP DATABASE IF EXISTS ptconnect; CREATE DATABASE ptconnect CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 
 echo 2. Khoi tao bang (init.sql)...
 "%MYSQL_BIN%" -u root -p123 ptconnect < "%~dp0database\init.sql"

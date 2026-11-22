@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class OtpUtil {
 
     private static final SecureRandom RANDOM = new SecureRandom();
-    private static final int DEFAULT_EXPIRY_MINUTES = 30;
+    private static final int DEFAULT_EXPIRY_MINUTES = 15;
 
     public record OtpEntry(String code, LocalDateTime expiresAt) {
         public boolean isExpired() {

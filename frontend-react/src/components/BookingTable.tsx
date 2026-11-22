@@ -15,6 +15,7 @@ interface BookingTableProps {
   onConfirmOtp?: (booking: Booking) => void;
   onReview?: (booking: Booking) => void;
   reviewedBookingIds?: Set<number>;
+  onDisputeCreated?: () => void;
 }
 
 export const BookingTable: React.FC<BookingTableProps> = ({
@@ -27,6 +28,7 @@ export const BookingTable: React.FC<BookingTableProps> = ({
   onConfirmOtp,
   onReview,
   reviewedBookingIds,
+  onDisputeCreated,
 }) => {
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
 
@@ -110,6 +112,7 @@ export const BookingTable: React.FC<BookingTableProps> = ({
 
       setDisputedBookingIds(prev => new Set(prev).add(disputeModalBooking.id));
       setDisputeSuccessMsg('✓ Đã gửi hồ sơ khiếu nại thành công! Ban Quản Trị sẽ thẩm tra và ban hành phán quyết trọng tài.');
+      onDisputeCreated?.();
       setTimeout(() => {
         setDisputeModalBooking(null);
         setDisputeSuccessMsg(null);
@@ -385,9 +388,10 @@ export const BookingTable: React.FC<BookingTableProps> = ({
 
       {/* Modal Khiếu Nại & Báo Cáo Sự Cố Ca Tập Lên Ban Quản Trị */}
       {disputeModalBooking && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 animate-scale-up">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-4">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 dark:border-slate-800 animate-scale-up my-auto max-h-[92vh] flex flex-col overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 sm:p-5 pb-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
               <div className="flex items-center gap-2.5 text-amber-600 dark:text-amber-400">
                 <ShieldAlert className="w-5 h-5 shrink-0" />
                 <h4 className="text-base font-bold text-slate-900 dark:text-white">
@@ -397,160 +401,167 @@ export const BookingTable: React.FC<BookingTableProps> = ({
               <button
                 type="button"
                 onClick={() => setDisputeModalBooking(null)}
-                className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg"
+                className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Thông tin ca tập liên quan */}
-            <div className="text-xs text-slate-600 dark:text-slate-300 space-y-1.5 mb-4 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
-              <div className="flex justify-between">
-                <span className="text-slate-400">Thời gian ca tập:</span>
-                <b>{formatDateTime(disputeModalBooking.startTime)} - {formatDateTime(disputeModalBooking.endTime)}</b>
+            {/* Modal Body (Scrollable) */}
+            <div className="p-4 sm:p-5 overflow-y-auto flex-1 space-y-3.5">
+              {/* Thông tin ca tập liên quan */}
+              <div className="text-xs text-slate-600 dark:text-slate-300 space-y-1.5 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Thời gian ca tập:</span>
+                  <b>{formatDateTime(disputeModalBooking.startTime)} - {formatDateTime(disputeModalBooking.endTime)}</b>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">{isPtView ? 'Học viên đối tác:' : 'Huấn luyện viên:'}</span>
+                  <b>{isPtView ? disputeModalBooking.studentName : disputeModalBooking.ptName}</b>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Khóa học / Gói:</span>
+                  <span>{disputeModalBooking.courseTitle || 'Ca tập cá nhân'}</span>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">{isPtView ? 'Học viên đối tác:' : 'Huấn luyện viên:'}</span>
-                <b>{isPtView ? disputeModalBooking.studentName : disputeModalBooking.ptName}</b>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Khóa học / Gói:</span>
-                <span>{disputeModalBooking.courseTitle || 'Ca tập cá nhân'}</span>
-              </div>
+
+              {disputeSuccessMsg ? (
+                <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl text-center text-xs text-emerald-800 dark:text-emerald-300 space-y-1">
+                  <p className="font-bold text-sm">🎉 Gửi khiếu nại thành công!</p>
+                  <p>{disputeSuccessMsg}</p>
+                </div>
+              ) : (
+                <>
+                  {/* Chọn lý do khiếu nại */}
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">
+                      Lý do khiếu nại chính:
+                    </label>
+                    <select
+                      value={disputeType}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setDisputeType(val);
+                        const sel = currentReasons.find(r => r.value === val);
+                        if (sel) setDisputeSeverity(sel.severity);
+                      }}
+                      className="w-full p-2.5 text-xs border border-slate-300 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    >
+                      {currentReasons.map((r) => (
+                        <option key={r.value} value={r.value}>
+                          {r.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Mức độ nghiêm trọng */}
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">
+                      Mức độ nghiêm trọng:
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(['LOW', 'MEDIUM', 'HIGH'] as const).map((sev) => (
+                        <button
+                          key={sev}
+                          type="button"
+                          onClick={() => setDisputeSeverity(sev)}
+                          className={`py-2 px-2 rounded-xl text-xs font-bold border transition cursor-pointer ${
+                            disputeSeverity === sev
+                              ? sev === 'HIGH'
+                                ? 'bg-red-500 text-white border-red-500 shadow-xs'
+                                : sev === 'MEDIUM'
+                                ? 'bg-amber-500 text-white border-amber-500 shadow-xs'
+                                : 'bg-blue-500 text-white border-blue-500 shadow-xs'
+                              : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                          }`}
+                        >
+                          {sev === 'HIGH' ? 'Nghiêm trọng' : sev === 'MEDIUM' ? 'Trung bình' : 'Nhẹ'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Tường trình chi tiết */}
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">
+                      Tường trình chi tiết sự việc <span className="text-red-500">*</span>:
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={disputeStatement}
+                      onChange={(e) => {
+                        setDisputeStatement(e.target.value);
+                        if (disputeError) setDisputeError(null);
+                      }}
+                      placeholder="Mô tả cụ thể: Bạn đã có mặt lúc mấy giờ? Chờ bao lâu? Số lần liên lạc? Yêu cầu hoàn tiền hoặc bồi thường thế nào..."
+                      className="w-full p-2.5 text-xs border border-slate-300 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                  </div>
+
+                  {/* Bằng chứng bằng cách tải ảnh lên */}
+                  <div>
+                    <MultiImageUploader
+                      files={disputeFiles}
+                      onChange={setDisputeFiles}
+                      label="Ảnh chụp bằng chứng xác minh (không bắt buộc)"
+                      subLabel="Hỗ trợ chọn nhiều ảnh cùng lúc (Ảnh check-in phòng tập, lịch sử gọi điện, tin nhắn...)"
+                    />
+
+                    <input
+                      type="text"
+                      value={disputeEvidence}
+                      onChange={(e) => setDisputeEvidence(e.target.value)}
+                      placeholder="Ghi chú thêm về ảnh (VD: Lịch sử 3 cuộc gọi nhỡ lúc 18:05, check-in quầy lễ tân...)"
+                      className="w-full mt-2 p-2.5 text-xs border border-slate-300 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                  </div>
+
+                  {disputeError && (
+                    <div className="p-2.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 rounded-xl text-xs text-red-700 dark:text-red-300">
+                      ⚠️ {disputeError}
+                    </div>
+                  )}
+
+                  <div className="p-2.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-xl text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">
+                    ⚖️ <b>Quy trình trọng tài:</b> Sau khi bạn gửi hồ sơ, Ban Quản Trị Hệ Thống sẽ đối soát log hệ thống, liên hệ bên liên quan và ra phán quyết hoàn trả học phí hoặc bồi thường theo đúng chính sách nền tảng.
+                  </div>
+                </>
+              )}
             </div>
 
-            {disputeSuccessMsg ? (
-              <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl text-center text-xs text-emerald-800 dark:text-emerald-300 space-y-1">
-                <p className="font-bold text-sm">🎉 Gửi khiếu nại thành công!</p>
-                <p>{disputeSuccessMsg}</p>
-              </div>
-            ) : (
-              <div className="space-y-3.5">
-                {/* Chọn lý do khiếu nại */}
-                <div>
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">
-                    Lý do khiếu nại chính:
-                  </label>
-                  <select
-                    value={disputeType}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setDisputeType(val);
-                      const sel = currentReasons.find(r => r.value === val);
-                      if (sel) setDisputeSeverity(sel.severity);
-                    }}
-                    className="w-full p-2.5 text-xs border border-slate-300 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
-                  >
-                    {currentReasons.map((r) => (
-                      <option key={r.value} value={r.value}>
-                        {r.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Mức độ nghiêm trọng */}
-                <div>
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">
-                    Mức độ nghiêm trọng:
-                  </label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {(['LOW', 'MEDIUM', 'HIGH'] as const).map((sev) => (
-                      <button
-                        key={sev}
-                        type="button"
-                        onClick={() => setDisputeSeverity(sev)}
-                        className={`py-1.5 px-2 rounded-lg text-xs font-bold border transition ${
-                          disputeSeverity === sev
-                            ? sev === 'HIGH'
-                              ? 'bg-red-500 text-white border-red-500'
-                              : sev === 'MEDIUM'
-                              ? 'bg-amber-500 text-white border-amber-500'
-                              : 'bg-blue-500 text-white border-blue-500'
-                            : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
-                        }`}
-                      >
-                        {sev === 'HIGH' ? 'Nghiêm trọng' : sev === 'MEDIUM' ? 'Trung bình' : 'Nhẹ'}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Tường trình chi tiết */}
-                <div>
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">
-                    Tường trình chi tiết sự việc <span className="text-red-500">*</span>:
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={disputeStatement}
-                    onChange={(e) => {
-                      setDisputeStatement(e.target.value);
-                      if (disputeError) setDisputeError(null);
-                    }}
-                    placeholder="Mô tả cụ thể: Bạn đã có mặt lúc mấy giờ? Chờ bao lâu? Số lần liên lạc? Yêu cầu hoàn tiền hoặc bồi thường thế nào..."
-                    className="w-full p-2.5 text-xs border border-slate-300 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
-                  />
-                </div>
-
-                {/* Bằng chứng bằng cách tải ảnh lên */}
-                <div>
-                  <MultiImageUploader
-                    files={disputeFiles}
-                    onChange={setDisputeFiles}
-                    label="Ảnh chụp bằng chứng xác minh (không bắt buộc)"
-                    subLabel="Hỗ trợ chọn nhiều ảnh cùng lúc (Ảnh check-in phòng tập, lịch sử gọi điện, tin nhắn...)"
-                  />
-
-                  <input
-                    type="text"
-                    value={disputeEvidence}
-                    onChange={(e) => setDisputeEvidence(e.target.value)}
-                    placeholder="Ghi chú thêm về ảnh (VD: Lịch sử 3 cuộc gọi nhỡ lúc 18:05, check-in quầy lễ tân...)"
-                    className="w-full mt-2 p-2.5 text-xs border border-slate-300 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
-                  />
-                </div>
-
-                {disputeError && (
-                  <div className="p-2.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 rounded-xl text-xs text-red-700 dark:text-red-300">
-                    ⚠️ {disputeError}
-                  </div>
-                )}
-
-                <div className="p-2.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-xl text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">
-                  ⚖️ <b>Quy trình trọng tài:</b> Sau khi bạn gửi hồ sơ, Ban Quản Trị Hệ Thống sẽ đối soát log hệ thống, liên hệ bên liên quan và ra phán quyết hoàn trả học phí hoặc bồi thường theo đúng chính sách nền tảng.
-                </div>
-
-                <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                  <button
-                    type="button"
-                    onClick={() => setDisputeModalBooking(null)}
-                    className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
-                  >
-                    Hủy bỏ
-                  </button>
-                  <button
-                    type="button"
-                    disabled={disputeSubmitting}
-                    onClick={handleSubmitDispute}
-                    className="px-4 py-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white text-xs font-bold rounded-lg shadow-sm transition flex items-center gap-1.5"
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                    {disputeSubmitting ? 'Đang gửi hồ sơ...' : 'Gửi hồ sơ khiếu nại'}
-                  </button>
-                </div>
-              </div>
-            )}
+            {/* Modal Footer (Pinned sticky) */}
+            <div className="p-3.5 sm:p-4 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-100 dark:border-slate-800 shrink-0 flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setDisputeModalBooking(null)}
+                className="px-5 py-2.5 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition cursor-pointer"
+              >
+                {disputeSuccessMsg ? 'Đóng' : 'Hủy bỏ'}
+              </button>
+              {!disputeSuccessMsg && (
+                <button
+                  type="button"
+                  disabled={disputeSubmitting}
+                  onClick={handleSubmitDispute}
+                  className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center gap-2 cursor-pointer"
+                >
+                  <Send className="w-4 h-4" />
+                  {disputeSubmitting ? 'Đang gửi hồ sơ...' : 'Gửi hồ sơ khiếu nại'}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
 
       {/* Modal Nhập Lý Do Hủy / Từ Chối Ca Tập */}
       {cancelModalBooking && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-scale-up">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-              <div className="flex items-center gap-2.5 text-red-600">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 dark:border-slate-800 animate-scale-up my-auto max-h-[92vh] flex flex-col overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 sm:p-5 pb-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
+              <div className="flex items-center gap-2.5 text-red-600 dark:text-red-400">
                 <AlertTriangle className="w-5 h-5 shrink-0" />
                 <h4 className="text-base font-bold text-slate-900 dark:text-white">
                   {cancelActionType === 'REJECT' ? 'Từ Chối Ca Tập' : 'Hủy Ca Tập'} #{cancelModalBooking.id}
@@ -558,136 +569,140 @@ export const BookingTable: React.FC<BookingTableProps> = ({
               </div>
               <button
                 onClick={() => setCancelModalBooking(null)}
-                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg"
+                className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="text-xs text-slate-600 space-y-2 mb-4 bg-slate-50 p-3 rounded-xl border border-slate-100">
-              <div>
-                <span className="text-slate-400">Thời gian tập:</span>{' '}
-                <b>{formatDateTime(cancelModalBooking.startTime)} - {formatDateTime(cancelModalBooking.endTime)}</b>
+            {/* Modal Body (Scrollable) */}
+            <div className="p-4 sm:p-5 overflow-y-auto flex-1 space-y-3.5">
+              <div className="text-xs text-slate-600 dark:text-slate-300 space-y-1.5 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
+                <div>
+                  <span className="text-slate-400">Thời gian tập:</span>{' '}
+                  <b>{formatDateTime(cancelModalBooking.startTime)} - {formatDateTime(cancelModalBooking.endTime)}</b>
+                </div>
+                <div>
+                  <span className="text-slate-400">{isPtView ? 'Học viên:' : 'HLV:'}</span>{' '}
+                  <b>{isPtView ? cancelModalBooking.studentName : cancelModalBooking.ptName}</b>
+                </div>
               </div>
-              <div>
-                <span className="text-slate-400">{isPtView ? 'Học viên:' : 'HLV:'}</span>{' '}
-                <b>{isPtView ? cancelModalBooking.studentName : cancelModalBooking.ptName}</b>
-              </div>
-            </div>
 
-            {/* Policy Preview Box */}
-            {cancelActionType === 'CANCEL' && (
-              <div className="mb-4 p-3.5 rounded-xl border border-amber-300 bg-amber-50/80 space-y-2 text-xs">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 font-bold text-amber-900">
-                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                    <span>Quy Định & Chính Sách Đền Bù Hủy Lịch</span>
+              {/* Policy Preview Box */}
+              {cancelActionType === 'CANCEL' && (
+                <div className="p-3.5 rounded-xl border border-amber-300 bg-amber-50/80 dark:bg-amber-950/30 dark:border-amber-800 space-y-2 text-xs">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 font-bold text-amber-900 dark:text-amber-300">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                      <span>Quy Định & Chính Sách Đền Bù Hủy Lịch</span>
+                    </div>
+                    {cancelModalBooking.status === 'CONFIRMED' && (
+                      <span className="text-[10px] font-bold bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full border border-blue-200">
+                        Ca tập đã duyệt
+                      </span>
+                    )}
                   </div>
-                  {cancelModalBooking.status === 'CONFIRMED' && (
-                    <span className="text-[10px] font-bold bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full border border-blue-200">
-                      Ca tập đã duyệt
-                    </span>
+
+                  {cancelPreviewLoading ? (
+                    <p className="text-slate-500 italic text-[11px] py-1">
+                      Đang tính toán chính sách đền bù và hoàn buổi...
+                    </p>
+                  ) : cancelPreview ? (
+                    <div className="space-y-2">
+                      <div className="p-2.5 bg-white dark:bg-slate-800 rounded-lg border border-amber-200 dark:border-amber-800 text-slate-800 dark:text-white text-xs leading-relaxed font-medium">
+                        {cancelPreview.explanation}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="bg-white dark:bg-slate-800 p-2 rounded-lg border border-slate-200 dark:border-slate-700">
+                          <span className="text-[10px] text-slate-500 block">Số buổi hợp đồng</span>
+                          <span className={cancelPreview.restoreSession ? "text-emerald-600 font-bold" : "text-red-600 font-bold"}>
+                            {cancelPreview.restoreSession ? "✓ Hoàn lại 1 buổi" : "✕ Bị trừ mất 1 buổi"}
+                          </span>
+                        </div>
+                        <div className="bg-white dark:bg-slate-800 p-2 rounded-lg border border-slate-200 dark:border-slate-700">
+                          <span className="text-[10px] text-slate-500 block">
+                            {isPtView ? "Tiền phạt trừ ví HLV" : "Tiền đền bù ca tập"}
+                          </span>
+                          <span className={cancelPreview.penaltyAmount > 0 || cancelPreview.compensationAmount > 0 ? "text-red-600 font-bold" : "text-slate-700 dark:text-slate-200 font-bold"}>
+                            {isPtView
+                              ? (cancelPreview.penaltyAmount > 0 ? '-' + Number(cancelPreview.penaltyAmount).toLocaleString('vi-VN') + ' ₫' : "0 ₫")
+                              : (cancelPreview.penaltyAmount > 0 ? '-' + Number(cancelPreview.penaltyAmount).toLocaleString('vi-VN') + ' ₫' : cancelPreview.compensationAmount > 0 ? 'Đền bù: +' + Number(cancelPreview.compensationAmount).toLocaleString('vi-VN') + ' ₫' : "0 ₫")}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-slate-600 dark:text-slate-300 text-[11px]">
+                      {isPtView
+                        ? "• HLV hủy sát giờ (< 24h): Đền bù 100% tiền 1 buổi học vào ví của Học viên và phạt trừ ví HLV."
+                        : "• Ca tập đã được PT duyệt nếu hủy sẽ áp dụng đền bù cho Huấn luyện viên."}
+                    </p>
                   )}
-                </div>
 
-                {cancelPreviewLoading ? (
-                  <p className="text-slate-500 italic text-[11px] py-1">
-                    Đang tính toán chính sách đền bù và hoàn buổi...
-                  </p>
-                ) : cancelPreview ? (
-                  <div className="space-y-2">
-                    <div className="p-2.5 bg-white rounded-lg border border-amber-200 text-slate-800 text-xs leading-relaxed font-medium">
-                      {cancelPreview.explanation}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="bg-white p-2 rounded-lg border border-slate-200">
-                        <span className="text-[10px] text-slate-500 block">Số buổi hợp đồng</span>
-                        <span className={cancelPreview.restoreSession ? "text-emerald-600 font-bold" : "text-red-600 font-bold"}>
-                          {cancelPreview.restoreSession ? "✓ Hoàn lại 1 buổi" : "✕ Bị trừ mất 1 buổi"}
-                        </span>
-                      </div>
-                      <div className="bg-white p-2 rounded-lg border border-slate-200">
-                        <span className="text-[10px] text-slate-500 block">
-                          {isPtView ? "Tiền phạt trừ ví HLV" : "Tiền đền bù ca tập"}
-                        </span>
-                        <span className={cancelPreview.penaltyAmount > 0 || cancelPreview.compensationAmount > 0 ? "text-red-600 font-bold" : "text-slate-700 dark:text-slate-200 font-bold"}>
-                          {isPtView
-                            ? (cancelPreview.penaltyAmount > 0 ? '-' + Number(cancelPreview.penaltyAmount).toLocaleString('vi-VN') + ' ₫' : "0 ₫")
-                            : (cancelPreview.penaltyAmount > 0 ? '-' + Number(cancelPreview.penaltyAmount).toLocaleString('vi-VN') + ' ₫' : cancelPreview.compensationAmount > 0 ? 'Đền bù: +' + Number(cancelPreview.compensationAmount).toLocaleString('vi-VN') + ' ₫' : "0 ₫")}
-                        </span>
-                      </div>
-                    </div>
+                  <div className="pt-1 flex items-center justify-between border-t border-amber-200/60 dark:border-amber-800 mt-1">
+                    <span className="text-[10px] text-amber-700 dark:text-amber-400">Mốc kiểm soát: &ge; 24h vs &lt; 24h</span>
+                    <button
+                      type="button"
+                      onClick={() => setShowPolicyModal(true)}
+                      className="text-[11px] font-bold text-rose-600 hover:text-rose-700 underline inline-flex items-center gap-1 cursor-pointer"
+                    >
+                      <BookOpen className="w-3 h-3" />
+                      Xem chi tiết toàn bộ bảng quy tắc & chính sách
+                    </button>
                   </div>
-                ) : (
-                  <p className="text-slate-600 text-[11px]">
-                    {isPtView
-                      ? "• HLV hủy sát giờ (< 24h): Đền bù 100% tiền 1 buổi học vào ví của Học viên và phạt trừ ví HLV."
-                      : "• Ca tập đã được PT duyệt nếu hủy sẽ áp dụng đền bù cho Huấn luyện viên."}
-                  </p>
-                )}
-
-                <div className="pt-1 flex items-center justify-between border-t border-amber-200/60 mt-1">
-                  <span className="text-[10px] text-amber-700">Mốc kiểm soát: &ge; 24h vs &lt; 24h</span>
-                  <button
-                    type="button"
-                    onClick={() => setShowPolicyModal(true)}
-                    className="text-[11px] font-bold text-rose-600 hover:text-rose-700 underline inline-flex items-center gap-1 cursor-pointer"
-                  >
-                    <BookOpen className="w-3 h-3" />
-                    Xem chi tiết toàn bộ bảng quy tắc & chính sách
-                  </button>
                 </div>
+              )}
+
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-slate-800 dark:text-slate-200">
+                  Lý do {cancelActionType === 'REJECT' ? 'từ chối' : 'hủy ca'} <span className="text-red-500">*</span>:
+                </label>
+
+                {/* Gợi ý lý do bấm nhanh */}
+                <div className="flex flex-wrap gap-1.5 pb-1">
+                  {commonReasons.map((r, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setCancelReason(r)}
+                      className={`text-[11px] px-2.5 py-1 rounded-lg border transition cursor-pointer ${
+                        cancelReason === r
+                          ? 'bg-red-50 dark:bg-red-950/50 border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 font-bold'
+                          : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+
+                <textarea
+                  rows={3}
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  placeholder="Nhập lý do cụ thể..."
+                  className="w-full p-2.5 text-xs border border-slate-300 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:outline-none focus:border-red-500"
+                />
+                <p className="text-[11px] text-slate-400">
+                  Lý do này sẽ hiển thị công khai cho {isPtView ? 'học viên' : 'huấn luyện viên'} và lưu vào lịch sử hệ thống.
+                </p>
               </div>
-            )}
-
-            <div className="space-y-2 mb-4">
-              <label className="block text-xs font-bold text-slate-800">
-                Lý do {cancelActionType === 'REJECT' ? 'từ chối' : 'hủy ca'} <span className="text-red-500">*</span>:
-              </label>
-
-              {/* Gợi ý lý do bấm nhanh */}
-              <div className="flex flex-wrap gap-1.5 pb-1">
-                {commonReasons.map((r, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => setCancelReason(r)}
-                    className={`text-[11px] px-2.5 py-1 rounded-lg border transition ${
-                      cancelReason === r
-                        ? 'bg-red-50 border-red-300 text-red-700 font-bold'
-                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100'
-                    }`}
-                  >
-                    {r}
-                  </button>
-                ))}
-              </div>
-
-              <textarea
-                rows={3}
-                value={cancelReason}
-                onChange={(e) => setCancelReason(e.target.value)}
-                placeholder="Nhập lý do cụ thể..."
-                className="w-full p-2.5 text-xs border border-slate-300 rounded-xl focus:outline-none focus:border-red-500"
-              />
-              <p className="text-[11px] text-slate-400">
-                Lý do này sẽ hiển thị công khai cho {isPtView ? 'học viên' : 'huấn luyện viên'} và lưu vào lịch sử hệ thống.
-              </p>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+            {/* Modal Footer (Pinned sticky) */}
+            <div className="p-3.5 sm:p-4 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-100 dark:border-slate-800 shrink-0 flex items-center justify-end gap-2.5">
               <button
                 type="button"
                 onClick={() => setCancelModalBooking(null)}
-                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition"
+                className="px-5 py-2.5 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition cursor-pointer"
               >
                 Đóng
               </button>
               <button
                 type="button"
                 onClick={handleConfirmCancel}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg shadow-xs transition"
+                className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl shadow-md transition cursor-pointer"
               >
                 Xác nhận {cancelActionType === 'REJECT' ? 'từ chối' : 'hủy'}
               </button>

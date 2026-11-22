@@ -2,7 +2,7 @@ import { getAvatarUrl } from "../lib/avatar";
 import { parseEvidence, EvidenceAttachmentList, compressImageToDataUrl, MultiImageUploader, SelectedEvidenceFile, uploadMultipleEvidenceFiles, isEvidenceSubmitted } from "../lib/evidence";
 import React, { useState, useEffect, useMemo } from 'react';
 import api from '../lib/axios';
-import { User, Course, AvailabilitySlot, Booking, Enrollment, WorkoutPlan, Wallet, PtProfile, DisputeCase } from '../types/api';
+import { User, Course, AvailabilitySlot, Booking, Enrollment, WorkoutPlan, Wallet, PtProfile, DisputeCase, Review } from '../types/api';
 import { PtProfileForm } from '../components/PtProfileForm';
 import { CourseCard } from '../components/CourseCard';
 import { SlotCard } from '../components/SlotCard';
@@ -93,6 +93,16 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [plans, setPlans] = useState<WorkoutPlan[]>([]);
   const [ptProfile, setPtProfile] = useState<PtProfile | null>(null);
+
+  // Reviews & Appeals
+  const [myReviews, setMyReviews] = useState<Review[]>([]);
+  const [reviewFilter, setReviewFilter] = useState<string>('ALL');
+  const [appealModalReview, setAppealModalReview] = useState<Review | null>(null);
+  const [appealText, setAppealText] = useState('');
+  const [appealEvidence, setAppealEvidence] = useState('');
+  const [appealFiles, setAppealFiles] = useState<SelectedEvidenceFile[]>([]);
+  const [appealSubmitting, setAppealSubmitting] = useState(false);
+  const [appealError, setAppealError] = useState<string | null>(null);
 
   // Slot filter & preview evidence
   const [slotStatusFilter, setSlotStatusFilter] = useState<'ALL' | 'AVAILABLE' | 'BOOKED'>('ALL');
@@ -336,11 +346,61 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
     setTimeout(() => setToastMsg(null), 3500);
   };
 
+  const fetchMyReviews = async () => {
+    try {
+      const res: any = await api.get('/reviews/pt/my');
+      setMyReviews(Array.isArray(res) ? res : []);
+    } catch (err) {
+      console.warn('Lỗi tải đánh giá của HLV:', err);
+    }
+  };
+
+  const handleOpenAppealModal = (r: Review) => {
+    setAppealModalReview(r);
+    setAppealText(r.ptAppeal || '');
+    setAppealEvidence(r.ptEvidence || '');
+    setAppealFiles([]);
+    setAppealError(null);
+  };
+
+  const handleSubmitAppeal = async () => {
+    if (!appealModalReview) return;
+    if (!appealText.trim()) {
+      setAppealError('Vui lòng nhập nội dung giải trình / phản biện');
+      return;
+    }
+    setAppealSubmitting(true);
+    setAppealError(null);
+    try {
+      let finalEvidence = appealEvidence.trim();
+      if (appealFiles.length > 0) {
+        const uploadedUrls = await uploadMultipleEvidenceFiles(appealFiles, (url, data) => api.post(url, data));
+        const urlsText = uploadedUrls.join('\n');
+        finalEvidence = finalEvidence ? `${urlsText}\n${finalEvidence}` : urlsText;
+      }
+      await api.post(`/reviews/${appealModalReview.id}/appeal`, {
+        ptAppeal: appealText.trim(),
+        ptEvidence: finalEvidence || undefined,
+      });
+      showToast('✓ Đã gửi bản phản biện giải trình cho Ban Quản Trị thành công!');
+      setAppealModalReview(null);
+      setAppealText('');
+      setAppealEvidence('');
+      setAppealFiles([]);
+      fetchMyReviews();
+    } catch (err: any) {
+      setAppealError(err.response?.data?.message || err.message || 'Lỗi khi gửi phản biện');
+    } finally {
+      setAppealSubmitting(false);
+    }
+  };
+
   useEffect(() => {
     fetchPtData();
     fetchPlansAndEnrollments();
     fetchPtWallet();
     fetchMyDisputes();
+    fetchMyReviews();
   }, []);
 
   // Counter Statement Modal (PT phản biện)
@@ -859,6 +919,10 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
     }
   };
 
+  const pendingReviewsToAppeal = myReviews.filter(
+    (r) => r.status === 'FLAGGED' || r.status === 'EVIDENCE_REQUESTED'
+  ).length;
+
   const tabs = [
     { label: 'Tổng Quan', icon: BarChart3 },
     { label: 'Duyệt Lịch', icon: CheckCircle2 },
@@ -868,6 +932,10 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
     { label: 'Ví & Thu Nhập', icon: WalletIcon },
     { label: `Khiếu Nại (${myDisputes.length})`, icon: ShieldAlert },
     { label: 'Hồ Sơ', icon: UserIcon },
+    {
+      label: `Đánh Giá & Phản Biện (${pendingReviewsToAppeal > 0 ? pendingReviewsToAppeal + ' cần xử lý' : myReviews.length})`,
+      icon: Star,
+    },
   ];
 
   return (
@@ -1240,6 +1308,13 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
                       {pendingBookingsCount}
                     </span>
                   )}
+                  {idx === 8 && pendingReviewsToAppeal > 0 && (
+                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${
+                      isCur ? 'bg-white text-red-600' : 'bg-amber-400 text-slate-950 animate-pulse'
+                    }`}>
+                      {pendingReviewsToAppeal}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -1483,46 +1558,72 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
 
             {/* Reviews & HFI Standard Banner */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-              {/* Reviews */}
-              <div className="lg:col-span-2 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              {/* Real Reviews */}
+              <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
                   <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                    Đánh Giá Gần Đây Từ Học Viên (5.0/5.0)
+                    Đánh Giá Từ Học Viên ({ptProfile?.averageRating ? Number(ptProfile.averageRating).toFixed(1) : '5.0'}/5.0 ⭐)
                   </h3>
-                  <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                    100% Hài lòng
-                  </span>
+                  <button
+                    onClick={() => setActiveTab(8)}
+                    className="text-xs font-semibold text-red-600 hover:text-red-700 bg-red-50 dark:bg-red-950/40 px-2.5 py-1 rounded-full border border-red-200 dark:border-red-900 transition flex items-center gap-1"
+                  >
+                    Xem tất cả ({myReviews.length}) <ArrowRight className="w-3 h-3" />
+                  </button>
                 </div>
+
+                {/* Warning notice if PT has 1-3 star reviews requiring appeal */}
+                {pendingReviewsToAppeal > 0 && (
+                  <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-xl flex items-center justify-between gap-3 text-xs text-amber-900 dark:text-amber-200">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                      <span>
+                        Bạn có <b>{pendingReviewsToAppeal} đánh giá 1-3 sao</b> đang chờ giải trình phản biện trước khi Quản trị viên xử lý!
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => setActiveTab(8)}
+                      className="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg shadow-xs transition shrink-0"
+                    >
+                      Phản biện ngay
+                    </button>
+                  </div>
+                )}
+
                 <div className="space-y-2.5">
-                  <div className="p-3 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                        <span className="w-6 h-6 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center font-bold text-[10px]">H</span>
-                        Hạnh Hải Đặng
-                      </span>
-                      <span className="text-amber-500 font-bold flex items-center gap-0.5">
-                        ⭐⭐⭐⭐⭐ (5/5 sao)
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 pl-7.5">
-                      PT tận tâm, chỉ dẫn từng form động tác rất chuẩn xác, luôn động viên trong từng set tập mệt mỏi!
+                  {myReviews.length === 0 ? (
+                    <p className="text-xs text-slate-400 italic py-4 text-center">
+                      Bạn chưa có đánh giá nào từ học viên.
                     </p>
-                  </div>
-                  <div className="p-3 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                        <span className="w-6 h-6 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center font-bold text-[10px]">B</span>
-                        Chị Bảo Dương
-                      </span>
-                      <span className="text-amber-500 font-bold flex items-center gap-0.5">
-                        ⭐⭐⭐⭐⭐ (5/5 sao)
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 pl-7.5">
-                      PT đến đúng giờ, bài tập đa dạng không bị nhàm chán, sau 1 tháng giảm được 3kg mỡ thừa!
-                    </p>
-                  </div>
+                  ) : (
+                    myReviews.slice(0, 3).map((r) => (
+                      <div
+                        key={r.id}
+                        className="p-3 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl"
+                      >
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                            <span className="w-6 h-6 rounded-full bg-red-100 text-red-700 flex items-center justify-center font-bold text-[10px]">
+                              {r.studentName ? r.studentName.charAt(0).toUpperCase() : 'H'}
+                            </span>
+                            {r.studentName || 'Học viên'}
+                          </span>
+                          <span className="text-amber-500 font-bold flex items-center gap-0.5">
+                            {'⭐'.repeat(r.rating)} ({r.rating}/5 sao)
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 pl-7.5">
+                          {r.comment || 'Không có bình luận.'}
+                        </p>
+                        {r.ptAppeal && (
+                          <div className="mt-2 ml-7.5 p-2 bg-sky-50 dark:bg-slate-900 rounded-lg border border-sky-100 dark:border-slate-800 text-[11px] text-sky-800 dark:text-sky-300 italic">
+                            Phản hồi của bạn: "{r.ptAppeal}"
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
 
@@ -1559,6 +1660,10 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
               onReject={handleRejectBooking}
               onCancel={handlePtCancelBooking}
               onGetOtp={handleOpenPtOtpModal}
+              onDisputeCreated={() => {
+                fetchMyDisputes();
+                fetchMyReviews();
+              }}
             />
           </div>
         )}
@@ -2772,6 +2877,255 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
             <PtProfileForm onSaved={showToast} />
           </div>
         )}
+
+        {/* TAB 8: ĐÁNH GIÁ & PHẢN BIỆN */}
+        {activeTab === 8 && (
+          <div className="space-y-6">
+            {/* Header Banner */}
+            <div className="bg-gradient-to-r from-slate-900 via-rose-950 to-slate-900 text-white p-6 rounded-2xl border border-rose-900/40 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="space-y-2 max-w-2xl">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs font-bold uppercase tracking-wider">
+                  <Star className="w-3.5 h-3.5 fill-rose-400 text-rose-400" />
+                  QUY CHẾ PHẢN BIỆN &amp; BẢO VỆ UY TÍN HLV
+                </div>
+                <h3 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-white">
+                  Đánh Giá Của Học Viên &amp; Quyền Phản Biện
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                  Tại PT-Connect, đánh giá 4-5 sao được công khai ngay. Đối với đánh giá 1-3 sao (tiêu cực), bạn có quyền <b>gửi phản biện &amp; bằng chứng đối chứng</b> để Ban Quản Trị xem xét xóa bỏ nếu là phản ánh sai lệch, hoặc yêu cầu hai bên cùng hòa giải.
+                </p>
+              </div>
+
+              {/* Status summary */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 shrink-0 text-center">
+                <div className="bg-white/5 border border-white/10 p-3 rounded-xl backdrop-blur-md">
+                  <span className="text-[10px] text-amber-300 font-bold uppercase block">Cần giải trình</span>
+                  <span className="text-2xl font-black text-amber-400 mt-0.5 block">{pendingReviewsToAppeal}</span>
+                  <span className="text-[10px] text-slate-400">đánh giá</span>
+                </div>
+                <div className="bg-white/5 border border-white/10 p-3 rounded-xl backdrop-blur-md">
+                  <span className="text-[10px] text-sky-300 font-bold uppercase block">Đã phản biện</span>
+                  <span className="text-2xl font-black text-sky-400 mt-0.5 block">
+                    {myReviews.filter(r => r.status === 'APPEALED').length}
+                  </span>
+                  <span className="text-[10px] text-slate-400">chờ Admin duyệt</span>
+                </div>
+                <div className="bg-white/5 border border-white/10 p-3 rounded-xl backdrop-blur-md col-span-2 sm:col-span-1">
+                  <span className="text-[10px] text-emerald-300 font-bold uppercase block">Đã công khai</span>
+                  <span className="text-2xl font-black text-emerald-400 mt-0.5 block">
+                    {myReviews.filter(r => r.status === 'PUBLISHED').length}
+                  </span>
+                  <span className="text-[10px] text-slate-400">đánh giá</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Filter pills */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1">
+              {[
+                { key: 'ALL', label: `Tất Cả (${myReviews.length})` },
+                { key: 'NEED_ACTION', label: `Cần Phản Biện (${pendingReviewsToAppeal})` },
+                { key: 'APPEALED', label: `Đã Gửi Phản Biện (${myReviews.filter(r => r.status === 'APPEALED').length})` },
+                { key: 'PUBLISHED', label: `Công Khai (${myReviews.filter(r => r.status === 'PUBLISHED').length})` },
+                { key: 'REMOVED', label: `Đã Gỡ Bỏ (${myReviews.filter(r => r.status === 'REMOVED').length})` },
+              ].map(f => (
+                <button
+                  key={f.key}
+                  onClick={() => setReviewFilter(f.key)}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition ${
+                    reviewFilter === f.key
+                      ? 'bg-red-600 text-white shadow-sm'
+                      : isDark
+                      ? 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                      : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Review Cards */}
+            {myReviews.length === 0 ? (
+              <div className="bg-white dark:bg-slate-900 p-12 rounded-2xl border border-slate-200 dark:border-slate-800 text-center">
+                <CheckCircle className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
+                <h4 className="text-base font-bold text-slate-900 dark:text-white">Bạn chưa có đánh giá nào từ học viên</h4>
+                <p className="text-xs text-slate-500 mt-1">Sau khi hoàn thành các ca tập, học viên sẽ gửi đánh giá chất lượng buổi tập tại đây.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {myReviews
+                  .filter(r => {
+                    if (reviewFilter === 'ALL') return true;
+                    if (reviewFilter === 'NEED_ACTION') return r.status === 'FLAGGED' || r.status === 'EVIDENCE_REQUESTED';
+                    return r.status === reviewFilter;
+                  })
+                  .map(r => (
+                    <div
+                      key={r.id}
+                      className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-4"
+                    >
+                      {/* Header */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="px-2.5 py-1 rounded-lg text-xs font-black bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                            Ca #{r.bookingId}
+                          </span>
+                          <span className="text-xs text-slate-500">
+                            Khóa: <b className="text-slate-700 dark:text-slate-300">{r.courseTitle || 'Tập luyện cùng PT'}</b> • Giờ: {r.slotTime || '—'}
+                          </span>
+                        </div>
+                        {/* Status badge */}
+                        <div>
+                          {r.status === 'FLAGGED' && (
+                            <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-300 animate-pulse">
+                              ⚠️ Chờ bạn phản biện (FLAGGED)
+                            </span>
+                          )}
+                          {r.status === 'APPEALED' && (
+                            <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-sky-100 text-sky-800 border border-sky-300">
+                              💬 Đã gửi giải trình - Chờ Admin xét duyệt
+                            </span>
+                          )}
+                          {r.status === 'EVIDENCE_REQUESTED' && (
+                            <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-100 text-purple-800 border border-purple-300 animate-bounce">
+                              🔍 Admin yêu cầu thêm bằng chứng
+                            </span>
+                          )}
+                          {r.status === 'PUBLISHED' && (
+                            <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                              ✓ Đã công khai trên hồ sơ của bạn
+                            </span>
+                          )}
+                          {r.status === 'REMOVED' && (
+                            <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800 border border-rose-300 line-through">
+                              ✕ Đã được gỡ bỏ (Không tính điểm sao)
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Content: Học viên + Phản biện của HLV */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Cột Học viên */}
+                        <div className="p-3.5 bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                              👤 Học viên: {r.studentName || 'Học viên ẩn danh'} ({r.studentEmail})
+                            </span>
+                            <span className={`font-bold px-2 py-0.5 rounded-full border text-xs ${
+                              r.rating <= 3 ? 'text-rose-600 bg-rose-50 border-rose-200' : 'text-amber-600 bg-amber-50 border-amber-200'
+                            }`}>
+                              {'⭐'.repeat(r.rating)} ({r.rating}/5 sao)
+                            </span>
+                          </div>
+                          <div className="text-xs text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800">
+                            <b>Nhận xét:</b> {r.comment || 'Không có bình luận'}
+                          </div>
+                          {r.studentEvidence && (() => {
+                            const parsed = parseEvidence(r.studentEvidence);
+                            return (
+                              <div className="text-xs text-slate-600 dark:text-slate-400 bg-amber-50/50 dark:bg-slate-900/40 p-2.5 rounded-lg border border-amber-200/50 space-y-1.5">
+                                <b className="text-amber-900 dark:text-amber-300">Chứng cứ học viên gửi:</b>
+                                {parsed.cleanText && (
+                                  <p className="mt-0.5 whitespace-pre-line text-slate-700 dark:text-slate-300">
+                                    {parsed.cleanText}
+                                  </p>
+                                )}
+                                {parsed.items.length > 0 && (
+                                  <div className="pt-1">
+                                    <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase block mb-1">
+                                      Ảnh bằng chứng ({parsed.items.length} ảnh) — Bấm để phóng to:
+                                    </span>
+                                    <EvidenceAttachmentList
+                                      items={parsed.items}
+                                      onPreviewImage={(url, name) => setPreviewEvidenceImage({ name: `Học viên (${r.studentName}) - ${name}`, url })}
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
+                        </div>
+
+                        {/* Cột Huấn luyện viên */}
+                        <div className="p-3.5 bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-bold text-slate-900 dark:text-white">
+                              Phản biện / Giải trình của bạn:
+                            </span>
+                            <span className="text-[11px] text-slate-400">
+                              {r.ptAppealedAt ? r.ptAppealedAt.slice(0, 10) : ''}
+                            </span>
+                          </div>
+                          {r.ptAppeal ? (
+                            <div className="text-xs text-slate-700 dark:text-slate-300 bg-sky-50 dark:bg-slate-900 p-2.5 rounded-lg border border-sky-200 dark:border-slate-800 space-y-1.5">
+                              <p className="italic text-slate-700 dark:text-slate-300">"{r.ptAppeal}"</p>
+                              {r.ptEvidence && (() => {
+                                const parsedPt = parseEvidence(r.ptEvidence);
+                                return (
+                                  <div className="mt-1.5 pt-1.5 border-t border-sky-100 dark:border-slate-800 text-[11px] text-slate-500 space-y-1">
+                                    <b className="text-sky-900 dark:text-sky-300">Bằng chứng đối chứng:</b>
+                                    {parsedPt.cleanText && (
+                                      <p className="italic text-slate-700 dark:text-slate-300">
+                                        "{parsedPt.cleanText}"
+                                      </p>
+                                    )}
+                                    {parsedPt.items.length > 0 && (
+                                      <div className="pt-1">
+                                        <span className="text-[10px] font-bold text-sky-700 dark:text-sky-400 uppercase block mb-1">
+                                          Ảnh đối chứng ({parsedPt.items.length} ảnh):
+                                        </span>
+                                        <EvidenceAttachmentList
+                                          items={parsedPt.items}
+                                          onPreviewImage={(url, name) => setPreviewEvidenceImage({ name: `HLV (${r.ptName}) - ${name}`, url })}
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })()}
+                            </div>
+                          ) : (
+                            <div className="text-xs text-slate-400 italic p-3 text-center border border-dashed border-slate-200 dark:border-slate-800 rounded-lg">
+                              Bạn chưa gửi bản giải trình phản biện nào cho đánh giá này.
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Phán quyết của Quản trị viên */}
+                      {r.adminNote && (
+                        <div className="p-3 bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-900 rounded-xl text-xs space-y-1">
+                          <div className="font-bold text-purple-900 dark:text-purple-300 flex items-center gap-1.5">
+                            <ShieldCheck className="w-3.5 h-3.5" />
+                            Phán quyết từ Ban Quản Trị:
+                            <span className="font-normal text-slate-500 text-[10px] ml-auto">
+                              {r.resolvedAt ? r.resolvedAt.slice(0, 10) : ''}
+                            </span>
+                          </div>
+                          <p className="text-purple-800 dark:text-purple-200">{r.adminNote}</p>
+                        </div>
+                      )}
+
+                      {/* Nút hành động phản biện nếu rating <= 3 và chưa bị xóa */}
+                      {r.rating <= 3 && r.status !== 'REMOVED' && (
+                        <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                          <button
+                            onClick={() => handleOpenAppealModal(r)}
+                            className="px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5" />
+                            {r.ptAppeal ? 'Cập Nhật Giải Trình Phản Biện' : 'Gửi Bản Phản Biện Giải Trình'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
+        )}
       </main>
 
       {/* Modal: Tạo Khóa Học Mới */}
@@ -3066,8 +3420,8 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
 
       {/* Counter Statement Modal for PT */}
       {counterDisputeModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl animate-scale-up border border-slate-200 dark:border-slate-800">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl animate-scale-up border border-slate-200 dark:border-slate-800 my-auto max-h-[92vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-4">
               <div className="flex items-center gap-2 text-indigo-600">
                 <MessageSquare className="w-5 h-5 shrink-0" />
@@ -3151,8 +3505,8 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
 
       {/* Quick Dispute Modal for PT */}
       {showTabDisputeModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl animate-scale-up border border-slate-200 dark:border-slate-800">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl animate-scale-up border border-slate-200 dark:border-slate-800 my-auto max-h-[92vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-4">
               <div className="flex items-center gap-2.5 text-amber-600">
                 <ShieldAlert className="w-5 h-5 shrink-0" />
@@ -3279,8 +3633,8 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
 
       {/* Modal: Nộp Bằng Chứng Bổ Sung Theo Yêu Cầu Admin cho PT */}
       {additionalEvidenceModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl animate-scale-up border border-slate-200 dark:border-slate-800">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl animate-scale-up border border-slate-200 dark:border-slate-800 my-auto max-h-[92vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-4">
               <div className="flex items-center gap-2.5 text-amber-600">
                 <Upload className="w-5 h-5 shrink-0" />
@@ -3405,7 +3759,7 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
                     {ptGeneratedOtp}
                   </div>
                   <div className="mt-1.5 text-[11px] text-slate-400 flex items-center justify-center gap-1">
-                    <Clock className="w-3.5 h-3.5" /> Mã có hiệu lực trong 30 phút
+                    <Clock className="w-3.5 h-3.5" /> Mã có hiệu lực trong 15 phút
                   </div>
                 </div>
 
@@ -3625,6 +3979,102 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
                   {contractDisputeSubmitting ? 'Đang gửi...' : 'Gửi yêu cầu hủy hợp đồng lên Admin'}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== MODAL HLV GỬI GIẢI TRÌNH PHẢN BIỆN ==================== */}
+      {appealModalReview && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-red-50 text-red-600 flex items-center justify-center font-bold">
+                <Star className="w-5 h-5 fill-red-600 text-red-600" />
+              </div>
+              <div>
+                <h4 className="text-base font-bold text-slate-900 dark:text-white">
+                  Phản Biện Đánh Giá Tiêu Cực (Ca #{appealModalReview.bookingId})
+                </h4>
+                <p className="text-xs text-slate-500">
+                  Học viên: {appealModalReview.studentName} ({appealModalReview.studentEmail})
+                </p>
+              </div>
+            </div>
+
+            {/* Thông tin đánh giá học viên */}
+            <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl text-xs space-y-1">
+              <div className="flex justify-between font-bold text-slate-800 dark:text-slate-200">
+                <span>Số sao học viên chấm:</span>
+                <span className="text-rose-600 font-black">{appealModalReview.rating}/5 sao ⭐</span>
+              </div>
+              <p className="text-slate-600 dark:text-slate-400">
+                <b>Lời nhận xét:</b> "{appealModalReview.comment || 'Không có lời bình luận'}"
+              </p>
+              {appealModalReview.adminNote && (
+                <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700 text-purple-700 dark:text-purple-300">
+                  <b>Yêu cầu từ Quản trị viên:</b> {appealModalReview.adminNote}
+                </div>
+              )}
+            </div>
+
+            {/* Form phản biện */}
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  Nội dung giải trình / phản biện chi tiết <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  rows={4}
+                  value={appealText}
+                  onChange={(e) => setAppealText(e.target.value)}
+                  placeholder="Giải thích rõ sự việc (giờ giấc, thái độ, sự tương tác, nguyên nhân khách quan nếu có)..."
+                  className="w-full p-3 text-xs border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-1 focus:ring-red-500 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <MultiImageUploader
+                  files={appealFiles}
+                  onChange={setAppealFiles}
+                  maxFiles={3}
+                  label="Tải ảnh bằng chứng đối chứng"
+                  subLabel="Ảnh chụp tin nhắn, thỏa thuận dời lịch, camera phòng tập..."
+                />
+                <div>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    Ghi chú / Link bổ sung (tùy chọn)
+                  </label>
+                  <input
+                    type="text"
+                    value={appealEvidence}
+                    onChange={(e) => setAppealEvidence(e.target.value)}
+                    placeholder="Mô tả bổ sung hoặc dán link đối chứng nếu có..."
+                    className="w-full p-2.5 text-xs border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-1 focus:ring-red-500 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {appealError && <p className="text-xs text-red-600">{appealError}</p>}
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setAppealModalReview(null)}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={handleSubmitAppeal}
+                disabled={appealSubmitting}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-xs font-bold rounded-lg shadow-sm transition flex items-center gap-1.5"
+              >
+                <Send className="w-3.5 h-3.5" />
+                {appealSubmitting ? 'Đang gửi...' : 'Gửi giải trình cho Admin'}
+              </button>
             </div>
           </div>
         </div>
