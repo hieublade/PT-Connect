@@ -62,7 +62,6 @@ public class UserServiceImpl implements IUserService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với email: " + email));
 
-        // Kiểm tra số điện thoại nếu thay đổi
         String newPhone = request.getPhone() != null ? request.getPhone().trim() : null;
         if (newPhone != null && !newPhone.equals(user.getPhone())) {
             if (userRepository.existsByPhone(newPhone)) {
@@ -77,7 +76,7 @@ public class UserServiceImpl implements IUserService {
 
         if (request.getAvatarUrl() != null) {
             String av = request.getAvatarUrl().trim();
-            // Tránh lưu blob URL (vốn chỉ tồn tại tạm thời trong bộ nhớ RAM trình duyệt của máy upload)
+
             if (!av.startsWith("blob:")) {
                 user.setAvatarUrl(av.isEmpty() ? null : av);
             }
@@ -154,3 +153,4 @@ public class UserServiceImpl implements IUserService {
         return UserDTO.fromEntity(savedUser);
     }
 }
+

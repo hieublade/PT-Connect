@@ -28,10 +28,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-/**
- * Triển khai nghiệp vụ Đánh giá nhận xét Huấn luyện viên và quy trình phản biện/kiểm duyệt (Milestone 7).
- * Phụ trách bởi: Thành.
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -67,8 +63,6 @@ public class ReviewServiceImpl implements IReviewService {
         String status = "PUBLISHED";
         String comment = request.getComment() != null ? request.getComment().trim() : null;
 
-        // Quy tắc nghiệp vụ: Đánh giá 1 - 3 sao là đánh giá tiêu cực / có vấn đề
-        // Bắt buộc học viên phải nêu rõ lý do góp ý hoặc bằng chứng để Admin & PT có căn cứ phân xử
         if (rating <= 3) {
             if (comment == null || comment.isBlank()) {
                 throw new BadRequestException("Khi đánh giá từ 1 đến 3 sao, bạn vui lòng nhập lý do cụ thể để Huấn luyện viên và Quản trị viên hỗ trợ giải quyết thỏa đáng.");
@@ -87,7 +81,6 @@ public class ReviewServiceImpl implements IReviewService {
 
         review = reviewRepository.save(review);
 
-        // Nếu đánh giá tốt 4-5 sao (PUBLISHED), cập nhật ngay số sao và lượt đánh giá cho PT
         if ("PUBLISHED".equals(status)) {
             updatePtRating(booking.getPt().getId());
         }
@@ -104,7 +97,7 @@ public class ReviewServiceImpl implements IReviewService {
         if (!ptProfileRepository.existsById(ptId)) {
             throw new ResourceNotFoundException("Không tìm thấy hồ sơ Huấn luyện viên với ID: " + ptId);
         }
-        // Chỉ lấy những đánh giá hợp lệ (PUBLISHED), các đánh giá tranh chấp 1-3 sao chưa kiểm duyệt hoặc bị xóa sẽ không hiển thị công khai
+
         return reviewRepository.findPublishedByPtIdOrderByCreatedAtDesc(ptId).stream()
                 .map(ReviewResponse::fromEntity)
                 .toList();
@@ -119,7 +112,6 @@ public class ReviewServiceImpl implements IReviewService {
         PTProfile ptProfile = ptProfileRepository.findByPtId(ptUser.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Tài khoản chưa khởi tạo hồ sơ Huấn luyện viên (PT Profile)"));
 
-        // Lấy toàn bộ đánh giá của PT (bao gồm FLAGGED, APPEALED, EVIDENCE_REQUESTED, PUBLISHED, REMOVED)
         return reviewRepository.findAllByPtIdOrderByCreatedAtDesc(ptProfile.getId()).stream()
                 .map(ReviewResponse::fromEntity)
                 .toList();
@@ -197,7 +189,6 @@ public class ReviewServiceImpl implements IReviewService {
             review.setStudentEvidence(newEvidence);
         }
 
-        // Nếu trạng thái đang là EVIDENCE_REQUESTED, chuyển sang APPEALED để Admin nhận biết đã có bổ sung
         if ("EVIDENCE_REQUESTED".equals(review.getStatus())) {
             review.setStatus("APPEALED");
         }
@@ -227,29 +218,29 @@ public class ReviewServiceImpl implements IReviewService {
 
         switch (decision) {
             case "REMOVE" -> {
-                // Admin phán quyết: Xóa bỏ đánh giá xấu (do học viên vu khống, vi phạm quy tắc,...)
+
                 review.setStatus("REMOVED");
                 review.setAdminDecision("REMOVED");
                 review.setAdminNote(request.getAdminNote().trim());
                 review.setResolvedAt(LocalDateTime.now());
                 review = reviewRepository.save(review);
-                // Cập nhật lại điểm đánh giá của PT (loại bỏ review này)
+
                 updatePtRating(ptId);
                 log.info("Admin đã XÓA BỎ đánh giá xấu Review ID #{}", reviewId);
             }
             case "KEEP" -> {
-                // Admin phán quyết: Giữ lại đánh giá xấu (phản ánh đúng thực tế, dịch vụ chưa tốt)
+
                 review.setStatus("PUBLISHED");
                 review.setAdminDecision("KEPT");
                 review.setAdminNote(request.getAdminNote().trim());
                 review.setResolvedAt(LocalDateTime.now());
                 review = reviewRepository.save(review);
-                // Cập nhật lại điểm đánh giá của PT (tính cả review này vào điểm số công khai)
+
                 updatePtRating(ptId);
                 log.info("Admin đã GIỮ LẠI đánh giá Review ID #{}", reviewId);
             }
             case "REQUEST_EVIDENCE" -> {
-                // Admin yêu cầu 2 bên bổ sung thêm bằng chứng (ảnh, đoạn chat, biên bản...)
+
                 review.setStatus("EVIDENCE_REQUESTED");
                 review.setAdminDecision("REQUEST_EVIDENCE");
                 review.setAdminNote(request.getAdminNote().trim());
@@ -262,9 +253,6 @@ public class ReviewServiceImpl implements IReviewService {
         return ReviewResponse.fromEntity(review);
     }
 
-    /**
-     * Cập nhật lại averageRating và totalReviews cho PTProfile dựa trên các đánh giá hợp lệ (PUBLISHED).
-     */
     private void updatePtRating(Long ptId) {
         PTProfile ptProfile = ptProfileRepository.findById(ptId).orElse(null);
         if (ptProfile != null) {
@@ -279,3 +267,4 @@ public class ReviewServiceImpl implements IReviewService {
         }
     }
 }
+

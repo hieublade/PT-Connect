@@ -112,3 +112,4 @@ class EnrollmentTest {
         assertTrue(ex.getMessage().contains("ACTIVE"));
     }
 }
+

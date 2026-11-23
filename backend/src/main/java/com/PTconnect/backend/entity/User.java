@@ -35,7 +35,6 @@ public abstract class User {
     @Column(nullable = false, unique = true, length = 20)
     private String phone;
 
-    // Cột role chính là discriminator, chỉ đọc
     @Enumerated(EnumType.STRING)
     @Column(insertable = false, updatable = false)
     private Role role;
@@ -61,12 +60,10 @@ public abstract class User {
     @Column(name = "updated_at", insertable = false, updatable = false)
     private LocalDateTime updatedAt;
 
-    // Đa hình: mỗi lớp con override khác nhau
     public abstract String getHomePage();
 
     public abstract String getDisplayRole();
 
-    // Hành vi nghiệp vụ quản lý trạng thái tài khoản (Encapsulation)
     public void activate() {
         this.status = UserStatus.ACTIVE;
     }
@@ -79,3 +76,4 @@ public abstract class User {
         this.status = UserStatus.PENDING;
     }
 }
+

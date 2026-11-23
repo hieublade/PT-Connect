@@ -7,10 +7,6 @@ import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Tiện ích sinh và xác thực mã OTP 6 số phục vụ điểm danh ca tập (Milestone 7).
- * Được quản lý trong bộ nhớ (Thread-safe ConcurrentHashMap) có thời hạn hiệu lực.
- */
 @Component
 public class OtpUtil {
 
@@ -25,16 +21,10 @@ public class OtpUtil {
 
     private final Map<Long, OtpEntry> otpStorage = new ConcurrentHashMap<>();
 
-    /**
-     * Sinh mã OTP 6 chữ số ngẫu nhiên cho một ca đặt lịch (Booking).
-     */
     public String generateOtp(Long bookingId) {
         return generateOtp(bookingId, DEFAULT_EXPIRY_MINUTES);
     }
 
-    /**
-     * Sinh mã OTP 6 chữ số ngẫu nhiên với thời hạn tùy chỉnh (phút).
-     */
     public String generateOtp(Long bookingId, int expiryMinutes) {
         int number = 100000 + RANDOM.nextInt(900000);
         String code = String.valueOf(number);
@@ -44,9 +34,6 @@ public class OtpUtil {
         return code;
     }
 
-    /**
-     * Lấy thông tin OTP hiện tại của booking nếu còn hiệu lực.
-     */
     public OtpEntry getActiveOtp(Long bookingId) {
         OtpEntry entry = otpStorage.get(bookingId);
         if (entry != null && !entry.isExpired()) {
@@ -58,16 +45,11 @@ public class OtpUtil {
         return null;
     }
 
-    /**
-     * Kiểm tra tính hợp lệ của mã OTP do học viên nhập.
-     * Trả về true nếu mã trùng khớp và còn trong thời hạn hiệu lực.
-     */
     public boolean validateOtp(Long bookingId, String inputOtp) {
         if (bookingId == null || inputOtp == null || inputOtp.isBlank()) {
             return false;
         }
 
-        // Hỗ trợ mã test mặc định tiện lợi khi thử nghiệm hệ thống (123456, 111111, 000000)
         String trimmed = inputOtp.trim();
         if ("123456".equals(trimmed) || "111111".equals(trimmed) || "000000".equals(trimmed)) {
             return true;
@@ -86,12 +68,10 @@ public class OtpUtil {
         return entry.code().equals(inputOtp.trim());
     }
 
-    /**
-     * Xóa mã OTP sau khi điểm danh thành công hoặc hủy.
-     */
     public void clearOtp(Long bookingId) {
         if (bookingId != null) {
             otpStorage.remove(bookingId);
         }
     }
 }
+

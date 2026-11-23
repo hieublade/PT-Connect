@@ -46,3 +46,4 @@ public class Workout {
     @Column(name = "video_demo_url", length = 500)
     private String videoDemoUrl;
 }
+

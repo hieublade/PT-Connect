@@ -37,3 +37,4 @@ public class StudentRegistrationHandler implements UserRegistrationHandler {
         return studentRepository.save(student);
     }
 }
+

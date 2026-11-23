@@ -7,19 +7,8 @@ import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
-/**
- * Lớp cơ sở trừu tượng cho các chính sách hủy ca tập (Milestone 7).
- * Tuân thủ nguyên tắc DRY: Tái sử dụng logic tính toán thời gian hủy trước ca tập.
- */
 public abstract class BaseCancellationPolicy implements CancellationPolicy {
 
-    /**
-     * Tính số giờ còn lại từ thời điểm hủy tới khi ca tập bắt đầu.
-     *
-     * @param booking    Đơn đặt lịch
-     * @param cancelTime Thời điểm hủy
-     * @return Số giờ còn lại làm tròn 2 chữ số thập phân, hoặc BigDecimal.ZERO nếu quá khứ
-     */
     protected BigDecimal calculateHoursBefore(Booking booking, LocalDateTime cancelTime) {
         if (booking.getSlot() == null || booking.getSlot().getStartTime() == null) {
             return BigDecimal.ZERO;
@@ -36,3 +25,4 @@ public abstract class BaseCancellationPolicy implements CancellationPolicy {
         return BigDecimal.valueOf(hours).setScale(2, RoundingMode.HALF_UP);
     }
 }
+

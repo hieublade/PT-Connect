@@ -18,11 +18,12 @@ public class ChatConversationDTO {
     private String partnerName;
     private String partnerEmail;
     private String partnerAvatar;
-    private String partnerRole; // PT hoặc STUDENT
+    private String partnerRole;
     private String lastMessage;
-    
+
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime lastMessageTime;
-    
+
     private long unreadCount;
 }
+

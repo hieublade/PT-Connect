@@ -19,10 +19,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-/**
- * Service chuyên biệt quản lý Khung giờ rảnh của Huấn luyện viên (Availability Slots).
- * Đảm bảo nguyên lý Đơn nhiệm (SRP) - Chỉ tiêm các repository liên quan tới Slot và Booking.
- */
 @Service
 @RequiredArgsConstructor
 public class PTSlotServiceImpl implements IPTSlotService {
@@ -97,7 +93,7 @@ public class PTSlotServiceImpl implements IPTSlotService {
 
         List<com.PTconnect.backend.entity.Booking> existingBookings = bookingRepository.findBySlotId(slotId);
         boolean hasActiveBooking = existingBookings.stream()
-                .anyMatch(b -> b.getStatus() == com.PTconnect.backend.entity.enums.BookingStatus.PENDING 
+                .anyMatch(b -> b.getStatus() == com.PTconnect.backend.entity.enums.BookingStatus.PENDING
                             || b.getStatus() == com.PTconnect.backend.entity.enums.BookingStatus.CONFIRMED);
         if (hasActiveBooking) {
             throw new IllegalArgumentException("Không thể xóa khung giờ đang có học viên đặt lịch hoặc chờ duyệt");
@@ -114,3 +110,4 @@ public class PTSlotServiceImpl implements IPTSlotService {
         availabilitySlotRepository.delete(slot);
     }
 }
+

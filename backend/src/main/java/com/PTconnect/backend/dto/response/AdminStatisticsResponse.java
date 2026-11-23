@@ -20,3 +20,4 @@ public class AdminStatisticsResponse {
     private long totalBookings;
     private BigDecimal totalRevenue;
 }
+

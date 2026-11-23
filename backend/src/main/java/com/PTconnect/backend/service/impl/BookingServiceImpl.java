@@ -32,10 +32,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-/**
- * Triển khai nghiệp vụ luồng Booking – Trái tim hệ thống (Milestone 6 & 7).
- * Phụ trách bởi: Huy, Hưng, Thắng.
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -56,7 +52,6 @@ public class BookingServiceImpl implements IBookingService {
         User student = userRepository.findByEmail(studentEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy học viên với email: " + studentEmail));
 
-        // 1. Khóa bi quan (PESSIMISTIC_WRITE) dòng slot để chống đặt trùng đa luồng
         AvailabilitySlot slot = slotRepository.findByIdWithLock(request.getSlotId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy khung giờ với ID: " + request.getSlotId()));
 
@@ -77,15 +72,14 @@ public class BookingServiceImpl implements IBookingService {
         Enrollment enrollment = null;
         BigDecimal sessionFee = BigDecimal.ZERO;
 
-        // 2. Xử lý nghiệp vụ theo loại Booking
         if (bookingType == BookingType.TRIAL) {
-            // Học thử: Mỗi student chỉ được 1 buổi thử với 1 PT
+
             if (bookingRepository.existsByStudentIdAndPtIdAndBookingType(student.getId(), slot.getPt().getId(), BookingType.TRIAL)) {
                 throw new BadRequestException("Bạn đã từng đặt lịch học thử với Huấn luyện viên này. Mỗi học viên chỉ được học thử 1 lần.");
             }
             sessionFee = BigDecimal.ZERO;
         } else {
-            // Đặt theo hợp đồng khóa học (PACKAGE)
+
             if (request.getEnrollmentId() == null) {
                 throw new BadRequestException("Cần chọn hợp đồng khóa học khi đặt lịch theo gói (PACKAGE)");
             }
@@ -117,7 +111,6 @@ public class BookingServiceImpl implements IBookingService {
                 throw new BadRequestException("Hợp đồng đã sử dụng hết số buổi tập");
             }
 
-            // Trừ 1 buổi tập khả dụng (Encapsulation qua consumeSession)
             enrollment.consumeSession();
             enrollmentRepository.save(enrollment);
 
@@ -126,11 +119,9 @@ public class BookingServiceImpl implements IBookingService {
             }
         }
 
-        // 3. Cập nhật trạng thái slot thành BOOKED
         slot.book();
         slotRepository.save(slot);
 
-        // 4. Tạo bản ghi Booking trạng thái PENDING
         Booking booking = Booking.builder()
                 .student(student)
                 .slot(slot)
@@ -322,10 +313,6 @@ public class BookingServiceImpl implements IBookingService {
         return executeCancellation(booking, ptProfile.getPt(), "PT", reason, evidenceUrl, result);
     }
 
-    /**
-     * Phương thức điều phối cốt lõi dùng chung cho toàn bộ luồng hủy lịch.
-     * Thực thi State Transition, thu hồi Slot, hoàn buổi tập, giao dịch ví tiền và ghi nhận Cancellation.
-     */
     private BookingResponse executeCancellation(
             Booking booking,
             User cancelledBy,
@@ -334,27 +321,23 @@ public class BookingServiceImpl implements IBookingService {
             String evidenceUrl,
             CancellationCalculationResult result
     ) {
-        // 1. Chuyển trạng thái booking sang CANCELLED (State Pattern / Entity tự bảo vệ)
+
         booking.cancel();
 
-        // 2. Trả slot về AVAILABLE
         AvailabilitySlot slot = booking.getSlot();
         if (slot != null) {
             slot.release();
             slotRepository.save(slot);
         }
 
-        // 3. Khôi phục buổi tập nếu chính sách cho phép (đối với gói PACKAGE)
         if (result.isRestoreSession() && booking.getBookingType() == BookingType.PACKAGE && booking.getEnrollment() != null) {
             Enrollment enrollment = booking.getEnrollment();
             enrollment.restoreSession();
             enrollmentRepository.save(enrollment);
         }
 
-        // 4. Xử lý ví tiền (đền bù / phạt)
         handleWalletTransactions(booking, cancelledByRole, result);
 
-        // 5. Ghi nhật ký hủy lịch vào bảng cancellations
         Cancellation cancellation = Cancellation.builder()
                 .booking(booking)
                 .cancelledBy(cancelledBy)
@@ -377,17 +360,13 @@ public class BookingServiceImpl implements IBookingService {
         return BookingResponse.fromEntity(booking, cancellation);
     }
 
-    /**
-     * Xử lý giao dịch bồi hoàn hoặc xử phạt trên ví tài chính.
-     */
     private void handleWalletTransactions(
             Booking booking,
             String cancelledByRole,
             CancellationCalculationResult result
     ) {
         if ("STUDENT".equalsIgnoreCase(cancelledByRole)) {
-            // Học viên hủy ca tập đã duyệt:
-            // 1. Phạt trừ ví học viên nếu có penalty
+
             if (result.getPenaltyAmount().compareTo(BigDecimal.ZERO) > 0
                     && booking.getStudent() != null) {
                 walletService.processBookingPenalty(
@@ -396,7 +375,7 @@ public class BookingServiceImpl implements IBookingService {
                         result.getPenaltyAmount()
                 );
             }
-            // 2. Đền bù vào ví của Huấn luyện viên
+
             if (result.getCompensationAmount().compareTo(BigDecimal.ZERO) > 0
                     && booking.getPt() != null && booking.getPt().getPt() != null) {
                 walletService.processBookingCompensation(
@@ -406,8 +385,7 @@ public class BookingServiceImpl implements IBookingService {
                 );
             }
         } else if ("PT".equalsIgnoreCase(cancelledByRole)) {
-            // Huấn luyện viên hủy:
-            // Đền bù cho Student nếu PT hủy sát giờ (< 24h)
+
             if (result.getCompensationAmount().compareTo(BigDecimal.ZERO) > 0 && booking.getStudent() != null) {
                 walletService.processBookingCompensation(
                         booking.getStudent().getId(),
@@ -416,7 +394,6 @@ public class BookingServiceImpl implements IBookingService {
                 );
             }
 
-            // Phạt PT nếu PT hủy sát giờ (< 24h)
             if (result.getPenaltyAmount().compareTo(BigDecimal.ZERO) > 0
                     && booking.getPt() != null && booking.getPt().getPt() != null) {
                 walletService.processBookingPenalty(
@@ -467,3 +444,4 @@ public class BookingServiceImpl implements IBookingService {
         return BookingResponse.fromEntity(booking, cancellation);
     }
 }
+

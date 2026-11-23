@@ -155,3 +155,4 @@ class PTSlotServiceTest {
         verify(availabilitySlotRepository).delete(slot);
     }
 }
+

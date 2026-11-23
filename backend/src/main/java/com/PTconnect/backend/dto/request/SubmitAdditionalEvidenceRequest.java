@@ -13,3 +13,4 @@ public class SubmitAdditionalEvidenceRequest {
     @NotBlank(message = "Nội dung bằng chứng bổ sung không được để trống")
     private String evidence;
 }
+

@@ -35,3 +35,4 @@ public class UpdateCourseRequest {
 
     private CourseStatus status;
 }
+

@@ -8,10 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * Factory điều phối các hiện thực CancellationPolicy theo Role (Milestone 7).
- * Minh chứng mẫu thiết kế Strategy và Nguyên tắc Open-Closed (SOLID).
- */
 @Component
 public class CancellationPolicyFactory {
 
@@ -44,3 +40,4 @@ public class CancellationPolicyFactory {
         }
     }
 }
+

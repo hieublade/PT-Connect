@@ -25,3 +25,4 @@ public enum PaymentMethod {
         return BANK_TRANSFER;
     }
 }
+

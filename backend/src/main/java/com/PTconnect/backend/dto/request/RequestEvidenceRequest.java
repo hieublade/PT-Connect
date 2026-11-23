@@ -11,8 +11,9 @@ import lombok.*;
 public class RequestEvidenceRequest {
 
     @NotBlank(message = "Đối tượng yêu cầu bằng chứng không được để trống (BOTH, PT, STUDENT)")
-    private String target; // BOTH, PT, STUDENT
+    private String target;
 
     @NotBlank(message = "Nội dung yêu cầu bằng chứng không được để trống")
     private String note;
 }
+

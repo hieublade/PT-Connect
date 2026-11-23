@@ -7,9 +7,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
-/**
- * Controller cho cac endpoint cong khai (Public endpoints).
- */
 @RestController
 @RequestMapping("/api/v1/public")
 public class PublicController {
@@ -22,3 +19,4 @@ public class PublicController {
         ));
     }
 }
+

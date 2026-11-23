@@ -109,3 +109,4 @@ class UserRegistrationHandlerTest {
         verify(ptProfileRepository).save(any(PTProfile.class));
     }
 }
+

@@ -18,3 +18,4 @@ public interface IChatService {
 
     long getUnreadCount(String userEmail);
 }
+

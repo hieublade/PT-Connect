@@ -30,3 +30,4 @@ public interface DisputeRepository extends JpaRepository<DisputeCase, Long> {
 
     boolean existsByBookingIdAndStatus(Long bookingId, String status);
 }
+

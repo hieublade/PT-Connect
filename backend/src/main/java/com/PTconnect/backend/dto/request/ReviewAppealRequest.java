@@ -3,9 +3,6 @@ package com.PTconnect.backend.dto.request;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 
-/**
- * DTO Huấn luyện viên gửi bản phản biện/giải trình cho đánh giá tiêu cực (1-3 sao).
- */
 @Getter
 @Setter
 @NoArgsConstructor
@@ -18,3 +15,4 @@ public class ReviewAppealRequest {
 
     private String ptEvidence;
 }
+

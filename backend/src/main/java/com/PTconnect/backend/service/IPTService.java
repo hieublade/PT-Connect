@@ -30,3 +30,4 @@ public interface IPTService {
 
     void deleteSlot(String userEmail, Long slotId);
 }
+

@@ -6,10 +6,6 @@ import lombok.*;
 
 import java.math.BigDecimal;
 
-/**
- * DTO hồ sơ công khai của Huấn luyện viên dành cho Học viên (Student) và Khách.
- * TUYỆT ĐỐI KHÔNG chứa thông tin nhạy cảm như certificateUrls, mật khẩu hoặc thông tin nội bộ.
- */
 @Getter
 @Setter
 @NoArgsConstructor
@@ -69,3 +65,4 @@ public class PTPublicDTO {
                 .build();
     }
 }
+

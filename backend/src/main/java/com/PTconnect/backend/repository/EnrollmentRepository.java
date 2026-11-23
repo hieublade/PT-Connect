@@ -36,8 +36,8 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
            "WHERE e.student.id = :studentId")
     List<Enrollment> findByStudentIdWithDetails(@Param("studentId") Long studentId);
 
-    // Khóa bi quan phục vụ trừ/hoàn buổi tập an toàn đa luồng (Milestone 6)
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT e FROM Enrollment e WHERE e.id = :id")
     Optional<Enrollment> findByIdWithLock(@Param("id") Long id);
 }
+

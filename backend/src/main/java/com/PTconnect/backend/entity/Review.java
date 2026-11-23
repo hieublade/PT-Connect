@@ -28,13 +28,10 @@ public class Review {
     @Column(columnDefinition = "TEXT")
     private String comment;
 
-    // Trạng thái kiểm duyệt: PUBLISHED (4-5 sao hoặc Admin giữ lại), FLAGGED (1-3 sao chờ phản biện), 
-    // APPEALED (HLV đã gửi phản biện), EVIDENCE_REQUESTED (Admin yêu cầu thêm bằng chứng), REMOVED (Admin xóa bỏ đánh giá xấu)
     @Column(name = "status", length = 30)
     @Builder.Default
     private String status = "PUBLISHED";
 
-    // Phản biện từ Huấn luyện viên
     @Column(name = "pt_appeal", columnDefinition = "TEXT")
     private String ptAppeal;
 
@@ -44,13 +41,11 @@ public class Review {
     @Column(name = "pt_appealed_at")
     private LocalDateTime ptAppealedAt;
 
-    // Bằng chứng bổ sung từ Học viên
     @Column(name = "student_evidence", columnDefinition = "TEXT")
     private String studentEvidence;
 
-    // Phán quyết từ Quản trị viên (Admin)
     @Column(name = "admin_decision", length = 50)
-    private String adminDecision; // REMOVE, KEEP, REQUEST_EVIDENCE
+    private String adminDecision;
 
     @Column(name = "admin_note", columnDefinition = "TEXT")
     private String adminNote;
@@ -75,3 +70,4 @@ public class Review {
         }
     }
 }
+

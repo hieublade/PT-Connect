@@ -80,7 +80,7 @@ class ReviewServiceTest {
         assertEquals(5, response.getRating());
         assertEquals("HLV dạy rất tận tâm và chuyên nghiệp!", response.getComment());
         verify(reviewRepository).save(any(Review.class));
-        // Đảm bảo mã Java không tự can thiệp cập nhật average_rating hay total_reviews của pt_profiles
+
         verifyNoInteractions(ptProfileRepository);
     }
 
@@ -120,3 +120,4 @@ class ReviewServiceTest {
         assertThrows(BadRequestException.class, () -> reviewService.createReview("student@test.com", request));
     }
 }
+

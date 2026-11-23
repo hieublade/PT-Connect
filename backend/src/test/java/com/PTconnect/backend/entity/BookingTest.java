@@ -101,3 +101,4 @@ class BookingTest {
         assertTrue(ex.getMessage().contains("CONFIRMED"));
     }
 }
+

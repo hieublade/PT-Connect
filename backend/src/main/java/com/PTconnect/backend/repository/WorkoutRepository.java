@@ -9,3 +9,4 @@ public interface WorkoutRepository extends JpaRepository<Workout, Long> {
 
     void deleteByPlanId(Long planId);
 }
+

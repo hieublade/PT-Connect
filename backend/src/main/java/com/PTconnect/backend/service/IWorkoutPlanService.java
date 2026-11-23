@@ -21,3 +21,4 @@ public interface IWorkoutPlanService {
 
     void deleteWorkout(String ptEmail, Long planId, Long workoutId);
 }
+

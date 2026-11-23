@@ -127,3 +127,4 @@ class AuthServiceTest {
         assertThrows(IllegalArgumentException.class, () -> authService.register(request));
     }
 }
+

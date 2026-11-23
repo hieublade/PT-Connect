@@ -53,7 +53,6 @@ public class EnrollmentServiceImpl implements IEnrollmentService {
             throw new BadRequestException("Khóa học hiện không còn mở bán");
         }
 
-        // Kiểm tra học viên có đang theo học khóa này không (chưa hoàn thành hết số buổi)
         List<Enrollment> existingActiveEnrollments = enrollmentRepository
                 .findByStudentIdAndCourseIdAndStatus(student.getId(), course.getId(), EnrollmentStatus.ACTIVE);
         Enrollment activeEnrollment = existingActiveEnrollments.stream()
@@ -76,11 +75,9 @@ public class EnrollmentServiceImpl implements IEnrollmentService {
 
         BigDecimal coursePrice = course.getBasePrice();
 
-        // 1. Tính thời hạn khóa tập
         LocalDate startDate = LocalDate.now();
         LocalDate endDate = startDate.plusDays(course.getValidityDays());
 
-        // 2. Khởi tạo hợp đồng Enrollment (kho buổi ban đầu: remaining = total)
         Enrollment enrollment = Enrollment.builder()
                 .student(student)
                 .course(course)
@@ -96,7 +93,6 @@ public class EnrollmentServiceImpl implements IEnrollmentService {
 
         Enrollment savedEnrollment = enrollmentRepository.save(enrollment);
 
-        // 3. Xử lý thanh toán tài chính qua IWalletService
         Payment payment = walletService.processCoursePurchase(
                 student.getId(),
                 savedEnrollment,
@@ -104,17 +100,15 @@ public class EnrollmentServiceImpl implements IEnrollmentService {
                 request.getPaymentMethod()
         );
 
-        // 4. Cập nhật URL hợp đồng chính thức
         String contractUrl = "/api/v1/enrollments/" + savedEnrollment.getId() + "/contract";
         savedEnrollment.setContractUrl(contractUrl);
         enrollmentRepository.save(savedEnrollment);
 
-        // 5. Sinh hợp đồng điện tử PDF
         try {
             contractPdfGenerator.generateContractPdf(savedEnrollment, payment.getTransactionRef());
         } catch (Exception e) {
             log.warn("Không thể sinh file PDF hợp đồng: {}", e.getMessage());
-            // Vẫn tiếp tục nếu sinh file gặp trục trặc, hoặc để transactional xử lý
+
         }
 
         log.info("Mua khóa học thành công! Enrollment ID: {}, TxnRef: {}", savedEnrollment.getId(), payment.getTransactionRef());
@@ -204,3 +198,4 @@ public class EnrollmentServiceImpl implements IEnrollmentService {
         throw new AccessDeniedException("Bạn không có quyền truy cập hợp đồng này");
     }
 }
+

@@ -21,10 +21,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * Controller cho các endpoint dành riêng cho PT (Huấn luyện viên).
- * Áp dụng Interface Segregation Principle (ISP) - Tiêm các Service chuyên biệt cho từng nhóm chức năng.
- */
 @RestController
 @RequestMapping("/api/v1/pt")
 @RequiredArgsConstructor
@@ -33,10 +29,6 @@ public class PTController {
     private final IPTProfileService profileService;
     private final IPTCourseService courseService;
     private final IPTSlotService slotService;
-
-    // -------------------------------------------------------------
-    // 1. PT Profile
-    // -------------------------------------------------------------
 
     @GetMapping("/profile")
     public ResponseEntity<ApiResponse<PTProfileResponse>> getProfile(Authentication auth) {
@@ -62,10 +54,6 @@ public class PTController {
         PTProfileResponse response = profileService.uploadCertificate(email, file);
         return ResponseEntity.ok(ApiResponse.success("Tải tệp chứng chỉ lên thành công", response));
     }
-
-    // -------------------------------------------------------------
-    // 2. PT Courses
-    // -------------------------------------------------------------
 
     @PostMapping("/courses")
     public ResponseEntity<ApiResponse<CourseResponse>> createCourse(
@@ -112,10 +100,6 @@ public class PTController {
         return ResponseEntity.ok(ApiResponse.success("Xóa khóa học thành công", null));
     }
 
-    // -------------------------------------------------------------
-    // 3. PT Availability Slots
-    // -------------------------------------------------------------
-
     @PostMapping("/slots")
     public ResponseEntity<ApiResponse<SlotResponse>> createSlot(
             Authentication auth,
@@ -142,3 +126,4 @@ public class PTController {
         return ResponseEntity.ok(ApiResponse.success("Xóa khung giờ rảnh thành công", null));
     }
 }
+

@@ -71,10 +71,8 @@ public class PTProfile {
                         .distinct()
                         .toList();
 
-        // 1. Loại bỏ những địa điểm không còn nằm trong danh sách mới
         this.locations.removeIf(loc -> !targetNames.contains(loc.getLocationName()));
 
-        // 2. Thêm những địa điểm mới chưa tồn tại để tránh lỗi trùng khóa ngoại (Duplicate key uq_pt_location) trong Hibernate flush
         List<String> existingNames = this.locations.stream()
                 .map(PTLocation::getLocationName)
                 .toList();
@@ -136,7 +134,6 @@ public class PTProfile {
     @Column(name = "updated_at", insertable = false, updatable = false)
     private LocalDateTime updatedAt;
 
-    // Phương thức nghiệp vụ quản lý quy trình xét duyệt (Encapsulation / Rich Domain Model)
     public void approve() {
         this.verificationStatus = VerificationStatus.VERIFIED;
         if (this.pt != null) {

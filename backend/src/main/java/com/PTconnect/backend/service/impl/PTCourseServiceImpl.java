@@ -19,10 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.List;
 
-/**
- * Service chuyên biệt quản lý Khóa học của Huấn luyện viên (PT Course).
- * Đảm bảo nguyên lý Đơn nhiệm (SRP) - Chỉ tiêm các repository liên quan tới Course và Enrollment.
- */
 @Service
 @RequiredArgsConstructor
 public class PTCourseServiceImpl implements IPTCourseService {
@@ -148,3 +144,4 @@ public class PTCourseServiceImpl implements IPTCourseService {
         courseRepository.delete(course);
     }
 }
+

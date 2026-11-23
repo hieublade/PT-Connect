@@ -25,7 +25,6 @@ public class Wallet {
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
 
-    // Không có setter: chỉ đổi số dư qua credit()/debit()
     @Setter(AccessLevel.NONE)
     @Column(nullable = false, precision = 14, scale = 2)
     @Builder.Default
@@ -56,7 +55,6 @@ public class Wallet {
         this.lockedBalance = lockedBalance != null ? lockedBalance : BigDecimal.ZERO;
     }
 
-    // Đóng gói: quy tắc nghiệp vụ nằm trong Entity
     public void credit(BigDecimal amount) {
         checkUsable(amount);
         this.balance = this.balance.add(amount);

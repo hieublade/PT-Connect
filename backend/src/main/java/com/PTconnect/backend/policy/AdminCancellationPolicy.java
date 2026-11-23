@@ -8,10 +8,6 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-/**
- * Hiện thực chính sách hủy lịch dành cho Quản trị viên (AdminCancellationPolicy).
- * Áp dụng trong các trường hợp bất khả kháng hoặc can thiệp khiếu nại (Milestone 7).
- */
 @Component
 public class AdminCancellationPolicy extends BaseCancellationPolicy {
 
@@ -45,3 +41,4 @@ public class AdminCancellationPolicy extends BaseCancellationPolicy {
                 .build();
     }
 }
+

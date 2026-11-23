@@ -6,3 +6,4 @@ public enum EnrollmentStatus {
     CANCELLED,
     COMPLETED
 }
+

@@ -31,7 +31,6 @@ public class RegisterRequest {
     @NotNull(message = "Vai trò (Role) không được để trống")
     private Role role;
 
-    // Các trường mở rộng dành riêng cho PT
     private String bio;
     private Integer experienceYears;
     private String availableLocations;
@@ -60,3 +59,4 @@ public class RegisterRequest {
         return s;
     }
 }
+

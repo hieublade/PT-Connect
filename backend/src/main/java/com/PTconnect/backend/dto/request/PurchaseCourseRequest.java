@@ -21,3 +21,4 @@ public class PurchaseCourseRequest {
     @Builder.Default
     private PaymentMethod paymentMethod = PaymentMethod.WALLET;
 }
+

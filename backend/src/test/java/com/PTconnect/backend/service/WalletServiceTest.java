@@ -148,3 +148,4 @@ class WalletServiceTest {
         assertEquals("TXN_BUY_12345", ref);
     }
 }
+

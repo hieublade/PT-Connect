@@ -16,3 +16,4 @@ public interface WorkoutPlanRepository extends JpaRepository<WorkoutPlan, Long> 
     @Query("SELECT w FROM WorkoutPlan w WHERE w.enrollment.course.pt.id = :ptId ORDER BY w.createdAt DESC")
     List<WorkoutPlan> findByPtIdOrderByCreatedAtDesc(@Param("ptId") Long ptId);
 }
+

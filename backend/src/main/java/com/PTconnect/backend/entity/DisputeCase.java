@@ -7,9 +7,6 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-/**
- * Thực thể Lưu trữ Hồ sơ Tranh chấp & Khiếu nại giữa Huấn luyện viên và Học viên.
- */
 @Entity
 @Table(name = "dispute_cases")
 @Getter
@@ -47,13 +44,13 @@ public class DisputeCase {
     private User defendant;
 
     @Column(name = "dispute_type", nullable = false)
-    private String disputeType; // PT_ABSENT, LATE_CANCEL_STUDENT, OTP_PREMATURE, QUALITY_ISSUE, CONTRACT_TERMINATION, OTHER
+    private String disputeType;
 
     @Column(name = "dispute_type_label", nullable = false)
     private String disputeTypeLabel;
 
     @Column(name = "severity", nullable = false)
-    private String severity; // HIGH, MEDIUM, LOW
+    private String severity;
 
     @Column(name = "summary", length = 500)
     private String summary;
@@ -71,7 +68,7 @@ public class DisputeCase {
     private Boolean evidenceRequested;
 
     @Column(name = "evidence_request_target")
-    private String evidenceRequestTarget; // BOTH, PT, STUDENT
+    private String evidenceRequestTarget;
 
     @Column(name = "evidence_request_note", columnDefinition = "TEXT")
     private String evidenceRequestNote;
@@ -92,10 +89,10 @@ public class DisputeCase {
     private BigDecimal sessionFee;
 
     @Column(name = "status", nullable = false)
-    private String status; // PENDING_ARBITRATION, AWAITING_EVIDENCE, RESOLVED_REFUND_STUDENT, RESOLVED_PAID_PT, RESOLVED_FORCE_MAJEURE, RESOLVED_CONTRACT_TERMINATION
+    private String status;
 
     @Column(name = "verdict_type")
-    private String verdictType; // REFUND_STUDENT, PAID_PT, FORCE_MAJEURE, CANCEL_CONTRACT_REFUND_STUDENT, CANCEL_CONTRACT_PAID_PT
+    private String verdictType;
 
     @Column(name = "resolution_decision", columnDefinition = "TEXT")
     private String resolutionDecision;
@@ -122,3 +119,4 @@ public class DisputeCase {
         }
     }
 }
+

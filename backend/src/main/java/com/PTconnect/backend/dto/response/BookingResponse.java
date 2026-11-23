@@ -9,10 +9,6 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-/**
- * DTO phản hồi thông tin chi tiết đơn đặt lịch ca tập (Milestone 6 - Hưng).
- * Ghép đầy đủ thông tin Học viên, Huấn luyện viên, Khung giờ và Hợp đồng.
- */
 @Getter
 @Setter
 @NoArgsConstructor
@@ -22,14 +18,12 @@ public class BookingResponse {
 
     private Long id;
 
-    // Thông tin học viên
     private Long studentId;
     private String studentName;
     private String studentEmail;
     private String studentPhone;
     private String studentAvatarUrl;
 
-    // Thông tin Huấn luyện viên
     private Long ptId;
     private Long ptUserId;
     private String ptName;
@@ -37,23 +31,19 @@ public class BookingResponse {
     private String ptPhone;
     private String ptAvatarUrl;
 
-    // Thông tin khung giờ (Slot)
     private Long slotId;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
 
-    // Chi tiết ca tập
     private BookingType bookingType;
     private BookingStatus status;
     private BigDecimal sessionFee;
     private String studentNote;
     private String trainingLocation;
 
-    // Hợp đồng liên kết (nếu là PACKAGE)
     private Long enrollmentId;
     private String courseTitle;
 
-    // Thông tin hủy lịch (nếu booking đã bị hủy)
     private String cancellationReason;
     private String cancelledByRole;
     private LocalDateTime cancelledAt;
@@ -128,3 +118,4 @@ public class BookingResponse {
         return builder.build();
     }
 }
+

@@ -13,3 +13,4 @@ public class CounterStatementRequest {
     @NotBlank(message = "Nội dung phản biện đối chứng không được để trống")
     private String counterStatement;
 }
+

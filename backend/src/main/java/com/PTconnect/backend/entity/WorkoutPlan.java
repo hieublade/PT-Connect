@@ -58,3 +58,4 @@ public class WorkoutPlan {
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 }
+

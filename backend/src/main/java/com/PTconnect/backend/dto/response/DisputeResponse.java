@@ -30,14 +30,14 @@ public class DisputeResponse {
     private String disputeType;
     private String disputeTypeLabel;
     private String severity;
-    private String complainant; // STUDENT or PT
+    private String complainant;
     private String summary;
     private String studentStatement;
     private String ptStatement;
     private String evidenceNote;
     private String counterStatement;
     private Boolean evidenceRequested;
-    private String evidenceRequestTarget; // BOTH, PT, STUDENT
+    private String evidenceRequestTarget;
     private String evidenceRequestNote;
     private String additionalEvidencePt;
     private String additionalEvidenceStudent;
@@ -110,7 +110,6 @@ public class DisputeResponse {
                     enr.getId(), enr.getRemainingSessions() != null ? enr.getRemainingSessions() : 0,
                     enr.getTotalSessions() != null ? enr.getTotalSessions() : 0);
 
-            // Tính chính xác giá trị các buổi còn lại theo hợp đồng thay vì chỉ 1 ca tập 300k
             if (isContract) {
                 int total = (enr.getTotalSessions() != null && enr.getTotalSessions() > 0) ? enr.getTotalSessions() : 1;
                 int remain = enr.getRemainingSessions() != null ? enr.getRemainingSessions() : total;
@@ -203,3 +202,4 @@ public class DisputeResponse {
                 .build();
     }
 }
+

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Khóa Bi Quan & Quy Tắc 24H - PT-Connect</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0B0F19;
+      color: #E2E8F0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 30px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      background: #111827;
+      border: 1px solid #1F2937;
+      border-radius: 16px;
+      padding: 32px 40px;
+      width: 960px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 26px;
+    }
+    .tag {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #38BDF8;
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 4px 12px;
+      border-radius: 20px;
+      display: inline-block;
+      margin-bottom: 8px;
+    }
+    .title {
+      font-size: 22px;
+      font-weight: 800;
+      color: #F8FAFC;
+    }
+    .title span {
+      background: linear-gradient(90deg, #38BDF8, #F59E0B);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    .section-card {
+      background: #161F30;
+      border: 1px solid #233044;
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .card-title {
+      font-size: 13.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .flow-step {
+      background: #1E293B;
+      border-radius: 8px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+    }
+    .arrow-down {
+      text-align: center;
+      color: #64748B;
+      font-size: 14px;
+      margin: -8px 0;
+    }
+    .branch-box {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .success-box {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid #10B981;
+      color: #6EE7B7;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .danger-box {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid #EF4444;
+      color: #FCA5A5;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .badge {
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .badge-win { background: #10B981; color: #064E3B; }
+    .badge-block { background: #EF4444; color: #7F1D1D; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <div class="tag">CONCURRENCY & CANCELLATION ENGINE</div>
+    <div class="title">Khóa Bi Quan Chống Trùng & <span>Quy Tắc Hủy Lịch 24H</span></div>
+  </div>
+
+  <div class="grid">
+    <!-- CỘT 1: KHÓA BI QUAN CHỐNG TRÙNG -->
+    <div class="section-card">
+      <div class="card-title" style="color: #38BDF8;">
+        <span>🔐</span> 1. KHÓA BI QUAN (CHỐNG TRÙNG LỊCH)
+      </div>
+
+      <div class="flow-step" style="border-left: 3px solid #38BDF8;">
+        <span>👥 <strong>Nhiều học viên</strong> cùng bấm đặt 1 slot</span>
+        <span style="color: #94A3B8; font-size: 10px;">Cùng tích tắc</span>
+      </div>
+
+      <div class="arrow-down">▼</div>
+
+      <div class="flow-step" style="background: #0F172A; border: 1px solid #3B82F6;">
+        <div>
+          <strong style="color: #93C5FD;">⚙️ MySQL InnoDB: SELECT FOR UPDATE</strong>
+          <div style="font-size: 10.5px; color: #64748B;">Khóa cấp dòng (Row-Level Locking)</div>
+        </div>
+      </div>
+
+      <div class="arrow-down">▼</div>
+
+      <div class="branch-box">
+        <div class="success-box">
+          <span>🥇 <strong>Người bấm trước:</strong> Đặt thành công</span>
+          <span class="badge badge-win">HTTP 201</span>
+        </div>
+        <div class="danger-box">
+          <span>🥈 <strong>Người bấm sau:</strong> Bị chặn ngay</span>
+          <span class="badge badge-block">409 CONFLICT</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CỘT 2: QUY TẮC HỦY CA MỐC 24H -->
+    <div class="section-card">
+      <div class="card-title" style="color: #F59E0B;">
+        <span>⏰</span> 2. QUY TẮC HỦY CA (MỐC 24 GIỜ)
+      </div>
+
+      <div class="flow-step" style="border-left: 3px solid #F59E0B;">
+        <span>⚠️ <strong>Yêu cầu hủy ca tập</strong> đã được duyệt</span>
+        <span style="color: #94A3B8; font-size: 10px;">CONFIRMED</span>
+      </div>
+
+      <div class="arrow-down">▼</div>
+
+      <div class="flow-step" style="background: #0F172A; border: 1px solid #F59E0B; text-align: center; justify-content: center;">
+        <strong style="color: #FCD34D;">⏳ ĐỐI SOÁT THEO MỐC 24 TIẾNG</strong>
+      </div>
+
+      <div class="arrow-down">▼</div>
+
+      <div class="branch-box">
+        <div class="success-box">
+          <div>
+            <strong>BÁO TRƯỚC ≥ 24 TIẾNG</strong>
+            <div style="font-size: 10px; color: #A7F3D0;">Hoàn 100% buổi tập vào hợp đồng</div>
+          </div>
+          <span class="badge badge-win">HOÀN BUỔI</span>
+        </div>
+        <div class="danger-box">
+          <div>
+            <strong>HỦY SÁT GIỜ &lt; 24 TIẾNG</strong>
+            <div style="font-size: 10px; color: #FECACA;">Mất buổi tập & Phạt tiền đền bù bên kia</div>
+          </div>
+          <span class="badge badge-block">MẤT BUỔI</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

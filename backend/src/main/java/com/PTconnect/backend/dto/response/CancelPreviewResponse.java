@@ -4,9 +4,6 @@ import lombok.*;
 
 import java.math.BigDecimal;
 
-/**
- * DTO trả về kết quả xem trước số tiền hoàn/đền bù/phạt trước khi bấm xác nhận hủy (Milestone 7).
- */
 @Getter
 @Setter
 @NoArgsConstructor
@@ -23,3 +20,4 @@ public class CancelPreviewResponse {
     private BigDecimal penaltyAmount;
     private String explanation;
 }
+

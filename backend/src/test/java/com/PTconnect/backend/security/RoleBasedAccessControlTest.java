@@ -29,9 +29,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Ma trận phân quyền Role × API (Milestone 3 - Huy).
- */
 @WebMvcTest(controllers = {
         PublicController.class,
         StudentController.class,
@@ -82,10 +79,6 @@ class RoleBasedAccessControlTest {
         adminToken   = jwtUtil.generateToken("admin@ptconnect.vn",       "ADMIN");
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
-    // ROW 1: Anonymous (không có token)
-    // ══════════════════════════════════════════════════════════════════════════
-
     @Nested
     @DisplayName("Anonymous (không token)")
     class AnonymousTests {
@@ -126,10 +119,6 @@ class RoleBasedAccessControlTest {
         }
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
-    // ROW 2: STUDENT token
-    // ══════════════════════════════════════════════════════════════════════════
-
     @Nested
     @DisplayName("STUDENT token")
     class StudentTokenTests {
@@ -166,10 +155,6 @@ class RoleBasedAccessControlTest {
                     .andExpect(status().isForbidden());
         }
     }
-
-    // ══════════════════════════════════════════════════════════════════════════
-    // ROW 3: PT token
-    // ══════════════════════════════════════════════════════════════════════════
 
     @Nested
     @DisplayName("PT token")
@@ -208,10 +193,6 @@ class RoleBasedAccessControlTest {
         }
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
-    // ROW 4: ADMIN token
-    // ══════════════════════════════════════════════════════════════════════════
-
     @Nested
     @DisplayName("ADMIN token")
     class AdminTokenTests {
@@ -249,3 +230,4 @@ class RoleBasedAccessControlTest {
         }
     }
 }
+

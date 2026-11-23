@@ -64,9 +64,6 @@ public class Booking {
     @Column(name = "student_note", length = 255)
     private String studentNote;
 
-    // active_slot_id: cột sinh tự động (generated), chỉ đọc
-    // Chỉ khác NULL khi booking còn hiệu lực (status IN PENDING, CONFIRMED,
-    // COMPLETED)
     @Column(name = "active_slot_id", insertable = false, updatable = false)
     private Long activeSlotId;
 
@@ -76,7 +73,6 @@ public class Booking {
     @Column(name = "updated_at", insertable = false, updatable = false)
     private LocalDateTime updatedAt;
 
-    // Địa điểm tập tự động lấy theo hợp đồng (đối với PACKAGE)
     public String getTrainingLocation() {
         return this.enrollment != null ? this.enrollment.getTrainingLocation() : null;
     }
@@ -85,7 +81,6 @@ public class Booking {
         this.status = status;
     }
 
-    // Phương thức nghiệp vụ tự bảo vệ trạng thái (Encapsulation / State Transition)
     public void confirm() {
         if (this.status != BookingStatus.PENDING) {
             throw new IllegalStateException(
@@ -112,3 +107,4 @@ public class Booking {
         this.status = BookingStatus.COMPLETED;
     }
 }
+

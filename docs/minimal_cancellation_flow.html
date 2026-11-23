@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Quy Tắc Hủy Ca Mốc 24H - PT-Connect</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0B0F19;
+      color: #E2E8F0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 30px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      background: #111827;
+      border: 1px solid #1F2937;
+      border-radius: 16px;
+      padding: 32px 40px;
+      width: 980px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .tag {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #F59E0B;
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      padding: 4px 12px;
+      border-radius: 20px;
+      display: inline-block;
+      margin-bottom: 8px;
+    }
+    .title {
+      font-size: 22px;
+      font-weight: 800;
+      color: #F8FAFC;
+    }
+    .title span {
+      background: linear-gradient(90deg, #F59E0B, #EF4444);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .card {
+      background: #161F30;
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid #233044;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .card-student { border-color: rgba(56, 189, 248, 0.4); }
+    .card-pt { border-color: rgba(52, 211, 153, 0.4); }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .card-title {
+      font-size: 14px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .rule-box {
+      border-radius: 8px;
+      padding: 10px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+    }
+    .box-green {
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid #10B981;
+      color: #A7F3D0;
+    }
+    .box-yellow {
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid #F59E0B;
+      color: #FDE68A;
+    }
+    .box-red {
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid #EF4444;
+      color: #FECACA;
+    }
+    .badge {
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    .b-green { background: #10B981; color: #064E3B; }
+    .b-yellow { background: #F59E0B; color: #451A03; }
+    .b-red { background: #EF4444; color: #450A0A; }
+
+    .conclusion-bar {
+      margin-top: 22px;
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      border-radius: 10px;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .conclusion-text {
+      font-size: 12px;
+      color: #E2E8F0;
+      line-height: 1.4;
+    }
+    .conclusion-text strong {
+      color: #FCD34D;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <div class="tag">CANCELLATION RULES & PENALTY MATRIX</div>
+    <div class="title">Chính Sách Hủy Ca <span>Quy Tắc Vàng Mốc 24H</span></div>
+  </div>
+
+  <div class="grid">
+    <!-- CỘT 1: HỌC VIÊN HỦY -->
+    <div class="card card-student">
+      <div class="card-header">
+        <div class="card-title" style="color: #38BDF8;">
+          <span>🏃</span> HỌC VIÊN HỦY CA
+        </div>
+        <span style="font-size: 10px; color: #94A3B8;">Student Cancellation</span>
+      </div>
+
+      <div class="rule-box box-green">
+        <div>
+          <strong>Ca đang chờ duyệt (PENDING):</strong>
+          <div style="font-size: 11px; opacity: 0.85;">Hủy mọi lúc ➔ Hoàn 1 buổi, không phạt</div>
+        </div>
+        <span class="badge b-green">HOÀN BUỔI</span>
+      </div>
+
+      <div class="rule-box box-yellow">
+        <div>
+          <strong>Đã duyệt & Báo trước ≥ 24 Giờ:</strong>
+          <div style="font-size: 11px; opacity: 0.85;">Hoàn 1 buổi ➔ Phạt 50% đền bù PT giữ chỗ</div>
+        </div>
+        <span class="badge b-yellow">PHẠT 50%</span>
+      </div>
+
+      <div class="rule-box box-red">
+        <div>
+          <strong>Đã duyệt & Hủy sát giờ &lt; 24 Giờ:</strong>
+          <div style="font-size: 11px; opacity: 0.85;">Mất buổi tập ➔ Chuyển 90% đền bù vào ví PT</div>
+        </div>
+        <span class="badge b-red">MẤT BUỔI</span>
+      </div>
+    </div>
+
+    <!-- CỘT 2: PT HỦY -->
+    <div class="card card-pt">
+      <div class="card-header">
+        <div class="card-title" style="color: #34D399;">
+          <span>🏋️</span> HUẤN LUYỆN VIÊN HỦY CA
+        </div>
+        <span style="font-size: 10px; color: #94A3B8;">PT Cancellation</span>
+      </div>
+
+      <div class="rule-box box-green">
+        <div>
+          <strong>Từ chối ca chờ duyệt (PENDING):</strong>
+          <div style="font-size: 11px; opacity: 0.85;">Từ chối nhận ca ➔ Hoàn 1 buổi cho học viên</div>
+        </div>
+        <span class="badge b-green">HOÀN BUỔI</span>
+      </div>
+
+      <div class="rule-box box-green">
+        <div>
+          <strong>Đã duyệt & Báo trước ≥ 24 Giờ:</strong>
+          <div style="font-size: 11px; opacity: 0.85;">Hoàn 1 buổi cho HV ➔ PT không bị phạt tiền</div>
+        </div>
+        <span class="badge b-green">HOÀN BUỔI</span>
+      </div>
+
+      <div class="rule-box box-red">
+        <div>
+          <strong>Đã duyệt & Hủy sát giờ &lt; 24 Giờ:</strong>
+          <div style="font-size: 11px; opacity: 0.85;">Phạt PT 100% ➔ Đền bù 100% tiền vào ví Học viên</div>
+        </div>
+        <span class="badge b-red">ĐỀN BÙ 100%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- KẾT LUẬN GIÚP GÌ CHO PT & HỌC VIÊN -->
+  <div class="conclusion-bar">
+    <div style="font-size: 20px;">🛡️</div>
+    <div class="conclusion-text">
+      <strong>KẾT LUẬN GIÁ TRỊ:</strong> Tôn trọng thời gian và công sức chuẩn bị của cả 2 phía. 
+      <strong>PT</strong> không lo bị học viên bùng ca sát giờ (được đền bù tiền) – 
+      <strong>Học viên</strong> được bảo toàn buổi tập khi báo sớm và được đền bù tiền nếu PT hủy hẹn đột xuất.
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

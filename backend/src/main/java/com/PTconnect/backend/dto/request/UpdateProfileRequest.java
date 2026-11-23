@@ -4,9 +4,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
-/**
- * DTO yêu cầu cập nhật thông tin cá nhân người dùng (Họ tên, SĐT, Ảnh đại diện).
- */
 @Getter
 @Setter
 @NoArgsConstructor
@@ -24,3 +21,4 @@ public class UpdateProfileRequest {
 
     private String avatarUrl;
 }
+

@@ -10,3 +10,4 @@ public interface IAuthService {
     AuthResponse login(LoginRequest request);
     UserDTO getMe(String email);
 }
+

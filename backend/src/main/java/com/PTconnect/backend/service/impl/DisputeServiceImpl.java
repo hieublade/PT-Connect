@@ -66,7 +66,6 @@ public class DisputeServiceImpl implements IDisputeService {
         boolean isContractDispute = (enrollment != null && "CONTRACT_TERMINATION".equalsIgnoreCase(request.getDisputeType()))
                 || (request.getEnrollmentId() != null && request.getBookingId() == null);
 
-        // Nếu khiếu nại hủy hợp đồng nhưng chưa truyền bookingId, gắn với booking đầu tiên của enrollment nếu có để đảm bảo toàn vẹn dữ liệu
         if (booking == null && enrollment != null) {
             List<Booking> list = bookingRepository.findByEnrollmentId(enrollment.getId());
             if (!list.isEmpty()) {
@@ -189,7 +188,6 @@ public class DisputeServiceImpl implements IDisputeService {
         DisputeCase dispute = disputeRepository.findById(disputeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hồ sơ tranh chấp #" + disputeId));
 
-        // Kiểm tra điều kiện thời hạn 48 giờ chống phán quyết độc đoán
         LocalDateTime createdAt = dispute.getCreatedAt() != null ? dispute.getCreatedAt() : LocalDateTime.now().minusHours(49);
         LocalDateTime deadline = createdAt.plusHours(48);
         boolean hasCounterStatement = dispute.getCounterStatement() != null && !dispute.getCounterStatement().trim().isEmpty();
@@ -241,7 +239,6 @@ public class DisputeServiceImpl implements IDisputeService {
                 refundAmt = enr.getFinalPrice().multiply(BigDecimal.valueOf(remain))
                         .divide(BigDecimal.valueOf(total), 2, RoundingMode.HALF_UP);
 
-                // Hủy các ca tập chưa diễn ra thuộc hợp đồng đã thanh lý để giải phóng lịch cho cả 2 bên
                 List<Booking> contractBookings = bookingRepository.findByEnrollmentId(enr.getId());
                 for (Booking b : contractBookings) {
                     if (b.getStatus() == BookingStatus.PENDING || b.getStatus() == BookingStatus.CONFIRMED) {
@@ -343,7 +340,7 @@ public class DisputeServiceImpl implements IDisputeService {
         dispute.setResolutionDecision(resolutionDesc);
         dispute.setVerdictReason(resolutionDesc);
         dispute.setResolvedAt(LocalDateTime.now());
-        dispute.setEvidenceRequested(false); // Đóng cờ yêu cầu bằng chứng khi đã có phán quyết
+        dispute.setEvidenceRequested(false);
 
         dispute = disputeRepository.save(dispute);
         log.info("Admin {} đã ban hành phán quyết [{}] cho vụ việc #{}", adminEmail, vType, disputeId);
@@ -367,7 +364,6 @@ public class DisputeServiceImpl implements IDisputeService {
         dispute.setEvidenceRequestNote(note != null && !note.isBlank() ? note.trim() : "Ban Quản Trị yêu cầu bổ sung bằng chứng xác minh vụ việc.");
         dispute.setStatus("AWAITING_ADDITIONAL_EVIDENCE");
 
-        // Mỗi lần gửi yêu cầu bổ sung mới, reset trạng thái nộp về đang chờ (false) cho bên bị yêu cầu
         if ("STUDENT".equals(reqTarget)) {
             dispute.setStudentEvidenceSubmitted(false);
         } else if ("PT".equals(reqTarget)) {
@@ -425,7 +421,6 @@ public class DisputeServiceImpl implements IDisputeService {
         boolean isDefendant = dispute.getDefendant() != null && caller.getId().equals(dispute.getDefendant().getId());
         boolean isComplainant = dispute.getComplainant() != null && caller.getId().equals(dispute.getComplainant().getId());
 
-        // Hỗ trợ dự phòng trường hợp hồ sơ cũ chưa kịp lưu defendant vào CSDL
         if (!isDefendant && !isComplainant) {
             com.PTconnect.backend.entity.Booking b = dispute.getBooking();
             if (b != null) {
@@ -452,3 +447,4 @@ public class DisputeServiceImpl implements IDisputeService {
         return DisputeResponse.fromEntity(dispute);
     }
 }
+

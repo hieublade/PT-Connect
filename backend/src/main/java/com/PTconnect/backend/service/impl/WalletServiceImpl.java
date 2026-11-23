@@ -48,7 +48,7 @@ public class WalletServiceImpl implements IWalletService {
         Wallet wallet = walletRepository.findByUserId(user.getId())
                 .orElseGet(() -> {
                     BigDecimal initialBal = (user.getRole() == Role.ADMIN)
-                            ? BigDecimal.valueOf(15650000) // Khởi tạo số dư quỹ hoa hồng nền tảng ban đầu của Admin
+                            ? BigDecimal.valueOf(15650000)
                             : BigDecimal.ZERO;
                     Wallet newWallet = Wallet.builder()
                             .user(user)
@@ -94,11 +94,9 @@ public class WalletServiceImpl implements IWalletService {
             wallet = walletRepository.save(wallet);
         }
 
-        // Cong tien vao vi qua phuong thuc dong goi nghiep vu cua Entity
         wallet.credit(request.getAmount());
         walletRepository.save(wallet);
 
-        // Sinh ma giao dich duy nhat
         String datePrefix = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         String shortId = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         String txnRef = "TXN_TOPUP_" + datePrefix + "_" + shortId;
@@ -186,7 +184,6 @@ public class WalletServiceImpl implements IWalletService {
             throw new BadRequestException("Ví của bạn đang bị khóa, không thể giao dịch");
         }
 
-        // Trừ tiền ví thông qua nghiệp vụ đóng gói trong Entity (Tell, Don't Ask)
         wallet.debit(amount);
         walletRepository.save(wallet);
 
@@ -288,12 +285,10 @@ public class WalletServiceImpl implements IWalletService {
             return null;
         }
 
-        // Chính sách hoa hồng nền tảng: Sàn thu 10% phí dịch vụ & điều phối, 90% thù lao chuyển cho HLV
         BigDecimal commissionRate = BigDecimal.valueOf(0.10);
         BigDecimal commission = amount.multiply(commissionRate).setScale(2, RoundingMode.HALF_UP);
         BigDecimal ptEarnings = amount.subtract(commission);
 
-        // 1. Chuyển 90% vào ví của HLV
         Wallet wallet = walletRepository.findByUserId(ptUserId).orElse(null);
         Payment ptPayment = null;
         if (wallet != null) {
@@ -321,7 +316,6 @@ public class WalletServiceImpl implements IWalletService {
             log.warn("Không tìm thấy ví của PT ID {} để trả thù lao ca tập", ptUserId);
         }
 
-        // 2. Thu 10% hoa hồng dịch vụ nền tảng chuyển vào Ví Doanh Thu của Admin
         try {
             User admin = userRepository.findAll().stream()
                     .filter(u -> u.getRole() == Role.ADMIN)
@@ -380,3 +374,4 @@ public class WalletServiceImpl implements IWalletService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với email: " + email));
     }
 }
+

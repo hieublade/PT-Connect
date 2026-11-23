@@ -6,9 +6,6 @@ import lombok.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-/**
- * DTO phản hồi thông tin đánh giá nhận xét của học viên kèm trạng thái kiểm duyệt (Milestone 7).
- */
 @Getter
 @Setter
 @NoArgsConstructor
@@ -29,7 +26,7 @@ public class ReviewResponse {
     private String slotTime;
     private Integer rating;
     private String comment;
-    private String status; // PUBLISHED, FLAGGED, APPEALED, EVIDENCE_REQUESTED, REMOVED
+    private String status;
     private String ptAppeal;
     private String ptEvidence;
     private LocalDateTime ptAppealedAt;
@@ -85,3 +82,4 @@ public class ReviewResponse {
         return builder.build();
     }
 }
+

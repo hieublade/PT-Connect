@@ -36,10 +36,6 @@ import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * Service chuyên biệt quản lý thông tin hồ sơ Huấn luyện viên (PT Profile).
- * Đảm bảo nguyên lý Đơn nhiệm (SRP) cho miền Hồ sơ PT.
- */
 @Service
 @RequiredArgsConstructor
 public class PTProfileServiceImpl implements IPTProfileService {
@@ -48,10 +44,6 @@ public class PTProfileServiceImpl implements IPTProfileService {
     private final PTProfileRepository ptProfileRepository;
     private final CourseRepository courseRepository;
     private final AvailabilitySlotRepository availabilitySlotRepository;
-
-    // -------------------------------------------------------------
-    // 1. Public PT Profiles
-    // -------------------------------------------------------------
 
     @Override
     @Transactional(readOnly = true)
@@ -126,10 +118,6 @@ public class PTProfileServiceImpl implements IPTProfileService {
 
         return PTPublicDTO.fromEntity(profile, lowestPrice);
     }
-
-    // -------------------------------------------------------------
-    // 2. Private PT Profile Management
-    // -------------------------------------------------------------
 
     @Override
     @Transactional(readOnly = true)

@@ -35,3 +35,4 @@ public class CreateWorkoutRequest {
 
     private String videoDemoUrl;
 }
+

@@ -18,3 +18,4 @@ public interface IPTCourseService {
 
     void deleteCourse(String userEmail, Long courseId);
 }
+

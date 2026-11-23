@@ -5,3 +5,4 @@ public enum VerificationMethod {
     QR_CODE,
     GEO_LOCATION
 }
+

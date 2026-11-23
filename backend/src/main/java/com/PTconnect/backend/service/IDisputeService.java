@@ -22,3 +22,4 @@ public interface IDisputeService {
 
     DisputeResponse submitAdditionalEvidence(String callerEmail, Long disputeId, String evidence);
 }
+

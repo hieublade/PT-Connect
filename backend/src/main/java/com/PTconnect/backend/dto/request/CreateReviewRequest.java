@@ -5,9 +5,6 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
-/**
- * DTO gửi yêu cầu tạo đánh giá nhận xét cho ca tập (Milestone 7).
- */
 @Getter
 @Setter
 @NoArgsConstructor
@@ -25,6 +22,6 @@ public class CreateReviewRequest {
 
     private String comment;
 
-    // Bằng chứng ban đầu đính kèm (nếu học viên đánh giá xấu 1-3 sao)
     private String studentEvidence;
 }
+

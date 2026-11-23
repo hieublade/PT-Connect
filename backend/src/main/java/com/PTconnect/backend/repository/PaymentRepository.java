@@ -20,7 +20,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     Page<Payment> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
     @Query("""
-           SELECT COALESCE(SUM(p.amount), 0) FROM Payment p 
+           SELECT COALESCE(SUM(p.amount), 0) FROM Payment p
            WHERE p.paymentType = :paymentType AND p.status = :status
            """)
     BigDecimal sumAmountByPaymentTypeAndStatus(

@@ -18,7 +18,6 @@ public interface AvailabilitySlotRepository extends JpaRepository<AvailabilitySl
 
     List<AvailabilitySlot> findByPtIdOrderByStartTimeAsc(Long ptId);
 
-    // Kiểm tra trùng/chồng thời gian khi tạo hoặc cập nhật slot
     @Query("SELECT s FROM AvailabilitySlot s WHERE s.pt.id = :ptId " +
            "AND (:excludeId IS NULL OR s.id != :excludeId) " +
            "AND s.startTime < :endTime AND s.endTime > :startTime")
@@ -27,8 +26,8 @@ public interface AvailabilitySlotRepository extends JpaRepository<AvailabilitySl
                                            @Param("endTime") LocalDateTime endTime,
                                            @Param("excludeId") Long excludeId);
 
-    // Khóa bi quan chống đặt trùng lịch ca tập (Milestone 6)
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT s FROM AvailabilitySlot s WHERE s.id = :id")
     java.util.Optional<AvailabilitySlot> findByIdWithLock(@Param("id") Long id);
 }
+

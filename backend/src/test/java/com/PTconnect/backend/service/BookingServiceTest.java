@@ -201,7 +201,7 @@ class BookingServiceTest {
         assertEquals(500L, response.getId());
         assertEquals(BookingStatus.PENDING, response.getStatus());
         assertEquals(SlotStatus.BOOKED, futureAvailableSlot.getStatus());
-        assertEquals(9, activeEnrollment.getRemainingSessions()); // 10 - 1 = 9
+        assertEquals(9, activeEnrollment.getRemainingSessions());
     }
 
     @Test
@@ -293,7 +293,7 @@ class BookingServiceTest {
     @DisplayName("PT từ chối booking thành công: CANCELLED, trả slot AVAILABLE, hoàn lại buổi tập")
     void rejectBooking_Success() {
         futureAvailableSlot.setStatus(SlotStatus.BOOKED);
-        activeEnrollment.consumeSession(); // Đã bị trừ 1 buổi khả dụng từ 10 xuống 9 qua nghiệp vụ chuẩn
+        activeEnrollment.consumeSession();
 
         Booking booking = Booking.builder()
                 .id(800L)
@@ -319,7 +319,7 @@ class BookingServiceTest {
         assertNotNull(res);
         assertEquals(BookingStatus.CANCELLED, res.getStatus());
         assertEquals(SlotStatus.AVAILABLE, futureAvailableSlot.getStatus());
-        assertEquals(10, activeEnrollment.getRemainingSessions()); // Đã hoàn lại 9 + 1 = 10
+        assertEquals(10, activeEnrollment.getRemainingSessions());
         verify(cancellationRepository, times(1)).save(any(Cancellation.class));
     }
 
@@ -334,7 +334,7 @@ class BookingServiceTest {
                 .status(SlotStatus.BOOKED)
                 .build();
 
-        activeEnrollment.consumeSession(); // 10 -> 9
+        activeEnrollment.consumeSession();
 
         Booking booking = Booking.builder()
                 .id(801L)
@@ -375,7 +375,7 @@ class BookingServiceTest {
                 .status(SlotStatus.BOOKED)
                 .build();
 
-        activeEnrollment.consumeSession(); // 10 -> 9
+        activeEnrollment.consumeSession();
 
         Booking booking = Booking.builder()
                 .id(803L)
@@ -401,7 +401,7 @@ class BookingServiceTest {
         assertNotNull(res);
         assertEquals(BookingStatus.CANCELLED, res.getStatus());
         assertEquals(SlotStatus.AVAILABLE, nearSlot.getStatus());
-        assertEquals(9, activeEnrollment.getRemainingSessions()); // Không được hoàn: vẫn 9
+        assertEquals(9, activeEnrollment.getRemainingSessions());
         verify(cancellationRepository, times(1)).save(any(Cancellation.class));
         verify(walletService, times(1)).processBookingCompensation(eq(ptUser.getId()), eq(activeEnrollment), eq(BigDecimal.valueOf(50000).setScale(2)));
     }
@@ -417,7 +417,7 @@ class BookingServiceTest {
                 .status(SlotStatus.BOOKED)
                 .build();
 
-        activeEnrollment.consumeSession(); // 10 -> 9
+        activeEnrollment.consumeSession();
 
         Booking booking = Booking.builder()
                 .id(802L)
@@ -447,3 +447,4 @@ class BookingServiceTest {
         verify(cancellationRepository, times(1)).save(any(Cancellation.class));
     }
 }
+

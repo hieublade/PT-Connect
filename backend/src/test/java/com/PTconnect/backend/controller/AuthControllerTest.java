@@ -72,7 +72,6 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.data.user.role").value("STUDENT"))
                 .andExpect(jsonPath("$.data.user.status").value("ACTIVE"));
 
-        // Kiểm tra database: ví tiền được tạo tự động
         User user = userRepository.findByEmail(uniqueEmail).orElseThrow();
         assertEquals(UserStatus.ACTIVE, user.getStatus());
         Optional<Wallet> walletOpt = walletRepository.findByUserId(user.getId());
@@ -104,16 +103,13 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.data.user.role").value("PT"))
                 .andExpect(jsonPath("$.data.user.status").value("PENDING"));
 
-        // Kiểm tra database: PT có trạng thái PENDING
         User user = userRepository.findByEmail(uniqueEmail).orElseThrow();
         assertEquals(UserStatus.PENDING, user.getStatus(), "PT mới đăng ký phải ở trạng thái PENDING");
 
-        // Kiểm tra database: PTProfile có trạng thái PENDING
         Optional<PTProfile> profileOpt = ptProfileRepository.findByPtId(user.getId());
         assertTrue(profileOpt.isPresent(), "PTProfile phải được tạo cùng PT");
         assertEquals(VerificationStatus.PENDING, profileOpt.get().getVerificationStatus(), "PT mới đăng ký phải ở trạng thái PENDING");
 
-        // Kiểm tra database: ví tiền cũng được tạo
         Optional<Wallet> walletOpt = walletRepository.findByUserId(user.getId());
         assertTrue(walletOpt.isPresent(), "Ví tiền phải được tạo tự động cùng PT");
     }
@@ -135,7 +131,6 @@ class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(registerReq)))
                 .andExpect(status().isCreated());
 
-        // Đăng nhập đúng mật khẩu
         LoginRequest loginReq = new LoginRequest(uniqueEmail, "password123");
 
         MvcResult loginResult = mockMvc.perform(post("/api/v1/auth/login")
@@ -148,7 +143,6 @@ class AuthControllerTest {
         String responseBody = loginResult.getResponse().getContentAsString();
         String token = objectMapper.readTree(responseBody).path("data").path("token").asText();
 
-        // Gọi GET /api/v1/auth/me với Bearer Token
         mockMvc.perform(get("/api/v1/auth/me")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
@@ -168,3 +162,4 @@ class AuthControllerTest {
                 .andExpect(status().isUnauthorized());
     }
 }
+

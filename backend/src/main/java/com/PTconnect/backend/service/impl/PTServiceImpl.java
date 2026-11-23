@@ -16,11 +16,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-/**
- * Facade Service điều phối và ủy quyền tới các service chuyên biệt (Profile, Course, Slot).
- * Tuân thủ nguyên lý Đơn nhiệm (SRP) và Mẫu thiết kế Facade (Facade Pattern).
- * Đảm bảo tính tương thích ngược cho toàn bộ hệ thống.
- */
 @Service
 @RequiredArgsConstructor
 public class PTServiceImpl implements IPTService {
@@ -74,3 +69,4 @@ public class PTServiceImpl implements IPTService {
         slotService.deleteSlot(userEmail, slotId);
     }
 }
+

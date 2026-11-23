@@ -23,3 +23,4 @@ public class ChatMessageRequest {
 
     private Long bookingId;
 }
+

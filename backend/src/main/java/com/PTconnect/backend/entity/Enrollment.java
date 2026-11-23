@@ -76,7 +76,6 @@ public class Enrollment {
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    // Phương thức nghiệp vụ quản lý kho buổi tập và trạng thái (Encapsulation)
     public void consumeSession() {
         if (this.status != EnrollmentStatus.ACTIVE) {
             throw new IllegalStateException("Hợp đồng không ở trạng thái hoạt động (ACTIVE)");
@@ -110,3 +109,4 @@ public class Enrollment {
         this.status = EnrollmentStatus.CANCELLED;
     }
 }
+

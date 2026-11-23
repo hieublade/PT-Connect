@@ -23,10 +23,6 @@ public class DisputeController {
 
     private final IDisputeService disputeService;
 
-    /**
-     * Gửi hồ sơ khiếu nại ca tập (Học viên hoặc PT)
-     * POST /api/v1/disputes
-     */
     @PostMapping
     public ResponseEntity<ApiResponse<DisputeResponse>> createDispute(
             Authentication authentication,
@@ -36,20 +32,12 @@ public class DisputeController {
         return ResponseEntity.ok(ApiResponse.success("Đã tiếp nhận hồ sơ khiếu nại! Ban Quản Trị sẽ xử lý trong 24h.", response));
     }
 
-    /**
-     * Quản trị viên xem tất cả các vụ tranh chấp
-     * GET /api/v1/disputes
-     */
     @GetMapping
     public ResponseEntity<ApiResponse<List<DisputeResponse>>> getAllDisputes() {
         List<DisputeResponse> list = disputeService.getAllDisputes();
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách tranh chấp thành công", list));
     }
 
-    /**
-     * Xem các vụ tranh chấp liên quan tới bản thân
-     * GET /api/v1/disputes/my
-     */
     @GetMapping("/my")
     public ResponseEntity<ApiResponse<List<DisputeResponse>>> getMyDisputes(Authentication authentication) {
         String email = SecurityUtils.getCurrentUserEmail(authentication);
@@ -57,10 +45,6 @@ public class DisputeController {
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách tranh chấp của tôi thành công", list));
     }
 
-    /**
-     * Quản trị viên ban hành phán quyết trọng tài
-     * POST /api/v1/disputes/{id}/verdict
-     */
     @PostMapping("/{id}/verdict")
     public ResponseEntity<ApiResponse<DisputeResponse>> issueVerdict(
             Authentication authentication,
@@ -71,10 +55,6 @@ public class DisputeController {
         return ResponseEntity.ok(ApiResponse.success("Đã ban hành phán quyết trọng tài thành công!", response));
     }
 
-    /**
-     * Gửi phản biện / tường trình đối chứng (cho bên bị khiếu nại)
-     * POST /api/v1/disputes/{id}/counter-statement
-     */
     @PostMapping("/{id}/counter-statement")
     public ResponseEntity<ApiResponse<DisputeResponse>> submitCounterStatement(
             Authentication authentication,
@@ -85,10 +65,6 @@ public class DisputeController {
         return ResponseEntity.ok(ApiResponse.success("Đã gửi phản biện đối chứng thành công!", response));
     }
 
-    /**
-     * Admin yêu cầu bổ sung bằng chứng từ PT hoặc Học viên
-     * POST /api/v1/disputes/{id}/request-evidence
-     */
     @PostMapping("/{id}/request-evidence")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<DisputeResponse>> requestAdditionalEvidence(
@@ -100,10 +76,6 @@ public class DisputeController {
         return ResponseEntity.ok(ApiResponse.success("Đã gửi yêu cầu bổ sung bằng chứng tới các bên liên quan!", response));
     }
 
-    /**
-     * Học viên hoặc HLV nộp thêm bằng chứng theo yêu cầu của Admin
-     * POST /api/v1/disputes/{id}/additional-evidence
-     */
     @PostMapping("/{id}/additional-evidence")
     public ResponseEntity<ApiResponse<DisputeResponse>> submitAdditionalEvidence(
             Authentication authentication,
@@ -114,10 +86,6 @@ public class DisputeController {
         return ResponseEntity.ok(ApiResponse.success("Đã gửi bổ sung bằng chứng lên Ban Quản Trị thành công!", response));
     }
 
-    /**
-     * Tải ảnh bằng chứng xác minh khiếu nại (Bill, ảnh chụp phòng tập, lịch sử cuộc gọi...)
-     * POST /api/v1/disputes/upload-evidence
-     */
     @PostMapping(value = "/upload-evidence", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<java.util.Map<String, String>>> uploadEvidence(
             @RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
@@ -152,3 +120,4 @@ public class DisputeController {
         }
     }
 }
+

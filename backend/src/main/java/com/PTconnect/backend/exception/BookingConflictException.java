@@ -5,3 +5,4 @@ public class BookingConflictException extends RuntimeException {
         super(message);
     }
 }
+

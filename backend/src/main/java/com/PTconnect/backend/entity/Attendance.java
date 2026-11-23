@@ -48,8 +48,8 @@ public class Attendance {
     @Builder.Default
     private AttendanceStatus status = AttendanceStatus.PRESENT;
 
-    // Phương thức kiểm tra điểm danh 2 phía hoàn tất
     public boolean isFullyConfirmed() {
         return Boolean.TRUE.equals(this.studentConfirmed) && Boolean.TRUE.equals(this.ptConfirmed);
     }
 }
+

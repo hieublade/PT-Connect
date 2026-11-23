@@ -5,3 +5,4 @@ public enum SlotStatus {
     BOOKED,
     LOCKED
 }
+

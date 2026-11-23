@@ -31,10 +31,11 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
     int markAsRead(@Param("senderId") Long senderId, @Param("recipientId") Long recipientId);
 
     @Query("""
-           SELECT DISTINCT 
+           SELECT DISTINCT
              CASE WHEN m.sender.id = :userId THEN m.recipient.id ELSE m.sender.id END
            FROM ChatMessage m
            WHERE m.sender.id = :userId OR m.recipient.id = :userId
            """)
     List<Long> findDistinctPartnerIds(@Param("userId") Long userId);
 }
+

@@ -32,3 +32,4 @@ public class CreateCourseRequest {
     @DecimalMin(value = "0.0", inclusive = true, message = "Giá khóa học phải lớn hơn hoặc bằng 0")
     private BigDecimal basePrice;
 }
+

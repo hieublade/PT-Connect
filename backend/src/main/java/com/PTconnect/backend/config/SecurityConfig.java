@@ -76,10 +76,9 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // 1. Endpoint cap nhat avatar va thong tin me bat buoc phai dang nhap (first-match)
+
                         .requestMatchers("/api/v1/users/avatar/**", "/api/v1/users/me/avatar/**", "/api/v1/auth/me").authenticated()
 
-                        // 2. Cac endpoint cong khai (Auth, Public Health, Uploads)
                         .requestMatchers(
                                 "/api/v1/auth/register",
                                 "/api/v1/auth/login",
@@ -88,28 +87,23 @@ public class SecurityConfig {
                                 "/error"
                         ).permitAll()
 
-                        // 3. Ho so HLV va danh sach khoa hoc cong khai cho khach vang lai xem
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/pt-profiles/**").permitAll()
 
-                        // 4. Milestone 6: Booking endpoints
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/bookings").hasRole("STUDENT")
                         .requestMatchers("/api/v1/bookings/my").hasRole("STUDENT")
                         .requestMatchers("/api/v1/pt/bookings/**").hasRole("PT")
                         .requestMatchers("/api/v1/bookings/**").authenticated()
 
-                        // 5. Phan quyen theo Role co san
                         .requestMatchers("/api/v1/student/**").hasRole("STUDENT")
                         .requestMatchers("/api/v1/pt/**").hasRole("PT")
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
 
-                        // 6. Milestone 5: Chuc nang Student, Wallet va Enrollment
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/enrollments").hasRole("STUDENT")
                         .requestMatchers("/api/v1/enrollments/my").hasRole("STUDENT")
                         .requestMatchers("/api/v1/wallet/**").authenticated()
                         .requestMatchers("/api/v1/enrollments/**").authenticated()
                         .requestMatchers("/api/v1/users/**").authenticated()
 
-                        // 7. Milestone 7: Chuc nang Diem danh, Huy lich va Danh gia (Review)
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/reviews/moderation").hasRole("ADMIN")
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/reviews/*/verdict").hasRole("ADMIN")
                         .requestMatchers("/api/v1/reviews/pt/my").hasRole("PT")
@@ -121,10 +115,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/reviews/**").authenticated()
                         .requestMatchers("/api/v1/attendance/**").authenticated()
 
-                        // 8. Chuc nang Chat truc tiep 1-1 giua HLV va Hoc vien
                         .requestMatchers("/api/v1/chat/**").authenticated()
 
-                        // 9. Tat ca cac request con lai bat buoc phai dang nhap
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex
@@ -176,3 +168,4 @@ public class SecurityConfig {
         }
     }
 }
+

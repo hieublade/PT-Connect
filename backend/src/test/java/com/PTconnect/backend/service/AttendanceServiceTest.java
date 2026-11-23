@@ -143,7 +143,6 @@ class AttendanceServiceTest {
         when(ptProfileRepository.findByPtEmail("pt@test.com")).thenReturn(Optional.of(ptProfile));
         when(bookingRepository.findByIdWithLock(50L)).thenReturn(Optional.of(booking));
 
-        // Học viên đã confirm trước đó
         Attendance attendance = Attendance.builder()
                 .id(1L)
                 .booking(booking)
@@ -164,3 +163,4 @@ class AttendanceServiceTest {
         verify(otpUtil).clearOtp(50L);
     }
 }
+

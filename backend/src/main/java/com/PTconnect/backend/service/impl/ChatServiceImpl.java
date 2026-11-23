@@ -66,7 +66,6 @@ public class ChatServiceImpl implements IChatService {
         User currentUser = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với email: " + userEmail));
 
-        // Tự động đánh dấu đã đọc các tin nhắn mà đối phương gửi cho mình
         chatMessageRepository.markAsRead(partnerId, currentUser.getId());
 
         List<ChatMessage> list = chatMessageRepository.findChatHistory(currentUser.getId(), partnerId);
@@ -85,7 +84,6 @@ public class ChatServiceImpl implements IChatService {
         List<Long> partnerIds = chatMessageRepository.findDistinctPartnerIds(currentUserId);
         Set<Long> allPartnerIds = new LinkedHashSet<>(partnerIds);
 
-        // Bổ sung các đối tác từ bookings nếu chưa nhắn tin
         if (currentUser.getRole() == Role.STUDENT) {
             List<Booking> bookings = bookingRepository.findByStudentIdOrderByCreatedAtDesc(currentUserId);
             for (Booking b : bookings) {
@@ -94,7 +92,7 @@ public class ChatServiceImpl implements IChatService {
                 }
             }
         } else if (currentUser.getRole() == Role.PT) {
-            // Lấy các học viên đã đặt lịch với PT này
+
             List<Booking> ptBookings = bookingRepository.findAll();
             for (Booking b : ptBookings) {
                 if (b.getSlot() != null && b.getSlot().getPt() != null && b.getSlot().getPt().getPt() != null
@@ -135,7 +133,6 @@ public class ChatServiceImpl implements IChatService {
                     .build());
         }
 
-        // Sắp xếp: tin nhắn mới nhất lên đầu
         conversations.sort((a, b) -> {
             if (a.getLastMessageTime() == null && b.getLastMessageTime() == null) return 0;
             if (a.getLastMessageTime() == null) return 1;
@@ -162,3 +159,4 @@ public class ChatServiceImpl implements IChatService {
         return chatMessageRepository.countUnreadTotal(currentUser.getId());
     }
 }
+

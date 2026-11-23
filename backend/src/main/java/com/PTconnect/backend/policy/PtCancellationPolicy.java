@@ -10,19 +10,12 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 
-/**
- * Hiện thực chính sách hủy lịch dành cho Huấn luyện viên (PtCancellationPolicy).
- * Triển khai chính sách:
- * - Khi ca PENDING: PT từ chối, hoàn 1 buổi cho học viên, không phạt.
- * - Khi ca CONFIRMED và PT hủy trước >= 24h: hoàn 1 buổi cho học viên, không phạt.
- * - Khi ca CONFIRMED và PT hủy sát giờ (< 24h): hoàn 1 buổi cho học viên, đền bù 100% tiền 1 buổi học vào ví học viên và phạt 100% trừ ví PT.
- */
 @Component
 public class PtCancellationPolicy extends BaseCancellationPolicy {
 
     public static final double ADVANCE_NOTICE_HOURS = 24.0;
-    public static final BigDecimal COMPENSATION_RATE = BigDecimal.valueOf(1.00); // 100% (Tiền 1 buổi học)
-    public static final BigDecimal PENALTY_RATE = BigDecimal.valueOf(1.00);      // 100% (Tiền 1 buổi học)
+    public static final BigDecimal COMPENSATION_RATE = BigDecimal.valueOf(1.00);
+    public static final BigDecimal PENALTY_RATE = BigDecimal.valueOf(1.00);
 
     @Override
     public Role getSupportedRole() {
@@ -40,7 +33,6 @@ public class PtCancellationPolicy extends BaseCancellationPolicy {
         boolean isPackage = booking.getBookingType() == BookingType.PACKAGE;
         BigDecimal hoursBefore = calculateHoursBefore(booking, cancelTime);
 
-        // 1. Trường hợp từ chối lịch PENDING
         if (booking.getStatus() == BookingStatus.PENDING) {
             return CancellationCalculationResult.builder()
                     .restoreSession(isPackage)
@@ -52,7 +44,6 @@ public class PtCancellationPolicy extends BaseCancellationPolicy {
                     .build();
         }
 
-        // 2. Ca tập đã CONFIRMED và PT hủy trước >= 24 giờ
         if (hoursBefore.doubleValue() >= ADVANCE_NOTICE_HOURS) {
             return CancellationCalculationResult.builder()
                     .restoreSession(isPackage)
@@ -64,7 +55,6 @@ public class PtCancellationPolicy extends BaseCancellationPolicy {
                     .build();
         }
 
-        // 3. Ca tập đã CONFIRMED và PT hủy sát giờ (< 24 giờ)
         BigDecimal compensation = isPackage
                 ? sessionFee.multiply(COMPENSATION_RATE).setScale(2, RoundingMode.HALF_UP)
                 : BigDecimal.ZERO;
@@ -84,3 +74,4 @@ public class PtCancellationPolicy extends BaseCancellationPolicy {
                 .build();
     }
 }
+

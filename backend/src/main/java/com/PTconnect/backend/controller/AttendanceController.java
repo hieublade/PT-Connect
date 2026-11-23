@@ -12,10 +12,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * Controller phục vụ toàn bộ luồng Điểm danh ca tập xác thực hai phía bằng mã OTP (Milestone 7).
- * Hỗ trợ các endpoint tương thích với cả mobile/web và React frontend.
- */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/attendance")
@@ -23,13 +19,6 @@ public class AttendanceController {
 
     private final IAttendanceService attendanceService;
 
-    /**
-     * Mở phiên điểm danh và sinh mã OTP 6 số
-     * Hỗ trợ các route:
-     * - POST /api/v1/attendance/{bookingId}/start
-     * - POST /api/v1/attendance/bookings/{bookingId}/otp/generate (React frontend)
-     * - POST /api/v1/attendance/{bookingId}/otp/generate
-     */
     @PostMapping({"/{bookingId}/start", "/bookings/{bookingId}/otp/generate", "/{bookingId}/otp/generate"})
     public ResponseEntity<ApiResponse<StartAttendanceResponse>> startAttendance(
             Authentication authentication,
@@ -39,13 +28,6 @@ public class AttendanceController {
         return ResponseEntity.ok(ApiResponse.success("Mở phiên điểm danh thành công", response));
     }
 
-    /**
-     * Nhập mã OTP 6 số để xác nhận điểm danh
-     * Hỗ trợ các route:
-     * - POST /api/v1/attendance/{bookingId}/student-checkin
-     * - POST /api/v1/attendance/bookings/{bookingId}/otp/verify (React frontend)
-     * - POST /api/v1/attendance/{bookingId}/otp/verify
-     */
     @PostMapping({"/{bookingId}/student-checkin", "/bookings/{bookingId}/otp/verify", "/{bookingId}/otp/verify"})
     public ResponseEntity<ApiResponse<AttendanceResponse>> studentCheckIn(
             Authentication authentication,
@@ -56,9 +38,6 @@ public class AttendanceController {
         return ResponseEntity.ok(ApiResponse.success("Xác nhận điểm danh thành công", response));
     }
 
-    /**
-     * Huấn luyện viên xác nhận hoàn tất buổi tập (POST /api/v1/attendance/{bookingId}/pt-confirm)
-     */
     @PostMapping("/{bookingId}/pt-confirm")
     public ResponseEntity<ApiResponse<AttendanceResponse>> ptConfirmAttendance(
             Authentication authentication,
@@ -68,9 +47,6 @@ public class AttendanceController {
         return ResponseEntity.ok(ApiResponse.success("Huấn luyện viên xác nhận điểm danh thành công", response));
     }
 
-    /**
-     * Huấn luyện viên đánh dấu học viên vắng mặt (POST /api/v1/attendance/{bookingId}/absent)
-     */
     @PostMapping("/{bookingId}/absent")
     public ResponseEntity<ApiResponse<AttendanceResponse>> markAbsent(
             Authentication authentication,
@@ -81,9 +57,6 @@ public class AttendanceController {
         return ResponseEntity.ok(ApiResponse.success("Đã ghi nhận học viên vắng mặt (buổi tập vẫn được tính)", response));
     }
 
-    /**
-     * Xem trạng thái điểm danh của đơn đặt lịch (GET /api/v1/attendance/{bookingId})
-     */
     @GetMapping("/{bookingId}")
     public ResponseEntity<ApiResponse<AttendanceResponse>> getAttendance(
             Authentication authentication,
@@ -93,3 +66,4 @@ public class AttendanceController {
         return ResponseEntity.ok(ApiResponse.success("Lấy thông tin điểm danh thành công", response));
     }
 }
+

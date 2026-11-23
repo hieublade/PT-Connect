@@ -7,9 +7,6 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
-/**
- * DTO phản hồi trạng thái chi tiết của việc điểm danh hai phía (Milestone 7).
- */
 @Getter
 @Setter
 @NoArgsConstructor
@@ -45,3 +42,4 @@ public class AttendanceResponse {
                 .build();
     }
 }
+

@@ -13,3 +13,4 @@ public interface IPTSlotService {
 
     void deleteSlot(String userEmail, Long slotId);
 }
+

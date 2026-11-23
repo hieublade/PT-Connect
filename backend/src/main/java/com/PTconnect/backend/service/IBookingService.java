@@ -7,9 +7,6 @@ import com.PTconnect.backend.entity.enums.BookingStatus;
 
 import java.util.List;
 
-/**
- * Service xử lý toàn bộ luồng Booking – Trái tim hệ thống (Milestone 6).
- */
 public interface IBookingService {
 
     BookingResponse createBooking(String studentEmail, CreateBookingRequest request);

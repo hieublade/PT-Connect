@@ -12,7 +12,6 @@ import java.util.Optional;
 
 public interface PTProfileRepository extends JpaRepository<PTProfile, Long> {
 
-    // Danh sách cho Student: VERIFIED và users.status = ACTIVE (AC 3.6)
     @Query("""
            SELECT p FROM PTProfile p
            WHERE p.verificationStatus = :vStatus AND p.pt.status = :uStatus
@@ -20,7 +19,6 @@ public interface PTProfileRepository extends JpaRepository<PTProfile, Long> {
     List<PTProfile> findVerifiedAndActivePTs(@Param("vStatus") VerificationStatus vStatus,
                                              @Param("uStatus") UserStatus uStatus);
 
-    // Tìm kiếm đa năng: theo tên HLV, tiểu sử chuyên môn hoặc địa điểm tập luyện
     @Query("""
            SELECT DISTINCT p FROM PTProfile p
            LEFT JOIN p.locations loc

@@ -105,7 +105,6 @@ public class WorkoutPlanServiceImpl implements IWorkoutPlanService {
         Enrollment enrollment = enrollmentRepository.findById(enrollmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hợp đồng khóa học với ID: " + enrollmentId));
 
-        // Phân quyền: Học viên của hợp đồng, PT của hợp đồng, hoặc ADMIN mới được xem
         boolean isStudent = enrollment.getStudent().getId().equals(user.getId());
         boolean isPt = enrollment.getPt().getPt().getId().equals(user.getId());
         boolean isAdmin = user.getRole() == Role.ADMIN;
@@ -170,5 +169,4 @@ public class WorkoutPlanServiceImpl implements IWorkoutPlanService {
         workoutRepository.delete(workout);
     }
 }
-
 

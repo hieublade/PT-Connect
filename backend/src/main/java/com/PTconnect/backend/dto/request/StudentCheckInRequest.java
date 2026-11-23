@@ -5,9 +5,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.*;
 
-/**
- * DTO học viên nhập mã OTP để xác nhận điểm danh (Milestone 7).
- */
 @Getter
 @Setter
 @NoArgsConstructor
@@ -20,3 +17,4 @@ public class StudentCheckInRequest {
     @JsonAlias({"otp", "otpCode"})
     private String otpCode;
 }
+

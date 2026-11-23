@@ -33,11 +33,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     boolean existsBySlotIdAndStatusIn(Long slotId, List<BookingStatus> statuses);
 
-    // Kiểm tra học thử: mỗi Student chỉ được 1 buổi thử với mỗi PT
     @Query("SELECT COUNT(b) > 0 FROM Booking b WHERE b.student.id = :studentId AND b.slot.pt.id = :ptId AND b.bookingType = :type")
     boolean existsByStudentIdAndPtIdAndBookingType(@Param("studentId") Long studentId, @Param("ptId") Long ptId, @Param("type") BookingType type);
 
-    // Khóa dòng cho chống đặt trùng / xử lý đồng thời
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT b FROM Booking b WHERE b.id = :id")
     Optional<Booking> findByIdWithLock(@Param("id") Long id);
@@ -46,7 +44,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     List<Booking> findByEnrollmentId(Long enrollmentId);
 
-    // Kiểm tra trùng giờ tập của Student
     @Query("SELECT COUNT(b) > 0 FROM Booking b " +
            "WHERE b.student.id = :studentId " +
            "AND b.status IN :statuses " +
@@ -62,15 +59,15 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findAllByOrderByCreatedAtDesc();
 
     @Query("""
-           SELECT b, c FROM Booking b 
-           LEFT JOIN Cancellation c ON c.booking.id = b.id 
+           SELECT b, c FROM Booking b
+           LEFT JOIN Cancellation c ON c.booking.id = b.id
            ORDER BY b.createdAt DESC
            """)
     List<Object[]> findBookingsWithCancellation();
 
     @Query("""
-           SELECT b, c FROM Booking b 
-           LEFT JOIN Cancellation c ON c.booking.id = b.id 
+           SELECT b, c FROM Booking b
+           LEFT JOIN Cancellation c ON c.booking.id = b.id
            ORDER BY b.createdAt DESC
            """)
     Page<Object[]> findBookingsWithCancellation(Pageable pageable);

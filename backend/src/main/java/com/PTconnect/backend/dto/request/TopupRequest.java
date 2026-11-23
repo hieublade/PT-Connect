@@ -21,3 +21,4 @@ public class TopupRequest {
     @Builder.Default
     private PaymentMethod paymentMethod = PaymentMethod.BANK_TRANSFER;
 }
+

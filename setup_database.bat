@@ -1,4 +1,5 @@
 @echo off
+chcp 65001 > nul
 title Khoi tao CSDL MySQL ptconnect
 echo =======================================================
 echo    Dang nap CSDL ptconnect tu init.sql va seed_demo.sql...
@@ -10,13 +11,13 @@ if exist "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" (
 )
 
 echo 1. Lam sach va tao moi Database ptconnect...
-"%MYSQL_BIN%" -u root -p123 -e "DROP DATABASE IF EXISTS ptconnect; CREATE DATABASE ptconnect CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+"%MYSQL_BIN%" -u root -p123 --default-character-set=utf8mb4 -e "DROP DATABASE IF EXISTS ptconnect; CREATE DATABASE ptconnect CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 
 echo 2. Khoi tao bang (init.sql)...
-"%MYSQL_BIN%" -u root -p123 ptconnect < "%~dp0database\init.sql"
+"%MYSQL_BIN%" -u root -p123 --default-character-set=utf8mb4 ptconnect < "%~dp0database\init.sql"
 
 echo 3. Nap du lieu mau (seed_demo.sql)...
-"%MYSQL_BIN%" -u root -p123 ptconnect < "%~dp0database\seed_demo.sql"
+"%MYSQL_BIN%" -u root -p123 --default-character-set=utf8mb4 ptconnect < "%~dp0database\seed_demo.sql"
 
 echo.
 echo =======================================================

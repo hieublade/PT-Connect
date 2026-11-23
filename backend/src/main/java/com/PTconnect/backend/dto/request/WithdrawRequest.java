@@ -7,9 +7,6 @@ import lombok.*;
 
 import java.math.BigDecimal;
 
-/**
- * DTO yêu cầu rút tiền về tài khoản ngân hàng.
- */
 @Getter
 @Setter
 @NoArgsConstructor
@@ -30,3 +27,4 @@ public class WithdrawRequest {
     @NotBlank(message = "Tên chủ tài khoản không được để trống")
     private String accountHolderName;
 }
+

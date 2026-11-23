@@ -11,7 +11,6 @@ import java.util.List;
 
 public interface IPTProfileService {
 
-    // Public discovery methods
     List<PTPublicDTO> getPublicPTProfiles(String name);
 
     PTPublicDTO getPublicPTProfileById(Long id);
@@ -20,7 +19,6 @@ public interface IPTProfileService {
 
     List<SlotResponse> getAvailableSlotsByPTProfileId(Long profileId);
 
-    // Private management methods
     PTProfileResponse getProfile(String userEmail);
 
     PTProfileResponse updateProfile(String userEmail, UpdatePTProfileRequest request);
@@ -29,3 +27,4 @@ public interface IPTProfileService {
 
     PTProfile getPTProfileEntity(String userEmail);
 }
+

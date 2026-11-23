@@ -21,7 +21,6 @@ public class UpdatePTProfileRequest {
 
     private String locationPricingNote;
 
-    // Chuỗi JSON hoặc danh sách các đường link chứng chỉ
     private String certificateUrl;
     private String certificateUrls;
 
@@ -46,3 +45,4 @@ public class UpdatePTProfileRequest {
         return s;
     }
 }
+

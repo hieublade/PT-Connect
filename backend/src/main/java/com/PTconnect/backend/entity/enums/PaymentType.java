@@ -8,3 +8,4 @@ public enum PaymentType {
     WITHDRAW,
     EARNING
 }
+

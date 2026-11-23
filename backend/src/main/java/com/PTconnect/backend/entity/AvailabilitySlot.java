@@ -37,7 +37,6 @@ public class AvailabilitySlot {
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    // Phương thức đóng gói nghiệp vụ (Encapsulation)
     public void book() {
         this.status = SlotStatus.BOOKED;
     }
@@ -46,3 +45,4 @@ public class AvailabilitySlot {
         this.status = SlotStatus.AVAILABLE;
     }
 }
+

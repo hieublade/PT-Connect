@@ -99,3 +99,4 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.data.id").value(1));
     }
 }
+

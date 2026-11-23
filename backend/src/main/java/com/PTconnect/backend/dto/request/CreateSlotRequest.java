@@ -21,3 +21,4 @@ public class CreateSlotRequest {
     @JsonFormat(pattern = "yyyy-MM-dd['T'][' ']HH:mm[:ss]")
     private LocalDateTime endTime;
 }
+

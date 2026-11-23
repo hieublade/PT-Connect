@@ -23,3 +23,4 @@ public class Admin extends User {
     @Override
     public String getDisplayRole() { return "Quản trị viên"; }
 }
+

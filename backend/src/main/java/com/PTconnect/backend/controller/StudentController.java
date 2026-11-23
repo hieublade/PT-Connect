@@ -8,9 +8,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
-/**
- * Controller cho cac endpoint danh rieng cho STUDENT (Hoc vien).
- */
 @RestController
 @RequestMapping("/api/v1/student")
 public class StudentController {
@@ -24,3 +21,4 @@ public class StudentController {
         ));
     }
 }
+

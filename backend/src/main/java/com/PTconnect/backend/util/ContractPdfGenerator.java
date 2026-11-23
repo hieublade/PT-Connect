@@ -30,7 +30,6 @@ public class ContractPdfGenerator {
             PdfWriter.getInstance(document, baos);
             document.open();
 
-            // Fonts
             Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 18, Color.DARK_GRAY);
             Font subtitleFont = FontFactory.getFont(FontFactory.HELVETICA, 11, Color.GRAY);
             Font sectionFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12, new Color(25, 118, 210));
@@ -38,7 +37,6 @@ public class ContractPdfGenerator {
             Font boldFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10, Color.BLACK);
             Font noteFont = FontFactory.getFont(FontFactory.HELVETICA_OBLIQUE, 9, Color.DARK_GRAY);
 
-            // Header
             Paragraph title = new Paragraph("CONG HOA XA HOI CHU NGHIA VIET NAM", boldFont);
             title.setAlignment(Element.ALIGN_CENTER);
             document.add(title);
@@ -63,7 +61,6 @@ public class ContractPdfGenerator {
             document.add(docNum);
             document.add(new Paragraph(" "));
 
-            // Thong tin cac ben
             Paragraph pAHeader = new Paragraph("I. THONG TIN CAC BEN THOA THUAN", sectionFont);
             document.add(pAHeader);
 
@@ -72,7 +69,6 @@ public class ContractPdfGenerator {
             partiesTable.setSpacingBefore(8f);
             partiesTable.setSpacingAfter(12f);
 
-            // Ben A - Student
             PdfPCell cellA = new PdfPCell();
             cellA.setPadding(8f);
             cellA.setBorderColor(Color.LIGHT_GRAY);
@@ -86,7 +82,6 @@ public class ContractPdfGenerator {
             cellA.addElement(new Paragraph("- Dien thoai: " + studentPhone, bodyFont));
             partiesTable.addCell(cellA);
 
-            // Ben B - PT
             PdfPCell cellB = new PdfPCell();
             cellB.setPadding(8f);
             cellB.setBorderColor(Color.LIGHT_GRAY);
@@ -103,7 +98,6 @@ public class ContractPdfGenerator {
 
             document.add(partiesTable);
 
-            // Noi dung goi tap
             Paragraph pBHeader = new Paragraph("II. CHI TIET GOI HUAN LUYEN & THANH TOAN", sectionFont);
             document.add(pBHeader);
 
@@ -130,7 +124,6 @@ public class ContractPdfGenerator {
 
             document.add(courseTable);
 
-            // Dieu khoan cam ket
             Paragraph pCHeader = new Paragraph("III. DIEU KHOAN CAM KET & QUY DINH", sectionFont);
             document.add(pCHeader);
 
@@ -143,7 +136,6 @@ public class ContractPdfGenerator {
             terms.add(new Paragraph("4. Hop dong co hieu luc ke tu thoi diem Ben A thanh toan thanh cong qua Vi dien tu.", bodyFont));
             document.add(terms);
 
-            // Chu ky dien tu
             PdfPTable signTable = new PdfPTable(3);
             signTable.setWidthPercentage(100);
             signTable.setSpacingBefore(10f);
@@ -225,3 +217,4 @@ public class ContractPdfGenerator {
         return null;
     }
 }
+
