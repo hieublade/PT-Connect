@@ -19,14 +19,8 @@ export const ReviewModal: React.FC<Props> = ({ booking, onClose, onSubmitted }) 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isLowRating = rating <= 3;
-
   const submit = async () => {
     setError(null);
-    if (isLowRating && (!comment || comment.trim().length < 5)) {
-      setError('Khi đánh giá từ 1 đến 3 sao, bạn vui lòng nhập lý do cụ thể (tối thiểu 5 ký tự) để HLV và Ban Quản Trị có căn cứ xác minh.');
-      return;
-    }
 
     setSubmitting(true);
     try {
@@ -41,7 +35,7 @@ export const ReviewModal: React.FC<Props> = ({ booking, onClose, onSubmitted }) 
         bookingId: booking.id,
         rating,
         comment: comment.trim() || undefined,
-        studentEvidence: isLowRating && finalEvidence ? finalEvidence : undefined,
+        studentEvidence: finalEvidence ? finalEvidence : undefined,
       };
       const created = (await api.post('/reviews', payload)) as unknown as Review;
       onSubmitted(created);
@@ -83,58 +77,43 @@ export const ReviewModal: React.FC<Props> = ({ booking, onClose, onSubmitted }) 
             </span>
           </div>
 
-          {isLowRating && (
-            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 space-y-1">
-              <div className="font-bold flex items-center gap-1.5 text-amber-900">
-                <span>⚠️</span> Lưu ý về quy chế phản biện và kiểm duyệt
-              </div>
-              <p>
-                Đánh giá từ 1 - 3 sao sẽ được chuyển vào quy trình kiểm duyệt công bằng. Huấn luyện viên có quyền phản biện giải trình, và Ban Quản Trị (Admin) sẽ xem xét quyết định xóa bỏ hoặc công khai đánh giá.
-              </p>
-            </div>
-          )}
-
           <div className="space-y-3">
             <div>
               <label className="text-xs font-semibold text-slate-700 block mb-1">
-                Nhận xét / Đóng góp ý kiến {isLowRating && <span className="text-red-500">*</span>}
+                Nhận xét / Đóng góp ý kiến
               </label>
               <textarea
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 rows={3}
-                placeholder={
-                  isLowRating
-                    ? 'Mô tả cụ thể vấn đề bạn gặp phải (thái độ, giờ giấc, chất lượng bài tập)...'
-                    : 'Chia sẻ cảm nhận của bạn về buổi tập...'
-                }
+                placeholder="Chia sẻ cảm nhận của bạn về buổi tập..."
                 className="w-full p-3 border border-slate-300 rounded-xl text-sm focus:ring-1 focus:ring-[#FF4B4B] outline-none"
               />
             </div>
 
-            {isLowRating && (
-              <div className="space-y-2">
-                <MultiImageUploader
-                  files={evidenceFiles}
-                  onChange={setEvidenceFiles}
-                  maxFiles={3}
-                  label="Bằng chứng ảnh đối chứng ban đầu"
-                  subLabel="Hỗ trợ chọn hoặc kéo thả trực tiếp ảnh chụp màn hình, ảnh hóa đơn, biên lai..."
-                />
+            <div className="space-y-2">
+              <MultiImageUploader
+                files={evidenceFiles}
+                onChange={setEvidenceFiles}
+                maxFiles={3}
+                label="Hình ảnh đính kèm (tùy chọn)"
+                subLabel="Hỗ trợ chọn hoặc kéo thả trực tiếp ảnh chụp phòng tập, bài tập..."
+              />
+              {evidenceFiles.length > 0 && (
                 <div>
                   <label className="text-[11px] font-semibold text-slate-600 block mb-1">
-                    Mô tả / Ghi chú thêm về bằng chứng (tùy chọn)
+                    Ghi chú thêm về ảnh (tùy chọn)
                   </label>
                   <textarea
                     value={studentEvidence}
                     onChange={(e) => setStudentEvidence(e.target.value)}
                     rows={2}
-                    placeholder="Mô tả cụ thể sự việc đối chứng hoặc dán link bổ sung nếu có..."
+                    placeholder="Mô tả cụ thể nếu có..."
                     className="w-full p-2.5 border border-slate-300 rounded-xl text-xs focus:ring-1 focus:ring-[#FF4B4B] outline-none"
                   />
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
           {error && <p className="text-xs text-red-600 mt-2">⚠️ {error}</p>}
@@ -155,7 +134,7 @@ export const ReviewModal: React.FC<Props> = ({ booking, onClose, onSubmitted }) 
             disabled={submitting}
             className="flex-1 py-2.5 bg-[#FF4B4B] hover:bg-[#E03E3E] disabled:opacity-60 text-white rounded-xl text-xs font-bold shadow-md transition cursor-pointer"
           >
-            {submitting ? 'Đang gửi...' : isLowRating ? 'Gửi đánh giá (Kiểm duyệt)' : 'Gửi đánh giá'}
+            {submitting ? 'Đang gửi...' : 'Gửi đánh giá'}
           </button>
         </div>
       </div>

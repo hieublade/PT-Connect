@@ -63,13 +63,6 @@ public class ReviewServiceImpl implements IReviewService {
         String status = "PUBLISHED";
         String comment = request.getComment() != null ? request.getComment().trim() : null;
 
-        if (rating <= 3) {
-            if (comment == null || comment.isBlank()) {
-                throw new BadRequestException("Khi đánh giá từ 1 đến 3 sao, bạn vui lòng nhập lý do cụ thể để Huấn luyện viên và Quản trị viên hỗ trợ giải quyết thỏa đáng.");
-            }
-            status = "FLAGGED";
-        }
-
         Review review = Review.builder()
                 .booking(booking)
                 .rating(rating)
@@ -80,10 +73,7 @@ public class ReviewServiceImpl implements IReviewService {
                 .build();
 
         review = reviewRepository.save(review);
-
-        if ("PUBLISHED".equals(status)) {
-            updatePtRating(booking.getPt().getId());
-        }
+        updatePtRating(booking.getPt().getId());
 
         log.info("Học viên {} đã gửi đánh giá {} sao cho PT Profile ID #{}, Booking ID #{}. Trạng thái: {}",
                 studentEmail, rating, booking.getPt().getId(), booking.getId(), status);

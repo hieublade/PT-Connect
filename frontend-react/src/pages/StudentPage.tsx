@@ -953,11 +953,6 @@ export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout, onUser
     }
   };
 
-  const moderatedReviews = myStudentReviews.filter(
-    (r) => r.rating <= 3 || r.status === 'FLAGGED' || r.status === 'APPEALED' || r.status === 'EVIDENCE_REQUESTED' || r.status === 'REMOVED'
-  );
-  const totalComplaintsCount = myDisputes.length + moderatedReviews.length;
-
   const tabs = [
     { label: 'Khám Phá PT', icon: Compass },
     { label: 'Chi Tiết PT', icon: UserCheck },
@@ -965,7 +960,7 @@ export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout, onUser
     { label: 'Lịch Của Tôi', icon: Clock },
     { label: `Khóa Của Tôi (${myEnrollments.length})`, icon: BookOpen },
     { label: 'Ví Tiền', icon: WalletIcon },
-    { label: `Khiếu Nại (${totalComplaintsCount})`, icon: ShieldAlert },
+    { label: `Khiếu Nại (${myDisputes.length})`, icon: ShieldAlert },
     { label: 'Hồ Sơ', icon: UserIcon },
   ];
 
@@ -2598,73 +2593,25 @@ export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout, onUser
               </div>
             </div>
 
-            {/* Filter pills: Tất cả, Tranh chấp ca tập / HĐ, Đánh giá kiểm duyệt */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-1">
-              <button
-                type="button"
-                onClick={() => setDisputeFilterType('ALL')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
-                  disputeFilterType === 'ALL'
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                <span>Tất cả hồ sơ</span>
-                <span className={`px-2 py-0.5 rounded-full text-[10px] ${disputeFilterType === 'ALL' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700 font-extrabold'}`}>
-                  {totalComplaintsCount}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setDisputeFilterType('REVIEWS')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
-                  disputeFilterType === 'REVIEWS'
-                    ? 'bg-amber-600 text-white shadow-sm'
-                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                <span>⭐ Đánh giá kiểm duyệt (1-3 sao)</span>
-                <span className={`px-2 py-0.5 rounded-full text-[10px] ${disputeFilterType === 'REVIEWS' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700 font-extrabold'}`}>
-                  {moderatedReviews.length}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setDisputeFilterType('DISPUTES')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
-                  disputeFilterType === 'DISPUTES'
-                    ? 'bg-slate-900 text-white shadow-sm'
-                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                <span>⚖️ Tranh chấp ca tập &amp; HĐ</span>
-                <span className={`px-2 py-0.5 rounded-full text-[10px] ${disputeFilterType === 'DISPUTES' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700 font-extrabold'}`}>
-                  {myDisputes.length}
-                </span>
-              </button>
-            </div>
-
-            {/* Danh sách hiển thị */}
+                        {/* Danh sách hiển thị */}
             <div className="space-y-4">
               <h4 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <span>Danh sách vụ việc của bạn:</span>
+                <span>Danh sách khiếu nại &amp; tranh chấp:</span>
                 <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 font-extrabold">
-                  {disputeFilterType === 'REVIEWS' ? `${moderatedReviews.length} đánh giá` : disputeFilterType === 'DISPUTES' ? `${myDisputes.length} tranh chấp` : `${totalComplaintsCount} hồ sơ`}
+                  {myDisputes.length} hồ sơ
                 </span>
               </h4>
 
               {loadingDisputes ? (
                 <div className="p-8 text-center text-slate-400 text-xs">Đang kiểm tra hồ sơ khiếu nại...</div>
-              ) : totalComplaintsCount === 0 ? (
+              ) : myDisputes.length === 0 ? (
                 <div className="bg-white rounded-2xl border border-slate-200 p-10 text-center space-y-3">
                   <div className="w-14 h-14 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
                     <CheckCircle2 className="w-7 h-7" />
                   </div>
-                  <h5 className="font-bold text-slate-900 text-sm">Bạn chưa có khiếu nại hoặc đánh giá kiểm duyệt nào</h5>
+                  <h5 className="font-bold text-slate-900 text-sm">Bạn chưa có khiếu nại hoặc tranh chấp nào</h5>
                   <p className="text-xs text-slate-500 max-w-md mx-auto">
-                    Tất cả các ca tập và đánh giá của bạn đều diễn ra thuận lợi. Nếu có bất kỳ sự cố nào xảy ra trong tương lai, bạn luôn có thể báo cáo tại mục Lịch Của Tôi.
+                    Tất cả các ca tập của bạn đều diễn ra thuận lợi. Nếu có bất kỳ sự cố nào xảy ra trong tương lai, bạn luôn có thể báo cáo tại mục Lịch Của Tôi.
                   </p>
                   <button
                     onClick={() => setActiveTab(3)}
@@ -2675,168 +2622,7 @@ export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout, onUser
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {/* PHẦN 1: CÁC ĐÁNH GIÁ 1-3 SAO ĐANG KIỂM DUYỆT */}
-                  {(disputeFilterType === 'ALL' || disputeFilterType === 'REVIEWS') &&
-                    moderatedReviews.map((r) => (
-                      <div key={`rev-${r.id}`} className="bg-white rounded-2xl border border-amber-200 p-5 shadow-sm space-y-3.5 hover:border-amber-300 transition">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
-                          <div className="flex items-center gap-2.5 flex-wrap">
-                            <span className="font-mono text-xs font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
-                              #REVIEW-{r.id}
-                            </span>
-                            <span className="font-bold text-slate-900 text-sm">
-                              Hồ Sơ Đánh Giá &amp; Kiểm Duyệt Ca #{r.bookingId}
-                            </span>
-                            <span className="text-xs font-black text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200">
-                              {'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)} ({r.rating}/5 sao)
-                            </span>
-                          </div>
-
-                          <div>
-                            {r.status === 'FLAGGED' && (
-                              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 animate-pulse">
-                                ⏳ Chờ HLV phản biện (Trong vòng 48h)
-                              </span>
-                            )}
-                            {r.status === 'APPEALED' && (
-                              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                                ⚖️ HLV đã gửi phản biện - Chờ Admin phán quyết
-                              </span>
-                            )}
-                            {r.status === 'EVIDENCE_REQUESTED' && (
-                              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200 animate-bounce">
-                                🔍 Ban Quản Trị yêu cầu bổ sung bằng chứng
-                              </span>
-                            )}
-                            {r.status === 'APPROVED' && (
-                              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                ✓ Admin đã phán quyết: Giữ lại công khai
-                              </span>
-                            )}
-                            {r.status === 'REMOVED' && (
-                              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
-                                ✕ Admin đã phán quyết: Xóa bỏ đánh giá
-                              </span>
-                            )}
-                            {r.status === 'PENDING' && (
-                              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">
-                                Đang xử lý
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Thông tin HLV & thời gian */}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs bg-slate-50 p-3 rounded-xl border border-slate-100">
-                          <div>
-                            <span className="text-slate-400 block">Huấn luyện viên:</span>
-                            <span className="font-bold text-slate-800">{r.ptName || 'Huấn luyện viên'}</span>
-                            {r.ptEmail && <span className="text-[11px] text-slate-500 block">({r.ptEmail})</span>}
-                          </div>
-                          <div>
-                            <span className="text-slate-400 block">Mức đánh giá bạn đã cho:</span>
-                            <span className="font-extrabold text-rose-600 text-sm">
-                              {'⭐'.repeat(r.rating)} ({r.rating}/5 sao)
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-slate-400 block">Thời gian gửi đánh giá:</span>
-                            <span className="font-medium text-slate-700">
-                              {r.createdAt ? new Date(r.createdAt).toLocaleString('vi-VN') : 'Mới đây'}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Lời nhận xét & bằng chứng ban đầu */}
-                        <div>
-                          <span className="text-xs font-bold text-slate-700 block mb-1">
-                            Ý kiến nhận xét ban đầu của bạn:
-                          </span>
-                          <div className="space-y-1.5 bg-slate-50/70 p-3 rounded-xl border border-slate-100">
-                            <p className="text-xs text-slate-700 leading-relaxed font-medium">
-                              "{r.comment || 'Không có bình luận chi tiết'}"
-                            </p>
-                            {r.studentEvidence && (() => {
-                              const parsed = parseEvidence(r.studentEvidence);
-                              return (
-                                <div className="mt-2 pt-2 border-t border-slate-200/60">
-                                  <span className="text-[11px] font-bold text-slate-500 block mb-1">Bằng chứng đính kèm:</span>
-                                  {parsed.cleanText && (
-                                    <p className="text-xs text-slate-600 italic mb-1">{parsed.cleanText}</p>
-                                  )}
-                                  <EvidenceAttachmentList
-                                    items={parsed.items}
-                                    onPreviewImage={(url, name) => setPreviewEvidenceImage({ url, name })}
-                                  />
-                                </div>
-                              );
-                            })()}
-                          </div>
-                        </div>
-
-                        {/* Phản biện đối chứng từ HLV */}
-                        {r.ptAppeal && (
-                          <div className="p-3.5 bg-blue-50/80 rounded-xl border border-blue-200 text-xs space-y-1.5">
-                            <div className="flex items-center gap-2 font-bold text-blue-900">
-                              <span>💬</span>
-                              <span>Bản giải trình / phản biện từ Huấn Luyện Viên {r.ptName}:</span>
-                            </div>
-                            <p className="italic text-blue-800 leading-relaxed font-medium">
-                              "{r.ptAppeal}"
-                            </p>
-                            {r.ptEvidence && (() => {
-                              const parsed = parseEvidence(r.ptEvidence);
-                              return (
-                                <div className="mt-1 pt-1 border-t border-blue-200/60">
-                                  <span className="text-[11px] font-bold text-blue-700 block mb-1">Bằng chứng từ HLV:</span>
-                                  {parsed.cleanText && (
-                                    <p className="text-xs text-blue-700 italic mb-1">{parsed.cleanText}</p>
-                                  )}
-                                  <EvidenceAttachmentList
-                                    items={parsed.items}
-                                    onPreviewImage={(url, name) => setPreviewEvidenceImage({ url, name })}
-                                  />
-                                </div>
-                              );
-                            })()}
-                          </div>
-                        )}
-
-                        {/* Ghi chú / Yêu cầu / Phán quyết của Ban Quản Trị */}
-                        {r.adminNote && (
-                          <div className="p-3.5 bg-purple-50/80 rounded-xl border border-purple-200 text-xs space-y-1.5">
-                            <div className="flex items-center gap-2 font-bold text-purple-900">
-                              <span>⚖️</span>
-                              <span>Ghi chú &amp; Phán quyết từ Ban Quản Trị Hệ Thống:</span>
-                            </div>
-                            <p className="text-purple-950 leading-relaxed font-medium">
-                              {r.adminNote}
-                            </p>
-                          </div>
-                        )}
-
-                        {/* Nút hành động nếu Admin yêu cầu bổ sung bằng chứng */}
-                        {r.status === 'EVIDENCE_REQUESTED' && (
-                          <div className="p-3 bg-purple-100/70 rounded-xl border border-purple-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                            <div className="text-xs text-purple-900">
-                              <span className="font-bold">⚠️ Quản trị viên cần thêm bằng chứng:</span>{' '}
-                              {r.adminNote || 'Vui lòng cung cấp thêm hình ảnh đối chứng hoặc thông tin chi tiết.'}
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => setStudentEvidenceModalReview(r)}
-                              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold shadow-sm flex items-center gap-1.5 shrink-0 transition cursor-pointer"
-                            >
-                              <Upload className="w-3.5 h-3.5" /> Nộp thêm bằng chứng ngay
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-
-                  {/* PHẦN 2: CÁC TRANH CHẤP CA TẬP & HỢP ĐỒNG (myDisputes) */}
-                  {(disputeFilterType === 'ALL' || disputeFilterType === 'DISPUTES') &&
-                    myDisputes.map((d) => (
+                  {myDisputes.map((d) => (
                     <div key={d.id} className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3.5 hover:border-slate-300 transition">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
                         <div className="flex items-center gap-2.5 flex-wrap">
@@ -3791,60 +3577,6 @@ export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout, onUser
             }
           }}
         />
-      )}
-
-      {/* Modal Bổ Sung Bằng Chứng Cho Đánh Giá */}
-      {studentEvidenceModalReview && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 my-auto max-h-[92vh] overflow-y-auto">
-            <h4 className="text-base font-bold text-slate-900">
-              Bổ Sung Bằng Chứng Cho Đánh Giá (Ca #{studentEvidenceModalReview.bookingId})
-            </h4>
-            <div className="p-3 bg-purple-50 rounded-xl text-xs text-purple-900 space-y-1">
-              <p><b>Yêu cầu từ Quản trị viên:</b></p>
-              <p className="italic">{studentEvidenceModalReview.adminNote || 'Vui lòng cung cấp thêm hình ảnh đối chứng hoặc thông tin chi tiết.'}</p>
-            </div>
-            <div className="space-y-3">
-              <MultiImageUploader
-                files={studentEvidenceFiles}
-                onChange={setStudentEvidenceFiles}
-                maxFiles={3}
-                label="Tải ảnh bằng chứng bổ sung"
-                subLabel="Hỗ trợ chụp màn hình, ảnh giao dịch hoặc chứng cứ đối chứng (tối đa 3 ảnh)"
-              />
-              <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">
-                  Mô tả / Giải thích bổ sung
-                </label>
-                <textarea
-                  rows={2}
-                  value={studentEvidenceText}
-                  onChange={(e) => setStudentEvidenceText(e.target.value)}
-                  placeholder="Ghi chú chi tiết sự việc hoặc dán link nếu có..."
-                  className="w-full p-2.5 border border-slate-300 rounded-xl text-xs focus:ring-1 focus:ring-purple-500 outline-none"
-                />
-              </div>
-            </div>
-            {studentEvidenceError && <p className="text-xs text-red-600">{studentEvidenceError}</p>}
-            <div className="flex gap-2 justify-end pt-2 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => setStudentEvidenceModalReview(null)}
-                className="px-4 py-2 border border-slate-200 hover:bg-slate-50 rounded-xl text-xs font-semibold text-slate-600"
-              >
-                Hủy
-              </button>
-              <button
-                type="button"
-                onClick={handleSubmitStudentEvidence}
-                disabled={submittingStudentEvidence}
-                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-sm"
-              >
-                {submittingStudentEvidence ? 'Đang gửi...' : 'Gửi cho Ban Quản Trị'}
-              </button>
-            </div>
-          </div>
-        </div>
       )}
 
       {/* Modal phóng to xem ảnh đối chứng */}
