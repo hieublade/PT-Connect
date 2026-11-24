@@ -22,9 +22,10 @@ public class AttendanceController {
     @PostMapping({"/{bookingId}/start", "/bookings/{bookingId}/otp/generate", "/{bookingId}/otp/generate"})
     public ResponseEntity<ApiResponse<StartAttendanceResponse>> startAttendance(
             Authentication authentication,
-            @PathVariable Long bookingId) {
+            @PathVariable Long bookingId,
+            @RequestParam(required = false, defaultValue = "false") boolean bypassTimeCheck) {
         String email = SecurityUtils.getCurrentUserEmail(authentication);
-        StartAttendanceResponse response = attendanceService.startAttendance(email, bookingId);
+        StartAttendanceResponse response = attendanceService.startAttendance(email, bookingId, bypassTimeCheck);
         return ResponseEntity.ok(ApiResponse.success("Mở phiên điểm danh thành công", response));
     }
 
@@ -47,7 +48,7 @@ public class AttendanceController {
         return ResponseEntity.ok(ApiResponse.success("Huấn luyện viên xác nhận điểm danh thành công", response));
     }
 
-    @PostMapping("/{bookingId}/absent")
+    @PostMapping({"/{bookingId}/absent", "/bookings/{bookingId}/absent"})
     public ResponseEntity<ApiResponse<AttendanceResponse>> markAbsent(
             Authentication authentication,
             @PathVariable Long bookingId,

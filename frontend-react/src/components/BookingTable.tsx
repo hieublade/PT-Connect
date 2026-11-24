@@ -16,6 +16,7 @@ interface BookingTableProps {
   onReview?: (booking: Booking) => void;
   reviewedBookingIds?: Set<number>;
   onDisputeCreated?: () => void;
+  onMarkAbsent?: (booking: Booking) => void;
 }
 
 export const BookingTable: React.FC<BookingTableProps> = ({
@@ -29,6 +30,7 @@ export const BookingTable: React.FC<BookingTableProps> = ({
   onReview,
   reviewedBookingIds,
   onDisputeCreated,
+  onMarkAbsent,
 }) => {
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
 
@@ -307,6 +309,15 @@ export const BookingTable: React.FC<BookingTableProps> = ({
                                   >
                                     <Key className="w-3.5 h-3.5" /> Tạo mã OTP
                                   </button>
+                                  {onMarkAbsent && (
+                                    <button
+                                      onClick={() => onMarkAbsent(b)}
+                                      className="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1 shadow-sm"
+                                      title="Báo vắng nếu học viên không có mặt (No-Show)"
+                                    >
+                                      Báo vắng
+                                    </button>
+                                  )}
                                   <button
                                     onClick={() => handleOpenCancelModal(b, 'CANCEL')}
                                     className="px-2.5 py-1 border border-red-200 text-red-600 hover:bg-red-50 rounded-lg text-xs font-semibold"

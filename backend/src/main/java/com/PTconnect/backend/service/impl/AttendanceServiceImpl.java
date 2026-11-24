@@ -36,7 +36,7 @@ public class AttendanceServiceImpl implements IAttendanceService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public StartAttendanceResponse startAttendance(String callerEmail, Long bookingId) {
+    public StartAttendanceResponse startAttendance(String callerEmail, Long bookingId, boolean bypassTimeCheck) {
         Booking booking = bookingRepository.findByIdWithLock(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn đặt lịch với ID: " + bookingId));
 
@@ -56,14 +56,15 @@ public class AttendanceServiceImpl implements IAttendanceService {
         LocalDateTime now = LocalDateTime.now();
         AvailabilitySlot slot = booking.getSlot();
 
-        log.info("User {} mở điểm danh ca #{}: Thời gian hệ thống = {}, Ca tập = {} -> {}",
+        log.info("User {} mở điểm danh ca #{}: Thời gian hệ thống = {}, Ca tập = {} -> {}, bypassTimeCheck = {}",
                 callerEmail, bookingId, now,
                 slot != null ? slot.getStartTime() : "N/A",
-                slot != null ? slot.getEndTime() : "N/A");
+                slot != null ? slot.getEndTime() : "N/A",
+                bypassTimeCheck);
 
-        if (slot != null && slot.getStartTime() != null) {
+        if (!bypassTimeCheck && slot != null && slot.getStartTime() != null) {
             if (now.isBefore(slot.getStartTime().minusMinutes(15))) {
-                java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("HH:mm ngày dd/MM/yyyy");
+                java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("HH:mm 'ngày' dd/MM/yyyy");
                 throw new BadRequestException("Chưa đến thời gian bắt đầu ca tập (Hiện tại: "
                         + now.format(formatter) + " - Ca tập bắt đầu lúc: "
                         + slot.getStartTime().format(formatter) + "). Chỉ được mở điểm danh trước tối đa 15 phút.");
@@ -114,13 +115,11 @@ public class AttendanceServiceImpl implements IAttendanceService {
         Booking booking = bookingRepository.findByIdWithLock(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn đặt lịch với ID: " + bookingId));
 
-        boolean isPt = booking.getPt() != null && booking.getPt().getPt() != null
-                && callerEmail.equalsIgnoreCase(booking.getPt().getPt().getEmail());
         boolean isStudent = booking.getStudent() != null
                 && callerEmail.equalsIgnoreCase(booking.getStudent().getEmail());
 
-        if (!isPt && !isStudent) {
-            throw new BadRequestException("Bạn không có quyền thao tác trên ca tập này");
+        if (!isStudent) {
+            throw new BadRequestException("Chỉ học viên của ca tập mới có quyền nhập mã OTP để xác nhận điểm danh");
         }
 
         if (booking.getStatus() != BookingStatus.CONFIRMED) {

@@ -283,14 +283,15 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
   const [ptOtpCopied, setPtOtpCopied] = useState<boolean>(false);
   const [ptOtpError, setPtOtpError] = useState<string | null>(null);
 
-  const handleOpenPtOtpModal = async (b: Booking) => {
+  const handleOpenPtOtpModal = async (b: Booking, bypassTimeCheck: boolean = false) => {
     setPtOtpModalBooking(b);
     setPtGeneratedOtp(null);
     setPtOtpLoading(true);
     setPtOtpError(null);
     setPtOtpCopied(false);
     try {
-      const res: any = await api.post(`/attendance/bookings/${b.id}/otp/generate`);
+      const url = `/attendance/bookings/${b.id}/otp/generate${bypassTimeCheck ? '?bypassTimeCheck=true' : ''}`;
+      const res: any = await api.post(url);
       const code = res?.otpCode || res?.otp || res?.data?.otpCode || res?.data?.otp;
       if (code) {
         setPtGeneratedOtp(code);
@@ -302,6 +303,33 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
       setPtOtpError(err.response?.data?.message || err.message || 'Không thể tạo mã OTP lúc này. Vui lòng kiểm tra lại khung giờ.');
     } finally {
       setPtOtpLoading(false);
+    }
+  };
+
+  // Absent Modal State
+  const [absentModalBooking, setAbsentModalBooking] = useState<Booking | null>(null);
+  const [absentReason, setAbsentReason] = useState<string>('Học viên không có mặt tại buổi tập sau 15 phút');
+  const [absentSubmitting, setAbsentSubmitting] = useState<boolean>(false);
+
+  const handleOpenAbsentModal = (b: Booking) => {
+    setAbsentModalBooking(b);
+    setAbsentReason('Học viên không có mặt tại buổi tập sau 15 phút');
+  };
+
+  const handleConfirmAbsent = async () => {
+    if (!absentModalBooking) return;
+    setAbsentSubmitting(true);
+    try {
+      await api.post(`/attendance/${absentModalBooking.id}/absent?reason=${encodeURIComponent(absentReason)}`);
+      showToast(`✓ Đã ghi nhận học viên vắng mặt cho ca tập #${absentModalBooking.id}! Thù lao được cộng vào ví của bạn.`);
+      setAbsentModalBooking(null);
+      setPtOtpModalBooking(null);
+      fetchPtData();
+      fetchPtWallet();
+    } catch (err: any) {
+      showToast(err.response?.data?.message || err.message || 'Lỗi khi báo vắng');
+    } finally {
+      setAbsentSubmitting(false);
     }
   };
 
@@ -323,21 +351,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
       })
     );
     showToast('Đã mở khung Chat với học viên!');
-  };
-
-  const handlePtDirectConfirm = async (b: Booking, code: string) => {
-    try {
-      await api.post(`/attendance/bookings/${b.id}/otp/verify`, {
-        otp: code,
-        otpCode: code,
-      });
-      showToast('Đã xác nhận điểm danh hoàn tất ca tập thành công!');
-      setPtOtpModalBooking(null);
-      fetchPtData();
-      fetchPtWallet();
-    } catch (err: any) {
-      showToast(err.response?.data?.message || err.message || 'Xác nhận thất bại.');
-    }
   };
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
@@ -1656,6 +1669,7 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
               onReject={handleRejectBooking}
               onCancel={handlePtCancelBooking}
               onGetOtp={handleOpenPtOtpModal}
+              onMarkAbsent={handleOpenAbsentModal}
               onDisputeCreated={() => {
                 fetchMyDisputes();
                 fetchMyReviews();
@@ -3497,9 +3511,30 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
                 <span className="text-xs">Đang khởi tạo mã OTP ca tập...</span>
               </div>
             ) : ptOtpError ? (
-              <div className="my-4 p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 rounded-xl text-left text-xs text-red-700 dark:text-red-300">
-                <p className="font-bold">⚠️ Chưa thể tạo mã OTP:</p>
-                <p className="mt-1 leading-relaxed">{ptOtpError}</p>
+              <div className="my-4 space-y-3">
+                <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 rounded-xl text-left text-xs text-red-700 dark:text-red-300">
+                  <p className="font-bold">⚠️ Chưa thể tạo mã OTP:</p>
+                  <p className="mt-1 leading-relaxed">{ptOtpError}</p>
+                </div>
+
+                <div className="space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => handleOpenPtOtpModal(ptOtpModalBooking, true)}
+                    className="w-full py-2.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <span>⚡ Mở điểm danh ngay (Chế độ Kiểm thử / Demo)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAbsentModalBooking(ptOtpModalBooking);
+                    }}
+                    className="w-full py-2 px-3 border border-amber-300 dark:border-amber-800 hover:bg-amber-50 dark:hover:bg-amber-950/40 text-amber-700 dark:text-amber-300 rounded-xl text-xs font-semibold transition cursor-pointer"
+                  >
+                    Học viên không đến? Bấm vào đây để Báo vắng (No-Show)
+                  </button>
+                </div>
               </div>
             ) : (
               <>
@@ -3545,14 +3580,14 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
                   <span className="font-bold">💡 Hướng dẫn nghiệp vụ:</span> Đọc mã OTP 6 chữ số này hoặc nhấn Gửi qua Chat cho học viên. Học viên sẽ nhập mã trên màn hình của họ để xác nhận điểm danh. Sau khi học viên xác nhận, ca tập sẽ chuyển thành <b>ĐÃ HOÀN THÀNH</b> và tiền sẽ được chuyển vào ví của bạn.
                 </div>
 
-                {/* Hỗ trợ điểm danh thay nếu học viên gặp sự cố thiết bị */}
-                <div className="text-right mb-2">
+                {/* Hỗ trợ báo vắng nếu học viên vắng mặt */}
+                <div className="text-center text-xs mb-2 pt-1 border-t border-slate-100 dark:border-slate-800">
                   <button
                     type="button"
-                    onClick={() => ptGeneratedOtp && handlePtDirectConfirm(ptOtpModalBooking, ptGeneratedOtp)}
-                    className="text-[11px] text-slate-400 hover:text-blue-600 underline cursor-pointer"
+                    onClick={() => setAbsentModalBooking(ptOtpModalBooking)}
+                    className="text-[11px] text-amber-600 hover:text-amber-700 hover:underline font-semibold cursor-pointer"
                   >
-                    Học viên không mang điện thoại / nhờ điểm danh thay? Bấm vào đây
+                    Học viên vắng mặt không đến? Bấm vào đây để Báo vắng (No-Show)
                   </button>
                 </div>
               </>
@@ -3568,6 +3603,65 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
             >
               Đóng hộp thoại
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Báo Vắng Học Viên (No-Show) */}
+      {absentModalBooking && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl animate-scale-up space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950/40 text-amber-600 flex items-center justify-center font-bold">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-base font-bold text-slate-900 dark:text-white">
+                  Báo Vắng Học Viên (No-Show)
+                </h4>
+                <p className="text-xs text-slate-500">
+                  Ca tập #{absentModalBooking.id} • {absentModalBooking.studentName || 'Học viên'}
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-xl text-xs text-amber-800 dark:text-amber-300 leading-relaxed space-y-1">
+              <p className="font-bold">⚖️ Quy chế bảo vệ Huấn luyện viên:</p>
+              <p>
+                Khi xác nhận học viên vắng mặt không báo trước (No-Show), ca tập sẽ được chuyển sang trạng thái <b>ĐÃ HOÀN THÀNH</b>. Học viên sẽ bị tính 1 buổi tập và thù lao 90% sẽ được giải ngân vào ví của bạn để bù đắp thời gian chờ đợi.
+              </p>
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                Lý do ghi nhận vắng mặt:
+              </label>
+              <textarea
+                rows={2}
+                value={absentReason}
+                onChange={(e) => setAbsentReason(e.target.value)}
+                placeholder="Nhập lý do vắng mặt..."
+                className="w-full p-2.5 text-xs border border-slate-300 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-1 focus:ring-amber-500 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+              />
+            </div>
+
+            <div className="flex gap-2 justify-end pt-2 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setAbsentModalBooking(null)}
+                className="px-4 py-2 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 cursor-pointer"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmAbsent}
+                disabled={absentSubmitting}
+                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-sm transition cursor-pointer"
+              >
+                {absentSubmitting ? 'Đang xử lý...' : 'Xác nhận Báo vắng'}
+              </button>
+            </div>
           </div>
         </div>
       )}

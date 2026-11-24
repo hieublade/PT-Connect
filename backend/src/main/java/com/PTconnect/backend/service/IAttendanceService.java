@@ -6,7 +6,11 @@ import com.PTconnect.backend.dto.response.StartAttendanceResponse;
 
 public interface IAttendanceService {
 
-    StartAttendanceResponse startAttendance(String ptEmail, Long bookingId);
+    StartAttendanceResponse startAttendance(String ptEmail, Long bookingId, boolean bypassTimeCheck);
+
+    default StartAttendanceResponse startAttendance(String ptEmail, Long bookingId) {
+        return startAttendance(ptEmail, bookingId, false);
+    }
 
     AttendanceResponse studentCheckIn(String studentEmail, Long bookingId, StudentCheckInRequest request);
 
