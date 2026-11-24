@@ -5,7 +5,7 @@ from app.core.deps import get_current_user, get_db, require_roles
 from app.core.responses import created_response, ok_response
 from app.models.enums import Role
 from app.models.user import User
-from app.schemas.requests.workout import CreateWorkoutPlanRequest, CreateWorkoutRequest
+from app.schemas.requests.workout import CreateAIWorkoutPlanRequest, CreateWorkoutPlanRequest, CreateWorkoutRequest
 from app.services.workout_plan_service import WorkoutPlanService
 
 router = APIRouter(tags=["Workout Plans"])
@@ -22,6 +22,21 @@ def create_plan(
     return created_response(
         data=res.model_dump(mode="json", by_alias=True),
         message="Tạo giáo án luyện tập thành công",
+        status_code=201,
+    )
+
+
+@router.post("/pt/workout-plans/ai-save", status_code=201)
+def save_ai_plan(
+    request: CreateAIWorkoutPlanRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(Role.PT)),
+):
+    service = WorkoutPlanService(db)
+    res = service.save_ai_plan(current_user.email, request)
+    return created_response(
+        data=res.model_dump(mode="json", by_alias=True),
+        message="Lưu toàn bộ giáo án AI thành công",
         status_code=201,
     )
 

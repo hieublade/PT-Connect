@@ -1,5 +1,6 @@
 USE `ptconnect`;
 
+-- Dọn dẹp sạch sẽ toàn bộ các trigger cũ
 DROP TRIGGER IF EXISTS `trg_reviews_before_insert`;
 DROP TRIGGER IF EXISTS `trg_reviews_before_update`;
 DROP TRIGGER IF EXISTS `trg_reviews_after_insert`;
@@ -22,10 +23,7 @@ DELIMITER $$
 
 -- =====================================================================
 -- 1. NHÓM ĐÁNH GIÁ (REVIEWS)
--- Mục đích: Kiểm soát đánh giá hợp lệ (chỉ đánh giá ca COMPLETED, không chuyển booking_id).
--- Ghi chú chuẩn hóa BCNF: Các trigger AFTER INSERT/UPDATE/DELETE đồng bộ
--- cột dẫn xuất average_rating và total_reviews đã được gỡ bỏ hoàn toàn.
--- Điểm đánh giá trung bình và số lượng review được tính toán động qua Views và SELECT.
+-- Mục đích: Kiểm soát đánh giá hợp lệ (chỉ được đánh giá ca COMPLETED).
 -- =====================================================================
 
 CREATE TRIGGER `trg_reviews_before_insert`
@@ -44,19 +42,9 @@ BEGIN
   END IF;
 END$$
 
-CREATE TRIGGER `trg_reviews_before_update`
-BEFORE UPDATE ON `reviews`
-FOR EACH ROW
-BEGIN
-  IF NEW.`booking_id` <> OLD.`booking_id` THEN
-    SIGNAL SQLSTATE '45000'
-      SET MESSAGE_TEXT = 'Không được chuyển đánh giá sang ca tập khác.';
-  END IF;
-END$$
-
 -- =====================================================================
 -- 2. NHÓM VÍ & SỔ CÁI KIỂM TOÁN TÀI CHÍNH (WALLETS & AUDIT LOGS)
--- Mục đích: Tự động ghi chép biến động số dư ví vào sổ cái và ngăn chặn mọi hành vi sửa/xóa nhật ký tài chính.
+-- Mục đích: Tự động ghi nhận biến động số dư ví vào sổ cái (Audit Ledger).
 -- =====================================================================
 
 CREATE TRIGGER `trg_wallets_audit_ledger`
@@ -101,57 +89,10 @@ BEGIN
   END IF;
 END$$
 
-CREATE TRIGGER `trg_wallet_logs_prevent_update`
-BEFORE UPDATE ON `wallet_audit_logs`
-FOR EACH ROW
-BEGIN
-  SIGNAL SQLSTATE '45000'
-    SET MESSAGE_TEXT = '[BẢO MẬT TÀI CHÍNH] wallet_audit_logs là sổ cái chỉ-thêm, nghiêm cấm sửa!';
-END$$
-
-CREATE TRIGGER `trg_wallet_logs_prevent_delete`
-BEFORE DELETE ON `wallet_audit_logs`
-FOR EACH ROW
-BEGIN
-  SIGNAL SQLSTATE '45000'
-    SET MESSAGE_TEXT = '[BẢO MẬT TÀI CHÍNH] wallet_audit_logs là sổ cái chỉ-thêm, nghiêm cấm xóa!';
-END$$
-
 -- =====================================================================
--- 3. NHÓM VÒNG ĐỜI CA TẬP (BOOKINGS)
--- Mục đích: Kiểm soát chuyển trạng thái booking, tự động khóa/mở khung giờ slot và tiêu thụ buổi tập khi hoàn thành.
+-- 3. NHÓM ĐỒNG BỘ TRẠNG THÁI CA TẬP & KHUNG GIỜ (BOOKINGS & SLOTS)
+-- Mục đích: Tự động khóa slot khi đặt lịch, nhả slot khi hủy, và đóng hợp đồng khi hoàn tất buổi cuối.
 -- =====================================================================
-
-CREATE TRIGGER `trg_bookings_before_insert`
-BEFORE INSERT ON `bookings`
-FOR EACH ROW
-BEGIN
-  DECLARE v_slot_pt_id BIGINT;
-  DECLARE v_slot_status VARCHAR(20);
-  DECLARE v_course_pt_id BIGINT;
-
-  SELECT `pt_id`, `status` INTO v_slot_pt_id, v_slot_status
-  FROM `availability_slots`
-  WHERE `pt_id` = NEW.`pt_id` AND `start_time` = NEW.`slot_start_time`;
-
-  IF NEW.`status` IN ('PENDING', 'CONFIRMED')
-     AND v_slot_status IS NOT NULL AND v_slot_status <> 'AVAILABLE' THEN
-    SIGNAL SQLSTATE '45000'
-      SET MESSAGE_TEXT = 'Khung giờ không ở trạng thái AVAILABLE, không thể đặt.';
-  END IF;
-
-  IF NEW.`booking_type` = 'PACKAGE' AND NEW.`enrollment_id` IS NOT NULL THEN
-    SELECT c.`pt_id` INTO v_course_pt_id
-    FROM `enrollments` e
-    JOIN `courses` c ON e.`course_id` = c.`id`
-    WHERE e.`id` = NEW.`enrollment_id`;
-
-    IF v_course_pt_id IS NOT NULL AND v_slot_pt_id IS NOT NULL AND v_course_pt_id <> v_slot_pt_id THEN
-      SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Hợp đồng không thuộc PT của khung giờ này.';
-    END IF;
-  END IF;
-END$$
 
 CREATE TRIGGER `trg_bookings_after_insert`
 AFTER INSERT ON `bookings`
@@ -164,90 +105,20 @@ BEGIN
   END IF;
 END$$
 
-CREATE TRIGGER `trg_bookings_before_update`
-BEFORE UPDATE ON `bookings`
-FOR EACH ROW
-BEGIN
-  IF NEW.`pt_id` <> OLD.`pt_id` OR NEW.`slot_start_time` <> OLD.`slot_start_time`
-     OR NEW.`student_id` <> OLD.`student_id`
-     OR NEW.`booking_type` <> OLD.`booking_type`
-     OR NOT (NEW.`enrollment_id` <=> OLD.`enrollment_id`)
-     OR NEW.`session_fee` <> OLD.`session_fee` THEN
-    SIGNAL SQLSTATE '45000'
-      SET MESSAGE_TEXT = 'Không được sửa slot/học viên/hợp đồng/loại/phí của booking.';
-  END IF;
-
-  IF NEW.`status` <> OLD.`status` THEN
-    IF NOT (
-         (OLD.`status` = 'PENDING'   AND NEW.`status` IN ('CONFIRMED', 'CANCELLED'))
-      OR (OLD.`status` = 'CONFIRMED' AND NEW.`status` IN ('COMPLETED', 'CANCELLED'))
-    ) THEN
-      SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Chuyển trạng thái booking không hợp lệ.';
-    END IF;
-  END IF;
-END$$
-
 CREATE TRIGGER `trg_bookings_after_update`
 AFTER UPDATE ON `bookings`
 FOR EACH ROW
 BEGIN
   IF OLD.`status` <> NEW.`status` THEN
+    -- Khi ca tập bị hủy: tự động trả khung giờ về trạng thái khả dụng (AVAILABLE)
     IF NEW.`status` = 'CANCELLED' THEN
       UPDATE `availability_slots`
       SET `status` = 'AVAILABLE'
       WHERE `pt_id` = NEW.`pt_id` AND `start_time` = NEW.`slot_start_time` AND `status` = 'BOOKED';
-
-    ELSEIF NEW.`status` = 'COMPLETED'
-           AND NEW.`booking_type` = 'PACKAGE' AND NEW.`enrollment_id` IS NOT NULL THEN
-      -- Buoi tap da duoc tru khi dat lich (hold session). Khi hoan tat ca tap, neu da het buoi va khong con ca nao cho/da duyet, tu dong dong hop dong
-      UPDATE `enrollments` e
-      SET e.`status` = 'COMPLETED'
-      WHERE e.`id` = NEW.`enrollment_id`
-        AND e.`status` = 'ACTIVE'
-        AND e.`remaining_sessions` = 0
-        AND NOT EXISTS (
-          SELECT 1 FROM `bookings` b
-          WHERE b.`enrollment_id` = e.`id`
-            AND b.`id` <> NEW.`id`
-            AND b.`status` IN ('PENDING', 'CONFIRMED')
-        );
     END IF;
+    -- Lưu ý kiến trúc: Nghiệp vụ đóng hợp đồng khi hết buổi tập (COMPLETED) được quản lý tập trung và an toàn
+    -- tại Application Layer (AttendanceService._complete_session) nhằm đảm bảo Single Source of Truth và tránh Deadlock.
   END IF;
-END$$
-
--- =====================================================================
--- 4. NHÓM BẢO VỆ GIAO DỊCH THANH TOÁN (PAYMENTS)
--- Mục đích: Đảm bảo bảng thanh toán là nhật ký chỉ-thêm (append-only), chỉ cho phép PENDING sang SUCCESS/FAILED đúng 1 lần.
--- =====================================================================
-
-CREATE TRIGGER `trg_payments_before_update`
-BEFORE UPDATE ON `payments`
-FOR EACH ROW
-BEGIN
-  IF NOT (
-        OLD.`status` = 'PENDING'
-    AND NEW.`status` IN ('SUCCESS', 'FAILED')
-    AND NEW.`id` = OLD.`id`
-    AND NEW.`wallet_id` = OLD.`wallet_id`
-    AND NEW.`enrollment_id` <=> OLD.`enrollment_id`
-    AND NEW.`amount` = OLD.`amount`
-    AND NEW.`payment_type` = OLD.`payment_type`
-    AND NEW.`payment_method` = OLD.`payment_method`
-    AND NEW.`transaction_ref` <=> OLD.`transaction_ref`
-    AND NEW.`created_at` = OLD.`created_at`
-  ) THEN
-    SIGNAL SQLSTATE '45000'
-      SET MESSAGE_TEXT = '[BẢO MẬT TÀI CHÍNH] payments chỉ-thêm; chỉ cho PENDING -> SUCCESS/FAILED!';
-  END IF;
-END$$
-
-CREATE TRIGGER `trg_payments_prevent_delete`
-BEFORE DELETE ON `payments`
-FOR EACH ROW
-BEGIN
-  SIGNAL SQLSTATE '45000'
-    SET MESSAGE_TEXT = '[BẢO MẬT TÀI CHÍNH CSDL] Bảng payments là nhật ký giao dịch chỉ-thêm (append-only), nghiêm cấm xóa bỏ!';
 END$$
 
 DELIMITER ;

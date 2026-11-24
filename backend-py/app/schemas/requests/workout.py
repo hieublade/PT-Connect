@@ -64,3 +64,13 @@ class CreateWorkoutRequest(CamelModel):
         if v < 0:
             raise ValueError("Thời gian nghỉ không được âm")
         return v
+
+
+class CreateAIWorkoutPlanRequest(CamelModel):
+    enrollment_id: int
+    title: str
+    goal: str | None = None
+    start_date: date | None = None
+    end_date: date | None = None
+    exercises: list[CreateWorkoutRequest] = []
+

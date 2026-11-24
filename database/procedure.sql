@@ -162,7 +162,7 @@ END$$
 -- 3. NGHIỆP VỤ ĐẶT LỊCH TẬP (BOOKING)
 -- =====================================================================
 
--- Mục đích: Đặt ca tập mới (TRIAL hoặc PACKAGE); kiểm tra toàn vẹn slot, chống trùng lịch học viên, chống vượt số buổi gói tập và xử lý xung đột đồng thời.
+-- Mục đích: Đặt ca tập mới (TRIAL hoặc PACKAGE) - Bản tinh gọn phục vụ thuyết trình/bảo vệ đồ án
 DROP PROCEDURE IF EXISTS `sp_book_session`$$
 CREATE PROCEDURE `sp_book_session`(
     IN `p_student_id` BIGINT,
@@ -176,29 +176,12 @@ CREATE PROCEDURE `sp_book_session`(
     OUT `p_message` VARCHAR(255)
 )
 proc_label: BEGIN
-    DECLARE `v_student_role` VARCHAR(20);
-    DECLARE `v_student_status` VARCHAR(20);
-
-    DECLARE `v_slot_pt_id` BIGINT;
-    DECLARE `v_slot_start` DATETIME;
-    DECLARE `v_slot_end` DATETIME;
     DECLARE `v_slot_status` VARCHAR(20);
-
-    DECLARE `v_enroll_student_id` BIGINT;
-    DECLARE `v_enroll_remaining` INT;
-    DECLARE `v_enroll_status` VARCHAR(20);
-    DECLARE `v_enroll_start_date` DATE;
-    DECLARE `v_enroll_end_date` DATE;
-    DECLARE `v_course_pt_id` BIGINT;
-
-    DECLARE `v_session_fee` DECIMAL(12,2) DEFAULT 0.00;
-    DECLARE `v_overlap_count` INT DEFAULT 0;
     DECLARE `v_trial_count` INT DEFAULT 0;
-    DECLARE `v_active_bookings_count` INT DEFAULT 0;
+    DECLARE `v_enroll_remaining` INT DEFAULT 0;
+    DECLARE `v_session_fee` DECIMAL(12,2) DEFAULT 0.00;
 
-    DECLARE `v_errno` INT DEFAULT 0;
-    DECLARE `v_errmsg` VARCHAR(512) DEFAULT '';
-
+    -- Xử lý ngoại lệ: Tranh chấp đồng thời (lỗi 1062 - trùng slot) hoặc lỗi CSDL
     DECLARE EXIT HANDLER FOR 1062
     BEGIN
         ROLLBACK;
@@ -207,49 +190,24 @@ proc_label: BEGIN
         SET `p_message` = 'Khung giờ vừa được người khác đặt, vui lòng chọn khung giờ khác.';
     END;
 
-    DECLARE EXIT HANDLER FOR 1213, 1205
-    BEGIN
-        ROLLBACK;
-        SET `p_booking_id` = NULL;
-        SET `p_status_code` = 98;
-        SET `p_message` = 'Hệ thống đang bận (xung đột khóa), vui lòng thử lại.';
-    END;
-
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
-        GET DIAGNOSTICS CONDITION 1 `v_errno` = MYSQL_ERRNO, `v_errmsg` = MESSAGE_TEXT;
         ROLLBACK;
         SET `p_booking_id` = NULL;
         SET `p_status_code` = 99;
-        SET `p_message` = LEFT(CONCAT('Lỗi CSDL #', `v_errno`, ': ', `v_errmsg`), 255);
+        SET `p_message` = 'Lỗi hệ thống CSDL.';
     END;
 
+    -- Khởi tạo giá trị trả về
     SET `p_booking_id` = NULL;
     SET `p_status_code` = 0;
-    SET `p_message` = 'Thành công';
-
-    IF `p_booking_type` IS NULL OR `p_booking_type` NOT IN ('TRIAL', 'PACKAGE') THEN
-        SET `p_status_code` = 10;
-        SET `p_message` = 'Loại ca tập không hợp lệ (chỉ nhận TRIAL hoặc PACKAGE).';
-        LEAVE proc_label;
-    END IF;
+    SET `p_message` = 'Đặt lịch thành công';
 
     START TRANSACTION;
 
-    SELECT `role`, `status`
-    INTO `v_student_role`, `v_student_status`
-    FROM `users`
-    WHERE `id` = `p_student_id`;
-
-    IF `v_student_role` IS NULL OR `v_student_role` <> 'STUDENT' OR `v_student_status` <> 'ACTIVE' THEN
-        ROLLBACK;
-        SET `p_status_code` = 11;
-        SET `p_message` = 'Học viên không tồn tại hoặc tài khoản không hoạt động.';
-        LEAVE proc_label;
-    END IF;
-
-    SELECT `pt_id`, `start_time`, `end_time`, `status`
-    INTO `v_slot_pt_id`, `v_slot_start`, `v_slot_end`, `v_slot_status`
+    -- BƯỚC 1: Khóa bi quan (Pessimistic Lock) và kiểm tra slot còn trống không
+    SELECT `status`
+    INTO `v_slot_status`
     FROM `availability_slots`
     WHERE `pt_id` = `p_pt_id` AND `start_time` = `p_slot_start_time`
     FOR UPDATE;
@@ -257,112 +215,56 @@ proc_label: BEGIN
     IF `v_slot_status` IS NULL OR `v_slot_status` <> 'AVAILABLE' THEN
         ROLLBACK;
         SET `p_status_code` = 1;
-        SET `p_message` = 'Khung giờ này đã được đặt hoặc không khả dụng.';
+        SET `p_message` = 'Khung giờ không tồn tại hoặc đã có người đặt.';
         LEAVE proc_label;
     END IF;
 
-    IF `v_slot_start` < NOW() THEN
-        ROLLBACK;
-        SET `p_status_code` = 2;
-        SET `p_message` = 'Không thể đặt khung giờ trong quá khứ.';
-        LEAVE proc_label;
-    END IF;
-
-    SELECT COUNT(*)
-    INTO `v_overlap_count`
-    FROM `bookings` b
-    JOIN `availability_slots` s ON b.`pt_id` = s.`pt_id` AND b.`slot_start_time` = s.`start_time`
-    WHERE b.`student_id` = `p_student_id`
-      AND b.`status` IN ('PENDING', 'CONFIRMED')
-      AND s.`start_time` < `v_slot_end`
-      AND s.`end_time` > `v_slot_start`;
-
-    IF `v_overlap_count` > 0 THEN
-        ROLLBACK;
-        SET `p_status_code` = 3;
-        SET `p_message` = 'Bạn đã có một ca tập khác trùng khung giờ này.';
-        LEAVE proc_label;
-    END IF;
-
+    -- BƯỚC 2: Kiểm tra điều kiện nghiệp vụ theo loại ca tập
     IF `p_booking_type` = 'TRIAL' THEN
+        -- Học thử: Mỗi học viên chỉ được học thử 1 lần với PT này
         SELECT COUNT(*)
         INTO `v_trial_count`
-        FROM `bookings` b
-        JOIN `availability_slots` s ON b.`pt_id` = s.`pt_id` AND b.`slot_start_time` = s.`start_time`
-        WHERE b.`student_id` = `p_student_id`
-          AND s.`pt_id` = `v_slot_pt_id`
-          AND b.`booking_type` = 'TRIAL'
-          AND b.`status` <> 'CANCELLED';
+        FROM `bookings`
+        WHERE `student_id` = `p_student_id`
+          AND `pt_id` = `p_pt_id`
+          AND `booking_type` = 'TRIAL'
+          AND `status` <> 'CANCELLED';
 
         IF `v_trial_count` > 0 THEN
             ROLLBACK;
             SET `p_status_code` = 4;
-            SET `p_message` = 'Mỗi học viên chỉ được học thử 1 lần với PT này.';
+            SET `p_message` = 'Học viên đã từng đăng ký học thử với Huấn luyện viên này.';
             LEAVE proc_label;
         END IF;
 
         SET `v_session_fee` = 0.00;
         SET `p_enrollment_id` = NULL;
     ELSE
+        -- Gói tập (PACKAGE): Kiểm tra hợp đồng và số buổi còn lại
         IF `p_enrollment_id` IS NULL THEN
             ROLLBACK;
             SET `p_status_code` = 5;
-            SET `p_message` = 'Đặt ca theo gói phải chỉ định mã hợp đồng (enrollment_id).';
+            SET `p_message` = 'Vui lòng chọn hợp đồng khi đặt ca theo gói.';
             LEAVE proc_label;
         END IF;
 
-        SELECT e.`student_id`, e.`remaining_sessions`, e.`status`, e.`start_date`, e.`end_date`, c.`pt_id`
-        INTO `v_enroll_student_id`, `v_enroll_remaining`, `v_enroll_status`, `v_enroll_start_date`, `v_enroll_end_date`, `v_course_pt_id`
-        FROM `enrollments` e
-        JOIN `courses` c ON e.`course_id` = c.`id`
-        WHERE e.`id` = `p_enrollment_id`
-        FOR UPDATE OF e;
+        SELECT `remaining_sessions`
+        INTO `v_enroll_remaining`
+        FROM `enrollments`
+        WHERE `id` = `p_enrollment_id` AND `student_id` = `p_student_id`
+        FOR UPDATE;
 
-        IF `v_enroll_status` IS NULL OR `v_enroll_status` <> 'ACTIVE' THEN
-            ROLLBACK;
-            SET `p_status_code` = 6;
-            SET `p_message` = 'Hợp đồng không hợp lệ hoặc không ở trạng thái ACTIVE.';
-            LEAVE proc_label;
-        END IF;
-
-        IF `v_enroll_student_id` <> `p_student_id` THEN
-            ROLLBACK;
-            SET `p_status_code` = 7;
-            SET `p_message` = 'Hợp đồng này không thuộc về học viên.';
-            LEAVE proc_label;
-        END IF;
-
-        IF `v_course_pt_id` <> `v_slot_pt_id` THEN
-            ROLLBACK;
-            SET `p_status_code` = 8;
-            SET `p_message` = 'Hợp đồng này không phải với PT của khung giờ được chọn.';
-            LEAVE proc_label;
-        END IF;
-
-        IF DATE(`v_slot_start`) < `v_enroll_start_date` OR DATE(`v_slot_start`) > `v_enroll_end_date` THEN
-            ROLLBACK;
-            SET `p_status_code` = 12;
-            SET `p_message` = 'Ca tập nằm ngoài thời hạn hiệu lực của hợp đồng.';
-            LEAVE proc_label;
-        END IF;
-
-        SELECT COUNT(*)
-        INTO `v_active_bookings_count`
-        FROM `bookings`
-        WHERE `enrollment_id` = `p_enrollment_id`
-          AND `status` IN ('PENDING', 'CONFIRMED')
-        FOR SHARE;
-
-        IF `v_enroll_remaining` - `v_active_bookings_count` < 1 THEN
+        IF `v_enroll_remaining` IS NULL OR `v_enroll_remaining` < 1 THEN
             ROLLBACK;
             SET `p_status_code` = 9;
-            SET `p_message` = 'Hợp đồng không còn đủ buổi khả dụng để đặt thêm ca.';
+            SET `p_message` = 'Hợp đồng không hợp lệ hoặc đã hết số buổi tập.';
             LEAVE proc_label;
         END IF;
 
         SET `v_session_fee` = `fn_session_fee`(`p_enrollment_id`);
     END IF;
 
+    -- BƯỚC 3: Tạo ca tập mới (trạng thái chờ PT duyệt PENDING)
     INSERT INTO `bookings` (
         `booking_type`,
         `enrollment_id`,
@@ -469,12 +371,11 @@ proc_label: BEGIN
     END IF;
 
     SELECT b.`status`, b.`booking_type`, b.`enrollment_id`, b.`student_id`, b.`pt_id`, b.`slot_start_time`, b.`session_fee`,
-           s.`start_time`, p.`user_id`
+       b.`slot_start_time`, p.`user_id`
     INTO `v_booking_status`, `v_booking_type`, `v_enrollment_id`, `v_student_id`, `v_slot_pt_id`, `v_slot_start_time`, `v_session_fee`,
-         `v_slot_start`, `v_pt_user_id`
+     `v_slot_start`, `v_pt_user_id`
     FROM `bookings` b
-    JOIN `availability_slots` s ON b.`pt_id` = s.`pt_id` AND b.`slot_start_time` = s.`start_time`
-    JOIN `pt_profiles` p ON s.`pt_id` = p.`id`
+    JOIN `pt_profiles` p ON b.`pt_id` = p.`id`
     WHERE b.`id` = `p_booking_id`
     FOR UPDATE OF b;
 

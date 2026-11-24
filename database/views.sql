@@ -1,5 +1,8 @@
 USE `ptconnect`;
 
+-- Dọn dẹp View trùng lặp cũ nếu có
+DROP VIEW IF EXISTS `v_pt_profiles`;
+
 -- =====================================================================
 -- 1. VIEW ĐỐI SOÁT TÀI CHÍNH VÍ (RECONCILIATION VIEW)
 -- Mục đích: Đối soát số dư ví thực tế với tổng giá trị các giao dịch thành công (tìm chênh lệch tài chính nếu có).
@@ -45,11 +48,11 @@ SELECT
     b.`session_fee`,
     b.`student_id`,
     u_stu.`full_name` AS `student_name`,
-    s.`pt_id`,
+    b.`pt_id`,
     u_pt.`full_name` AS `pt_name`,
-    s.`start_time` AS `session_start_time`,
+    b.`slot_start_time` AS `session_start_time`,
     c.`cancelled_at`,
-    ROUND(TIMESTAMPDIFF(MINUTE, c.`cancelled_at`, s.`start_time`) / 60.0, 2) AS `hours_before_session`,
+    ROUND(TIMESTAMPDIFF(MINUTE, c.`cancelled_at`, b.`slot_start_time`) / 60.0, 2) AS `hours_before_session`,
     CASE
         WHEN c.`cancelled_by_id` IS NULL THEN 'SYSTEM'
         WHEN c.`cancelled_by_id` = b.`student_id` THEN 'STUDENT'
@@ -66,15 +69,14 @@ SELECT
     c.`status` AS `cancellation_status`
 FROM `cancellations` c
 JOIN `bookings` b ON c.`booking_id` = b.`id`
-JOIN `availability_slots` s ON b.`pt_id` = s.`pt_id` AND b.`slot_start_time` = s.`start_time`
-JOIN `pt_profiles` p ON s.`pt_id` = p.`id`
+JOIN `pt_profiles` p ON b.`pt_id` = p.`id`
 JOIN `users` u_stu ON b.`student_id` = u_stu.`id`
 JOIN `users` u_pt ON p.`user_id` = u_pt.`id`
 LEFT JOIN `users` u_actor ON c.`cancelled_by_id` = u_actor.`id`;
 
 -- =====================================================================
 -- 3. VIEW THỐNG KÊ ĐÁNH GIÁ CỦA PT (PT RATING STATISTICS - BCNF)
--- Mục đích: Tính toán động điểm rating và tổng số đánh giá của từng PT từ dữ liệu review thực tế.
+-- Mục đích: Tính toán động điểm rating và tổng số đánh giá của từng PT từ dữ liệu review thực tế (loại bỏ cột dẫn xuất).
 -- =====================================================================
 CREATE OR REPLACE VIEW `v_pt_rating_statistics` AS
 SELECT
@@ -85,43 +87,9 @@ SELECT
     ROUND(COALESCE(AVG(r.`rating`), 0.00), 2) AS `average_rating`
 FROM `pt_profiles` p
 JOIN `users` u ON p.`user_id` = u.`id`
-LEFT JOIN `availability_slots` s ON p.`id` = s.`pt_id`
-LEFT JOIN `bookings` b ON s.`pt_id` = b.`pt_id` AND s.`start_time` = b.`slot_start_time`
+LEFT JOIN `bookings` b ON p.`id` = b.`pt_id`
 LEFT JOIN `reviews` r ON b.`id` = r.`booking_id`
 GROUP BY p.`id`, p.`user_id`, u.`full_name`;
-
--- =====================================================================
--- 3b. VIEW HỒ SƠ PT TỔNG HỢP BCNF (PT PROFILES VIEW)
--- Mục đích: Cung cấp đầy đủ thông tin hồ sơ PT cùng điểm đánh giá và tổng số đánh giá tính toán động.
--- =====================================================================
-CREATE OR REPLACE VIEW `v_pt_profiles` AS
-SELECT
-    p.`id`,
-    p.`user_id`,
-    u.`full_name`,
-    u.`email`,
-    u.`phone`,
-    u.`avatar_url`,
-    p.`bio`,
-    p.`specialty`,
-    p.`experience_years`,
-    p.`location_pricing_note`,
-    p.`certificate_url`,
-    p.`demo_video_url`,
-    p.`verification_status`,
-    p.`created_at`,
-    p.`updated_at`,
-    COUNT(r.`id`) AS `total_reviews`,
-    ROUND(COALESCE(AVG(r.`rating`), 0.00), 2) AS `average_rating`
-FROM `pt_profiles` p
-JOIN `users` u ON p.`user_id` = u.`id`
-LEFT JOIN `availability_slots` s ON p.`id` = s.`pt_id`
-LEFT JOIN `bookings` b ON s.`pt_id` = b.`pt_id` AND s.`start_time` = b.`slot_start_time`
-LEFT JOIN `reviews` r ON b.`id` = r.`booking_id`
-GROUP BY p.`id`, p.`user_id`, u.`full_name`, u.`email`, u.`phone`, u.`avatar_url`,
-         p.`bio`, p.`specialty`, p.`experience_years`, p.`location_pricing_note`,
-         p.`certificate_url`, p.`demo_video_url`, p.`verification_status`,
-         p.`created_at`, p.`updated_at`;
 
 -- =====================================================================
 -- 4. VIEW GÓI TẬP ĐANG HIỆU LỰC (STUDENT ACTIVE PACKAGES)
@@ -162,6 +130,7 @@ WHERE e.`status` = 'ACTIVE'
 -- =====================================================================
 CREATE OR REPLACE VIEW `v_wallet_audit_logs` AS
 SELECT
+    CONCAT(l.`wallet_id`, '-', l.`seq_no`) AS `id`,
     l.`seq_no`,
     l.`wallet_id`,
     w.`user_id`,

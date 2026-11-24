@@ -3,7 +3,7 @@ USE ptconnect;
 SET NAMES utf8mb4;
 
 SET FOREIGN_KEY_CHECKS = 0;
-DROP TABLE IF EXISTS `booking_disputes`, `attendance`, `payments`, `cancellations`, `reviews`, `bookings`,
+DROP TABLE IF EXISTS `chat_messages`, `booking_disputes`, `attendance`, `payments`, `cancellations`, `reviews`, `bookings`,
   `availability_slots`, `workouts`, `workout_plans`, `wallet_audit_logs`, `enrollments`,
   `courses`, `wallets`, `pt_locations`, `pt_profiles`, `users`;
 SET FOREIGN_KEY_CHECKS = 1;

@@ -2,6 +2,7 @@ from app.models.attendance import Attendance
 from app.models.availability_slot import AvailabilitySlot
 from app.models.booking import Booking
 from app.models.cancellation import Cancellation
+from app.models.chat_message import ChatMessage
 from app.models.dispute import BookingDispute
 from app.models.course import Course
 from app.models.enrollment import Enrollment
@@ -66,6 +67,7 @@ __all__ = [
     "Enrollment",
     "Payment",
     "Cancellation",
+    "ChatMessage",
     "BookingDispute",
     "Attendance",
     "Review",

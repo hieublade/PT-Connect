@@ -12,7 +12,7 @@ from app.repositories.pt_profile_repo import PTProfileRepository
 from app.repositories.user_repo import UserRepository
 from app.repositories.workout_plan_repo import WorkoutPlanRepository
 from app.repositories.workout_repo import WorkoutRepository
-from app.schemas.requests.workout import CreateWorkoutPlanRequest, CreateWorkoutRequest
+from app.schemas.requests.workout import CreateAIWorkoutPlanRequest, CreateWorkoutPlanRequest, CreateWorkoutRequest
 from app.schemas.responses.workout import WorkoutPlanResponse, WorkoutResponse
 
 
@@ -67,6 +67,65 @@ class WorkoutPlanService:
         self.db.commit()
 
         # Reload with relations
+        reloaded = self.plan_repo.get_by_id(plan.id)
+        return WorkoutPlanResponse.from_entity(reloaded)
+
+    def save_ai_plan(self, pt_email: str, request: CreateAIWorkoutPlanRequest) -> WorkoutPlanResponse:
+        pt_profile = self.pt_repo.get_by_email(pt_email)
+        if not pt_profile:
+            raise UnauthorizedException("Chỉ Huấn luyện viên mới có quyền tạo giáo án")
+
+        enrollment = self.enrollment_repo.get_by_id(request.enrollment_id)
+        if not enrollment:
+            raise ResourceNotFoundException(f"Không tìm thấy hợp đồng khóa học với ID: {request.enrollment_id}")
+
+        if not enrollment.is_owned_by_pt(pt_profile.id):
+            raise UnauthorizedException("Bạn không phải là Huấn luyện viên phụ trách hợp đồng này")
+
+        if enrollment.status != EnrollmentStatus.ACTIVE:
+            raise BadRequestException(f"Hợp đồng khóa học hiện ở trạng thái {enrollment.status}, không thể tạo giáo án mới")
+
+        start = request.start_date if request.start_date is not None else enrollment.start_date
+        end = request.end_date if request.end_date is not None else enrollment.end_date
+
+        if start is None:
+            start = today_local()
+        if end is None:
+            end = start + timedelta(weeks=4)
+
+        if start > end:
+            raise BadRequestException("Ngày bắt đầu giáo án không thể sau ngày kết thúc")
+
+        if enrollment.start_date and start < enrollment.start_date:
+            raise BadRequestException(f"Ngày bắt đầu giáo án ({start}) không thể trước ngày bắt đầu hợp đồng ({enrollment.start_date})")
+        if enrollment.end_date and end > enrollment.end_date:
+            raise BadRequestException(f"Ngày kết thúc giáo án ({end}) không thể sau ngày hết hạn hợp đồng ({enrollment.end_date})")
+
+        plan = WorkoutPlan(
+            enrollment_id=enrollment.id,
+            title=request.title.strip(),
+            goal=request.goal,
+            start_date=start,
+            end_date=end,
+        )
+        self.plan_repo.save(plan)
+
+        for idx, ex in enumerate(request.exercises, start=1):
+            order = ex.exercise_order if ex.exercise_order and ex.exercise_order > 0 else idx
+            workout = Workout(
+                plan_id=plan.id,
+                exercise_order=order,
+                exercise_name=ex.exercise_name,
+                target_muscle=ex.target_muscle,
+                sets=ex.sets,
+                reps=ex.reps,
+                weight_kg=ex.weight_kg,
+                rest_seconds=ex.rest_seconds,
+                video_demo_url=ex.video_demo_url,
+            )
+            self.workout_repo.save(workout)
+
+        self.db.commit()
         reloaded = self.plan_repo.get_by_id(plan.id)
         return WorkoutPlanResponse.from_entity(reloaded)
 
