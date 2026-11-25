@@ -22,7 +22,10 @@ import java.util.List;
 public class EnrollmentController {
 
     private final IEnrollmentService enrollmentService;
-
+    /*private IEnrollmentService enrollmentService;
+    public EnrollmentController(IEnrollmentService enrollmentService) {
+        this.enrollmentService = enrollmentService;
+    }*/
     @PostMapping("/enrollments")
     public ResponseEntity<ApiResponse<EnrollmentResponse>> purchaseCourse(
             Authentication authentication,

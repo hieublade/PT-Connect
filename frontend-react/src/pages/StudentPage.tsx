@@ -2147,6 +2147,10 @@ export const StudentPage: React.FC<StudentPageProps> = ({ user, onLogout, onUser
                               style={{ width: `${progressPct}%` }}
                             ></div>
                           </div>
+                          <div className="flex justify-between text-[11px] text-slate-500 pt-0.5">
+                            <span>Đã hoàn thành: <b>{completed} buổi</b></span>
+                            <span className="text-emerald-600 font-bold">Còn lại: {en.remainingSessions}/{en.totalSessions} buổi khả dụng</span>
+                          </div>
                         </div>
                       </div>
 
