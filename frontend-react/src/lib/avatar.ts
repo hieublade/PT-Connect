@@ -1,17 +1,9 @@
-// Danh sách ảnh chân dung Huấn luyện viên thể hình độ phân giải cao chuẩn quốc tế
-// Góc chụp chuyên nghiệp, trang phục thể thao/polo đen, khoanh tay cơ bắp đúng phong cách HFI / CITIGYM
 const REAL_COACH_PORTRAITS: Record<string, string> = {
-  // Lê Hoàng Cường: HLV thể hình khoanh tay áo polo đen (rất giống ảnh mẫu Đào Ngọc Huy)
   'cuong': 'https://images.unsplash.com/photo-1567013127542-490d757e51fc?auto=format&fit=crop&w=800&q=80',
-  // Phạm Minh Dũng: Chuyên gia giảm mỡ & thể lực
   'dung': 'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?auto=format&fit=crop&w=800&q=80',
-  // Trần Quốc Bảo: Boxing, kickfit & thể lực cường độ cao
   'bao': 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=800&q=80',
-  // Nguyễn Thu Hà: HLV nữ Pilates, Yoga & chỉnh dáng cột sống
   'ha': 'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=800&q=80',
-  // Đỗ Tuấn Kiệt: Giảng viên thể hình Hypertrophy & Sức mạnh
   'kiet': 'https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=800&q=80',
-  // Vũ Hoàng: HLV Cardio & thể lực
   'hoang': 'https://images.unsplash.com/photo-1594381898411-846e7d193883?auto=format&fit=crop&w=800&q=80',
 };
 
@@ -24,10 +16,8 @@ const DEFAULT_COACH_PORTRAITS = [
   'https://images.unsplash.com/photo-1594381898411-846e7d193883?auto=format&fit=crop&w=800&q=80',
 ];
 
-// Sinh avatar vector SVG nội bộ (Data URI) không phụ thuộc mạng hay dịch vụ bên ngoài, không bao giờ bị lỗi ảnh vỡ
 export function getInitialAvatar(name?: string, role?: string): string {
   const cleanName = (name || (role === 'PT' ? 'HLV' : 'User')).trim();
-  // Lấy 1-2 ký tự đầu (nếu là số như "11", hiển thị "11" hoặc chữ hoa)
   const initial = cleanName.length > 2 && !/^\d+$/.test(cleanName)
     ? cleanName.slice(0, 2).toUpperCase()
     : cleanName.slice(0, 2).toUpperCase();
@@ -50,7 +40,6 @@ export function getInitialAvatar(name?: string, role?: string): string {
 }
 
 export function getAvatarUrl(name?: string, explicitUrl?: string, role?: string): string {
-  // Loại bỏ các URL không an toàn hoặc hết hạn: blob: (chỉ tồn tại tạm trong RAM), dicebear (dễ bị chặn/lỗi)
   if (explicitUrl && 
       !explicitUrl.includes('dicebear') && 
       !explicitUrl.startsWith('blob:') &&
@@ -67,7 +56,6 @@ export function getAvatarUrl(name?: string, explicitUrl?: string, role?: string)
   if (lower.includes('kiet')) return REAL_COACH_PORTRAITS['kiet'];
   if (lower.includes('hoang')) return REAL_COACH_PORTRAITS['hoang'];
 
-  // Nếu tên chỉ toàn số hoặc quá ngắn (ví dụ: "11"), dùng SVG Initials với màu đẹp thay vì lấy ảnh ngẫu nhiên
   if (/^\d+$/.test(name.trim()) || name.trim().length <= 2) {
     return getInitialAvatar(name, role);
   }

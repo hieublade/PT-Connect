@@ -21,8 +21,8 @@ export interface PtProfile {
   experienceYears: number;
   availableLocations: string;
   locationPricingNote?: string;
-  certificateUrl?: string | null;                 // trường chuẩn 1NF
-  certificateUrls?: string | string[] | null;     // alias cũ: có thể là chuỗi, '["..."]' hoặc mảng
+  certificateUrl?: string | null;
+  certificateUrls?: string | string[] | null;
   averageRating: number;
   totalReviews: number;
   lowestPrice?: number;

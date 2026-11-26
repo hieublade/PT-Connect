@@ -12,10 +12,6 @@ export interface ParsedEvidence {
   items: EvidenceItem[];
 }
 
-/**
- * Nén và chuyển đổi tệp ảnh của người dùng thành Base64 Data URL (kích thước tối ưu 30-50KB)
- * Đảm bảo mọi ảnh người dùng tải lên từ máy tính luôn hiển thị chính xác ảnh đó
- */
 export async function compressImageToDataUrl(file: File, maxWidth = 900, quality = 0.72): Promise<string> {
   return new Promise((resolve) => {
     try {
@@ -67,23 +63,18 @@ export async function compressImageToDataUrl(file: File, maxWidth = 900, quality
   });
 }
 
-/**
- * Trích xuất các liên kết hình ảnh, tên tệp đính kèm và làm sạch văn bản tường trình
- */
 export function parseEvidence(rawText?: string | null): ParsedEvidence {
   if (!rawText) return { cleanText: '', items: [] };
 
   const items: EvidenceItem[] = [];
   let text = rawText;
 
-  // 1. Tìm các cấu trúc [Ảnh đối chứng: <url_hoặc_tên_file>] hoặc [Ảnh: ...] hoặc [Tệp: ...]
   const bracketRegex = /\[(?:Ảnh đối chứng|Ảnh|Tệp):\s*([^\]]+)\]/gi;
   let match;
   while ((match = bracketRegex.exec(rawText)) !== null) {
     const rawVal = match[1].trim();
     const isUrl = rawVal.startsWith('/uploads/') || rawVal.startsWith('http://') || rawVal.startsWith('https://') || rawVal.startsWith('data:image/');
     
-    // Kiểm tra xem trong localStorage có ảnh thực tế người dùng vừa upload không
     let cachedDataUrl: string | null = null;
     if (!isUrl) {
       try {
@@ -91,7 +82,6 @@ export function parseEvidence(rawText?: string | null): ParsedEvidence {
       } catch {}
     }
 
-    // Tự động map tên tệp sang URL thực tế hoặc /uploads/disputes/<tên_tệp>
     const resolvedUrl = isUrl
       ? rawVal
       : (cachedDataUrl || (rawVal ? `/uploads/disputes/${encodeURI(rawVal)}` : undefined));
@@ -104,7 +94,6 @@ export function parseEvidence(rawText?: string | null): ParsedEvidence {
   }
   text = text.replace(bracketRegex, '').replace(/\|\s*$/, '').trim();
 
-  // 2. Tìm các URL hoặc tên file ảnh (tách theo xuống dòng hoặc dấu ' | ')
   const lines = text.split(/\r?\n| \| /);
   const remainingParts: string[] = [];
   for (const line of lines) {
@@ -153,9 +142,6 @@ export const DEFAULT_FALLBACK_SVG = 'data:image/svg+xml;utf8,' + encodeURICompon
 </svg>
 `);
 
-/**
- * Thẻ hiển thị một bằng chứng (ảnh thumbnail hoặc badge tệp đối chứng)
- */
 export const EvidenceImageCard: React.FC<{
   item: EvidenceItem;
   onPreviewImage?: (url: string, name: string) => void;
@@ -177,7 +163,6 @@ export const EvidenceImageCard: React.FC<{
     }
   };
 
-  // Nếu hoàn toàn không có url và đã báo lỗi
   if (!imgSrc && hasError) {
     return (
       <div
@@ -204,7 +189,6 @@ export const EvidenceImageCard: React.FC<{
         src={imgSrc || item.url}
         alt={item.name}
         onError={() => {
-          // Tự động fallback sang placeholder chuẩn nếu tệp ảnh riêng lẻ chưa tải được
           if (imgSrc !== DEFAULT_FALLBACK_SVG) {
             setImgSrc(DEFAULT_FALLBACK_SVG);
           } else {
@@ -225,9 +209,6 @@ export const EvidenceImageCard: React.FC<{
   );
 };
 
-/**
- * Component hiển thị danh sách bằng chứng & ảnh đính kèm
- */
 export const EvidenceAttachmentList: React.FC<{
   items: EvidenceItem[];
   onPreviewImage?: (url: string, name: string) => void;
@@ -248,9 +229,6 @@ export interface SelectedEvidenceFile {
   preview: string;
 }
 
-/**
- * Component hỗ trợ chọn và xem trước nhiều ảnh bằng chứng cùng lúc
- */
 export const MultiImageUploader: React.FC<{
   files: SelectedEvidenceFile[];
   onChange: (files: SelectedEvidenceFile[]) => void;
@@ -334,7 +312,6 @@ export const MultiImageUploader: React.FC<{
         )}
       </div>
 
-      {/* Grid danh sách ảnh đã chọn */}
       {files.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
           {files.map((item, idx) => (
@@ -363,7 +340,6 @@ export const MultiImageUploader: React.FC<{
         </div>
       )}
 
-      {/* Nút/Vùng chọn ảnh */}
       {files.length < maxFiles && (
         <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-amber-500 rounded-xl p-3.5 cursor-pointer hover:bg-amber-50/50 dark:hover:bg-amber-950/20 transition bg-slate-50/50 dark:bg-slate-800/40 text-center">
           <Upload className="w-5 h-5 text-slate-400 mb-1" />
@@ -389,9 +365,6 @@ export const MultiImageUploader: React.FC<{
 
 export const EvidenceUploadPicker = MultiImageUploader;
 
-/**
- * Xử lý tải lên danh sách nhiều ảnh: nén Base64 Data URL và gửi lên máy chủ
- */
 export async function uploadMultipleEvidenceFiles(
   files: SelectedEvidenceFile[],
   apiPost: (url: string, data: any) => Promise<any>
@@ -429,10 +402,6 @@ export async function uploadMultipleEvidenceFiles(
   return urls;
 }
 
-/**
- * Kiểm tra xem bên liên quan (Học viên hoặc HLV) đã nộp bằng chứng cho yêu cầu hiện tại hay chưa
- * Hỗ trợ đồng bộ trạng thái giữa máy chủ và localStorage để đảm bảo reset về ĐANG CHỜ ngay khi Admin gửi yêu cầu
- */
 export function isEvidenceSubmitted(
   dispute: {
     id: number;

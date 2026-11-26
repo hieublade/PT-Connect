@@ -10,7 +10,6 @@ interface PtCardProps {
   onBook?: (pt: PtProfile) => void;
 }
 
-// Chuyên môn và vai trò thực tế tương ứng với từng Huấn luyện viên
 const PT_EXTRA_INFO: Record<string, { role: string; highlights: string[] }> = {
   'cuong': {
     role: 'Giảng viên Huấn luyện Thể hình & Trưởng bộ môn Tăng cơ - HFI',
@@ -89,7 +88,6 @@ export const PtCard: React.FC<PtCardProps> = ({ pt, index = 0, onSelect, onBook 
       className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between group cursor-pointer"
     >
       <div>
-        {/* 1. KHUNG ẢNH CHÂN DUNG LỚN CHUẨN GYM (PHONG CÁCH VIỆN ĐÀO TẠO FITNESS) */}
         <div className="relative w-full aspect-[4/4.6] bg-slate-100 overflow-hidden">
           <img
             src={getAvatarUrl(pt.fullName, pt.avatarUrl)}
@@ -97,19 +95,16 @@ export const PtCard: React.FC<PtCardProps> = ({ pt, index = 0, onSelect, onBook 
             className="w-full h-full object-cover object-top transition-transform duration-700 ease-out group-hover:scale-108"
           />
 
-          {/* Huy hiệu số thứ tự đỏ chuẩn thể thao (góc trên bên trái - giống ảnh mẫu) */}
           <div className="absolute top-0 left-0 bg-[#E52E2E] text-white font-black text-base px-3.5 py-1.5 rounded-br-2xl shadow-lg flex items-center justify-center">
             {trainerNumber}
           </div>
 
-          {/* Huy hiệu xác thực (góc trên bên phải) */}
           <div className="absolute top-3 right-3 bg-emerald-600/95 text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-md backdrop-blur-xs flex items-center gap-1">
             <CheckCircle2 className="w-3.5 h-3.5 text-white" />
             <span>Xác thực</span>
           </div>
 
-          {/* Lớp phủ gradient mờ dưới chân ảnh kèm kinh nghiệm */}
-          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/80 via-slate-950/30 to-transparent p-3 flex items-end justify-between text-white">
+          <div className="absolute inset-x-0 bottom-0 bg-slate-950/70 p-3 flex items-end justify-between text-white">
             <div className="flex items-center gap-1.5 text-xs font-semibold">
               <Award className="w-4 h-4 text-amber-400" />
               <span>{pt.experienceYears || 5} năm kinh nghiệm</span>
@@ -122,9 +117,7 @@ export const PtCard: React.FC<PtCardProps> = ({ pt, index = 0, onSelect, onBook 
           </div>
         </div>
 
-        {/* 2. NỘI DUNG THÔNG TIN HUẤN LUYỆN VIÊN */}
         <div className="p-5 space-y-3">
-          {/* Tên HLV phong cách Athletic Red + Bold */}
           <div className="flex items-center gap-2">
             <span className="w-6 h-6 rounded bg-[#E52E2E] text-white font-black text-xs flex items-center justify-center shrink-0">
               {trainerNumber}
@@ -134,12 +127,10 @@ export const PtCard: React.FC<PtCardProps> = ({ pt, index = 0, onSelect, onBook 
             </h4>
           </div>
 
-          {/* Chức danh / Vai trò nổi bật */}
           <p className="text-xs font-bold text-slate-800 leading-snug line-clamp-2">
             {extra.role}
           </p>
 
-          {/* Gạch đầu dòng thế mạnh / chứng chỉ chuẩn như ảnh mẫu */}
           <ul className="space-y-1.5 text-xs text-slate-600 pt-1 border-t border-slate-100">
             {extra.highlights.map((h, i) => (
               <li key={i} className="flex items-start gap-1.5 leading-relaxed">
@@ -149,7 +140,6 @@ export const PtCard: React.FC<PtCardProps> = ({ pt, index = 0, onSelect, onBook 
             ))}
           </ul>
 
-          {/* Địa điểm tập luyện */}
           <div className="flex items-center gap-1.5 text-xs text-slate-500 pt-1">
             <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             <span className="truncate">{pt.availableLocations || 'Khu vực Đống Đa, Cầu Giấy'}</span>
@@ -157,7 +147,6 @@ export const PtCard: React.FC<PtCardProps> = ({ pt, index = 0, onSelect, onBook 
         </div>
       </div>
 
-      {/* 3. FOOTER: HỌC PHÍ & NÚT HÀNH ĐỘNG */}
       <div className="p-5 pt-3 border-t border-slate-100 bg-slate-50/60 flex items-center justify-between gap-3">
         <div>
           <span className="text-[10px] text-slate-500 uppercase font-bold block">
@@ -195,7 +184,7 @@ export const PtCard: React.FC<PtCardProps> = ({ pt, index = 0, onSelect, onBook 
               e.stopPropagation();
               onSelect?.(pt);
             }}
-            className="px-4 py-2.5 bg-gradient-to-r from-[#E52E2E] to-red-600 hover:from-red-600 hover:to-red-700 text-white text-xs font-black rounded-xl shadow-md hover:shadow-lg transition-all flex items-center gap-1.5 cursor-pointer uppercase"
+            className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer uppercase"
           >
             <span>Xem Chi Tiết</span>
             <ChevronRight className="w-4 h-4" />

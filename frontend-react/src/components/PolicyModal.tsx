@@ -45,12 +45,11 @@ export const PolicyModal: React.FC<PolicyModalProps> = ({
             : 'bg-white border-slate-200 text-slate-800'
         }`}
       >
-        {/* Header */}
         <div className={`px-6 py-4 border-b flex items-center justify-between shrink-0 ${
-          isDark ? 'bg-slate-950/80 border-slate-800' : 'bg-gradient-to-r from-slate-50 to-rose-50/40 border-slate-100'
+          isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'
         }`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-500 to-amber-500 text-white flex items-center justify-center shadow-md shadow-rose-500/20">
+            <div className="w-10 h-10 rounded-xl bg-rose-600 text-white flex items-center justify-center shadow-sm">
               <Scale className="w-5 h-5" />
             </div>
             <div>
@@ -76,11 +75,9 @@ export const PolicyModal: React.FC<PolicyModalProps> = ({
           </button>
         </div>
 
-        {/* Filter and Tab Navigation Bar */}
         <div className={`px-6 py-2.5 border-b flex flex-wrap items-center justify-between gap-3 shrink-0 ${
           isDark ? 'bg-slate-950/40 border-slate-800' : 'bg-slate-50/80 border-slate-200'
         }`}>
-          {/* Main Topics */}
           <div className="flex items-center gap-1.5 overflow-x-auto py-1">
             <button
               onClick={() => setActiveTab('CANCELLATION')}
@@ -131,7 +128,6 @@ export const PolicyModal: React.FC<PolicyModalProps> = ({
             </button>
           </div>
 
-          {/* Role Filter Pills */}
           <div className="flex items-center gap-1 text-[11px] font-semibold bg-white dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
             <span className="px-2 text-slate-400">Xem theo vai trò:</span>
             <button
@@ -169,12 +165,9 @@ export const PolicyModal: React.FC<PolicyModalProps> = ({
           </div>
         </div>
 
-        {/* Scrollable Body Content */}
         <div className="p-6 overflow-y-auto space-y-6 text-sm leading-relaxed">
-          {/* TAB 1: CANCELLATION RULES */}
           {activeTab === 'CANCELLATION' && (
             <div className="space-y-6">
-              {/* Highlight Alert Box */}
               <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 flex items-start gap-3">
                 <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                 <div className="text-xs space-y-1">
@@ -188,7 +181,6 @@ export const PolicyModal: React.FC<PolicyModalProps> = ({
                 </div>
               </div>
 
-              {/* Matrix Table */}
               <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-xs">
                 <div className="bg-slate-100 dark:bg-slate-950 px-4 py-2.5 font-bold text-xs uppercase tracking-wide border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
                   <span>Bảng Ma Trận Xử Lý Hủy Ca Tập Chi Tiết</span>
@@ -206,7 +198,6 @@ export const PolicyModal: React.FC<PolicyModalProps> = ({
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                      {/* Student rows */}
                       {(roleFilter === 'ALL' || roleFilter === 'STUDENT') && (
                         <>
                           <tr className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
@@ -269,7 +260,6 @@ export const PolicyModal: React.FC<PolicyModalProps> = ({
                         </>
                       )}
 
-                      {/* PT rows */}
                       {(roleFilter === 'ALL' || roleFilter === 'PT') && (
                         <>
                           <tr className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
@@ -336,7 +326,6 @@ export const PolicyModal: React.FC<PolicyModalProps> = ({
                 </div>
               </div>
 
-              {/* Concrete Practical Examples */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="p-4 rounded-xl border border-blue-200 dark:border-blue-900/60 bg-blue-50/40 dark:bg-blue-950/20 space-y-2">
                   <div className="flex items-center gap-2 font-bold text-blue-800 dark:text-blue-300 text-xs uppercase">
@@ -377,7 +366,6 @@ export const PolicyModal: React.FC<PolicyModalProps> = ({
             </div>
           )}
 
-          {/* TAB 2: ATTENDANCE & NO-SHOW */}
           {activeTab === 'ATTENDANCE' && (
             <div className="space-y-5">
               <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-900 dark:text-blue-200 flex items-start gap-3">
@@ -424,7 +412,6 @@ export const PolicyModal: React.FC<PolicyModalProps> = ({
                 </div>
               </div>
 
-              {/* Prohibitions */}
               <div className="p-4 rounded-xl border border-red-200 dark:border-red-900/60 bg-red-50/40 dark:bg-red-950/20 text-xs space-y-2">
                 <div className="flex items-center gap-2 font-bold text-red-800 dark:text-red-300 uppercase">
                   <XCircle className="w-4 h-4 text-red-600" />
@@ -439,7 +426,6 @@ export const PolicyModal: React.FC<PolicyModalProps> = ({
             </div>
           )}
 
-          {/* TAB 3: TRIAL & CONTRACT */}
           {activeTab === 'TRIAL_CONTRACT' && (
             <div className="space-y-5">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -486,7 +472,6 @@ export const PolicyModal: React.FC<PolicyModalProps> = ({
                 </div>
               </div>
 
-              {/* Package Expiration and Extension Rule */}
               <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs space-y-2">
                 <h4 className="font-bold text-slate-800 dark:text-white flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-rose-500" />
@@ -500,7 +485,6 @@ export const PolicyModal: React.FC<PolicyModalProps> = ({
             </div>
           )}
 
-          {/* TAB 4: CODE OF CONDUCT & ARBITRATION */}
           {activeTab === 'CONDUCT' && (
             <div className="space-y-5">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -531,7 +515,6 @@ export const PolicyModal: React.FC<PolicyModalProps> = ({
                 </div>
               </div>
 
-              {/* Red line prohibitions */}
               <div className="p-4 rounded-xl border border-red-200 dark:border-red-900/60 bg-red-500/10 text-xs space-y-2">
                 <div className="flex items-center gap-2 font-bold text-red-800 dark:text-red-300 uppercase">
                   <ShieldAlert className="w-4 h-4 text-red-600" />
@@ -547,7 +530,6 @@ export const PolicyModal: React.FC<PolicyModalProps> = ({
                 </ul>
               </div>
 
-              {/* Arbitration 48h */}
               <div className="p-4 rounded-xl border border-amber-200 dark:border-amber-900/60 bg-amber-50/50 dark:bg-amber-950/20 text-xs space-y-2">
                 <h4 className="font-bold text-amber-900 dark:text-amber-300 flex items-center gap-2">
                   <Scale className="w-4 h-4 text-amber-600" />
@@ -559,7 +541,6 @@ export const PolicyModal: React.FC<PolicyModalProps> = ({
                 </p>
               </div>
 
-              {/* Review & Counter-argument (1 - 3 stars) */}
               <div className="p-4 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/40 dark:bg-rose-950/20 text-xs space-y-2">
                 <h4 className="font-bold text-rose-900 dark:text-rose-300 flex items-center gap-2">
                   <Star className="w-4 h-4 fill-rose-500 text-rose-500" />
@@ -575,7 +556,6 @@ export const PolicyModal: React.FC<PolicyModalProps> = ({
           )}
         </div>
 
-        {/* Footer */}
         <div className={`px-6 py-3 border-t flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0 ${
           isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-100'
         }`}>

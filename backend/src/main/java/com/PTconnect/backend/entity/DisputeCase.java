@@ -61,7 +61,7 @@ public class DisputeCase {
     @Column(name = "counter_statement", columnDefinition = "TEXT")
     private String counterStatement;
 
-    @Column(name = "evidence_note", columnDefinition = "TEXT")
+    @Column(name = "evidence_note", columnDefinition = "LONGTEXT")
     private String evidenceNote;
 
     @Column(name = "evidence_requested")
@@ -73,10 +73,10 @@ public class DisputeCase {
     @Column(name = "evidence_request_note", columnDefinition = "TEXT")
     private String evidenceRequestNote;
 
-    @Column(name = "additional_evidence_pt", columnDefinition = "TEXT")
+    @Column(name = "additional_evidence_pt", columnDefinition = "LONGTEXT")
     private String additionalEvidencePt;
 
-    @Column(name = "additional_evidence_student", columnDefinition = "TEXT")
+    @Column(name = "additional_evidence_student", columnDefinition = "LONGTEXT")
     private String additionalEvidenceStudent;
 
     @Column(name = "student_evidence_submitted")

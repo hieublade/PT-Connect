@@ -34,7 +34,6 @@ export const BookingTable: React.FC<BookingTableProps> = ({
 }) => {
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
 
-  // Cancel/Reject Modal State
   const [cancelModalBooking, setCancelModalBooking] = useState<Booking | null>(null);
   const [cancelActionType, setCancelActionType] = useState<'REJECT' | 'CANCEL'>('CANCEL');
   const [cancelReason, setCancelReason] = useState<string>('Trùng lịch bận đột xuất');
@@ -42,7 +41,6 @@ export const BookingTable: React.FC<BookingTableProps> = ({
   const [cancelPreviewLoading, setCancelPreviewLoading] = useState<boolean>(false);
   const [showPolicyModal, setShowPolicyModal] = useState<boolean>(false);
 
-  // Dispute / Khiếu nại Modal State
   const [disputeModalBooking, setDisputeModalBooking] = useState<Booking | null>(null);
   const [disputeType, setDisputeType] = useState<string>('PT_ABSENT');
   const [disputeSeverity, setDisputeSeverity] = useState<'HIGH' | 'MEDIUM' | 'LOW'>('HIGH');
@@ -95,7 +93,7 @@ export const BookingTable: React.FC<BookingTableProps> = ({
       let finalEvidence = disputeEvidence.trim();
 
       if (disputeFiles.length > 0) {
-        const urls = await uploadMultipleEvidenceFiles(disputeFiles, api.post);
+        const urls = await uploadMultipleEvidenceFiles(disputeFiles, (url, data) => api.post(url, data));
         if (urls.length > 0) {
           const joinedUrls = urls.join(' | ');
           finalEvidence = finalEvidence ? `${joinedUrls} | ${finalEvidence}` : joinedUrls;
@@ -196,7 +194,6 @@ export const BookingTable: React.FC<BookingTableProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Filter Toolbar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
         <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200">
           <Filter className="w-4 h-4 text-slate-400" />
@@ -270,7 +267,6 @@ export const BookingTable: React.FC<BookingTableProps> = ({
                           {cfg.label}
                         </span>
 
-                        {/* Hiển thị lý do hủy rõ ràng nếu ca bị hủy */}
                         {b.status === 'CANCELLED' && (
                           <div className="mt-1.5 p-2 bg-red-50 rounded-lg border border-red-200/80 text-[11px] text-red-800 max-w-xs leading-normal">
                             <span className="font-bold">
@@ -369,7 +365,6 @@ export const BookingTable: React.FC<BookingTableProps> = ({
                             </>
                           )}
 
-                          {/* Nút Khiếu Nại / Báo Cáo Sự Cố cho các ca không phải PENDING */}
                           {b.status !== 'PENDING' && (
                             disputedBookingIds.has(b.id) ? (
                               <span className="px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 text-[11px] font-semibold flex items-center gap-1 border border-amber-300">
@@ -397,11 +392,9 @@ export const BookingTable: React.FC<BookingTableProps> = ({
         </div>
       )}
 
-      {/* Modal Khiếu Nại & Báo Cáo Sự Cố Ca Tập Lên Ban Quản Trị */}
       {disputeModalBooking && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
           <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 dark:border-slate-800 animate-scale-up my-auto max-h-[92vh] flex flex-col overflow-hidden">
-            {/* Modal Header */}
             <div className="flex items-center justify-between p-4 sm:p-5 pb-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
               <div className="flex items-center gap-2.5 text-amber-600 dark:text-amber-400">
                 <ShieldAlert className="w-5 h-5 shrink-0" />
@@ -418,9 +411,7 @@ export const BookingTable: React.FC<BookingTableProps> = ({
               </button>
             </div>
 
-            {/* Modal Body (Scrollable) */}
             <div className="p-4 sm:p-5 overflow-y-auto flex-1 space-y-3.5">
-              {/* Thông tin ca tập liên quan */}
               <div className="text-xs text-slate-600 dark:text-slate-300 space-y-1.5 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
                 <div className="flex justify-between">
                   <span className="text-slate-400">Thời gian ca tập:</span>
@@ -443,7 +434,6 @@ export const BookingTable: React.FC<BookingTableProps> = ({
                 </div>
               ) : (
                 <>
-                  {/* Chọn lý do khiếu nại */}
                   <div>
                     <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">
                       Lý do khiếu nại chính:
@@ -466,7 +456,6 @@ export const BookingTable: React.FC<BookingTableProps> = ({
                     </select>
                   </div>
 
-                  {/* Mức độ nghiêm trọng */}
                   <div>
                     <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">
                       Mức độ nghiêm trọng:
@@ -493,7 +482,6 @@ export const BookingTable: React.FC<BookingTableProps> = ({
                     </div>
                   </div>
 
-                  {/* Tường trình chi tiết */}
                   <div>
                     <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">
                       Tường trình chi tiết sự việc <span className="text-red-500">*</span>:
@@ -510,7 +498,6 @@ export const BookingTable: React.FC<BookingTableProps> = ({
                     />
                   </div>
 
-                  {/* Bằng chứng bằng cách tải ảnh lên */}
                   <div>
                     <MultiImageUploader
                       files={disputeFiles}
@@ -528,12 +515,6 @@ export const BookingTable: React.FC<BookingTableProps> = ({
                     />
                   </div>
 
-                  {disputeError && (
-                    <div className="p-2.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 rounded-xl text-xs text-red-700 dark:text-red-300">
-                      ⚠️ {disputeError}
-                    </div>
-                  )}
-
                   <div className="p-2.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-xl text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">
                     ⚖️ <b>Quy trình trọng tài:</b> Sau khi bạn gửi hồ sơ, Ban Quản Trị Hệ Thống sẽ đối soát log hệ thống, liên hệ bên liên quan và ra phán quyết hoàn trả học phí hoặc bồi thường theo đúng chính sách nền tảng.
                   </div>
@@ -541,7 +522,12 @@ export const BookingTable: React.FC<BookingTableProps> = ({
               )}
             </div>
 
-            {/* Modal Footer (Pinned sticky) */}
+            {disputeError && (
+              <div className="mx-4 sm:mx-5 mb-2 p-2.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 rounded-xl text-xs text-red-700 dark:text-red-300 shrink-0">
+                ⚠️ {disputeError}
+              </div>
+            )}
+
             <div className="p-3.5 sm:p-4 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-100 dark:border-slate-800 shrink-0 flex items-center justify-end gap-2.5">
               <button
                 type="button"
@@ -566,11 +552,9 @@ export const BookingTable: React.FC<BookingTableProps> = ({
         </div>
       )}
 
-      {/* Modal Nhập Lý Do Hủy / Từ Chối Ca Tập */}
       {cancelModalBooking && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
           <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 dark:border-slate-800 animate-scale-up my-auto max-h-[92vh] flex flex-col overflow-hidden">
-            {/* Modal Header */}
             <div className="flex items-center justify-between p-4 sm:p-5 pb-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
               <div className="flex items-center gap-2.5 text-red-600 dark:text-red-400">
                 <AlertTriangle className="w-5 h-5 shrink-0" />
@@ -586,7 +570,6 @@ export const BookingTable: React.FC<BookingTableProps> = ({
               </button>
             </div>
 
-            {/* Modal Body (Scrollable) */}
             <div className="p-4 sm:p-5 overflow-y-auto flex-1 space-y-3.5">
               <div className="text-xs text-slate-600 dark:text-slate-300 space-y-1.5 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
                 <div>
@@ -599,7 +582,6 @@ export const BookingTable: React.FC<BookingTableProps> = ({
                 </div>
               </div>
 
-              {/* Policy Preview Box */}
               {cancelActionType === 'CANCEL' && (
                 <div className="p-3.5 rounded-xl border border-amber-300 bg-amber-50/80 dark:bg-amber-950/30 dark:border-amber-800 space-y-2 text-xs">
                   <div className="flex items-center justify-between">
@@ -670,7 +652,6 @@ export const BookingTable: React.FC<BookingTableProps> = ({
                   Lý do {cancelActionType === 'REJECT' ? 'từ chối' : 'hủy ca'} <span className="text-red-500">*</span>:
                 </label>
 
-                {/* Gợi ý lý do bấm nhanh */}
                 <div className="flex flex-wrap gap-1.5 pb-1">
                   {commonReasons.map((r, i) => (
                     <button
@@ -701,7 +682,6 @@ export const BookingTable: React.FC<BookingTableProps> = ({
               </div>
             </div>
 
-            {/* Modal Footer (Pinned sticky) */}
             <div className="p-3.5 sm:p-4 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-100 dark:border-slate-800 shrink-0 flex items-center justify-end gap-2.5">
               <button
                 type="button"
@@ -722,7 +702,6 @@ export const BookingTable: React.FC<BookingTableProps> = ({
         </div>
       )}
 
-      {/* Modal Bảng Quy Tắc & Chính Sách */}
       <PolicyModal
         isOpen={showPolicyModal}
         onClose={() => setShowPolicyModal(false)}

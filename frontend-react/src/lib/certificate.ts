@@ -22,7 +22,6 @@ const cleanOne = (raw: unknown): string | null => {
   return s.replace(/^"|"$/g, '').trim() || null;
 };
 
-/** Ưu tiên certificateUrl, fallback certificateUrls (chuỗi / chuỗi JSON / mảng). */
 export const resolveCertificateUrl = (src?: CertSource | null): string | null =>
   src ? cleanOne(src.certificateUrl) ?? cleanOne(src.certificateUrls) : null;
 

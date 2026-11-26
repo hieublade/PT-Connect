@@ -36,7 +36,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({ currentU
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Helper unwrappers (tương thích cả khi Axios interceptor đã bóc tách dữ liệu)
   const unwrapList = (res: any): any[] => {
     if (!res) return [];
     if (Array.isArray(res)) return res;
@@ -53,7 +52,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({ currentU
     return res;
   };
 
-  // Cuộn xuống tin nhắn mới nhất
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -62,7 +60,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({ currentU
     scrollToBottom();
   }, [messages]);
 
-  // Tải danh sách hội thoại
   const fetchConversations = async () => {
     try {
       const res: any = await api.get('/chat/conversations');
@@ -72,7 +69,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({ currentU
     }
   };
 
-  // Tải số lượng tin nhắn chưa đọc
   const fetchUnreadCount = async () => {
     try {
       const res: any = await api.get('/chat/unread-count');
@@ -85,14 +81,12 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({ currentU
     }
   };
 
-  // Tải tin nhắn của hội thoại hiện tại
   const fetchMessages = async (partnerId: number) => {
     try {
       setLoading(true);
       setErrorMessage(null);
       const res: any = await api.get(`/chat/messages/${partnerId}`);
       setMessages(unwrapList(res));
-      // Đọc xong thì cập nhật lại số lượng chưa đọc
       fetchUnreadCount();
       fetchConversations();
     } catch (err: any) {
@@ -103,7 +97,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({ currentU
     }
   };
 
-  // Chu kỳ polling cập nhật tin nhắn định kỳ mỗi 4 giây
   useEffect(() => {
     fetchUnreadCount();
     fetchConversations();
@@ -111,7 +104,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({ currentU
     const interval = setInterval(() => {
       fetchUnreadCount();
       if (isOpen && selectedPartner) {
-        // Cập nhật ngầm tin nhắn không đổi trạng thái loading
         api.get(`/chat/messages/${selectedPartner.partnerId}`)
           .then((res: any) => {
             const list = unwrapList(res);
@@ -124,7 +116,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({ currentU
     return () => clearInterval(interval);
   }, [isOpen, selectedPartner]);
 
-  // Lắng nghe sự kiện toàn cục mở chat với PT cụ thể từ bất kỳ trang nào
   useEffect(() => {
     const handleOpenChat = (e: any) => {
       const detail = e.detail;
@@ -157,12 +148,10 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({ currentU
     return () => window.removeEventListener('ptconnect:open_chat' as any, handleOpenChat);
   }, [conversations]);
 
-  // Gửi tin nhắn
   const handleSendMessage = async (textToSend?: string) => {
     const text = (textToSend || inputContent).trim();
     if (!text || !selectedPartner || sending) return;
 
-    // Không cho phép nhắn tin cho chính tài khoản của mình
     if (currentUser?.id && selectedPartner.partnerId === currentUser.id) {
       setErrorMessage('Bạn đang đăng nhập chính tài khoản này nên không thể tự nhắn tin cho bản thân!');
       return;
@@ -196,7 +185,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({ currentU
     }
   };
 
-  // Gợi ý tin nhắn nhanh
   const quickChips = currentUser.role === 'STUDENT' ? [
     '👋 Chào PT, mình muốn trao đổi về lịch tập tuần này',
     '💪 Hôm nay bài tập thể lực thế nào vậy ạ?',
@@ -209,7 +197,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({ currentU
     '✅ Mình đã cập nhật giáo án mới, bạn vào xem nhé'
   ];
 
-  // Lọc danh sách hội thoại
   const filteredConversations = conversations.filter(c => 
     c.partnerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     c.partnerEmail.toLowerCase().includes(searchQuery.toLowerCase())
@@ -227,7 +214,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({ currentU
 
   return (
     <>
-      {/* 1. NÚT CHAT BONG BÓNG GÓC PHẢI DƯỚI (FLOATING CHAT BUBBLE) */}
       {!isOpen && (
         <div className="fixed bottom-6 right-6 z-30 flex items-center gap-3">
           <div className="hidden md:flex items-center bg-white px-3.5 py-1.5 rounded-full shadow-lg border border-slate-200 text-xs font-semibold text-slate-700 animate-fade-in">
@@ -240,12 +226,11 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({ currentU
               setIsMinimized(false);
               fetchConversations();
             }}
-            className="group relative w-14 h-14 rounded-full bg-gradient-to-tr from-red-600 via-orange-500 to-amber-500 text-white shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-300 flex items-center justify-center cursor-pointer border-2 border-white/60 focus:outline-none"
+            className="group relative w-14 h-14 rounded-full bg-rose-600 hover:bg-rose-700 text-white shadow-lg active:scale-95 transition-all flex items-center justify-center cursor-pointer border-2 border-white focus:outline-none"
             aria-label="Mở cửa sổ Chat"
           >
             <MessageCircle className="w-7 h-7 drop-shadow-md group-hover:rotate-6 transition-transform" />
             
-            {/* Badge tin nhắn chưa đọc nhấp nháy */}
             {totalUnread > 0 && (
               <span className="absolute -top-1 -right-1 min-w-[22px] h-[22px] px-1 bg-red-600 border-2 border-white text-white text-[11px] font-extrabold rounded-full flex items-center justify-center animate-bounce shadow-md">
                 {totalUnread > 99 ? '99+' : totalUnread}
@@ -255,7 +240,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({ currentU
         </div>
       )}
 
-      {/* 2. CỬA SỔ CHAT FLOATING POPUP (SHOPEE / MESSENGER STYLE) */}
       {isOpen && (
         <div 
           className={`fixed bottom-6 right-6 z-30 w-[380px] sm:w-[410px] bg-white rounded-2xl shadow-2xl border border-slate-200/90 flex flex-col overflow-hidden transition-all duration-300 ${
@@ -263,8 +247,7 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({ currentU
           }`}
           style={{ boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.25)' }}
         >
-          {/* HEADER CỬA SỔ CHAT */}
-          <div className="h-[60px] bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 text-white px-4 flex items-center justify-between border-b border-slate-800 select-none">
+          <div className="h-[60px] bg-slate-900 text-white px-4 flex items-center justify-between border-b border-slate-800 select-none">
             <div className="flex items-center gap-2.5 min-w-0">
               {selectedPartner ? (
                 <>
@@ -301,7 +284,7 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({ currentU
                 </>
               ) : (
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-red-500 to-orange-500 flex items-center justify-center shadow-inner">
+                  <div className="w-8 h-8 rounded-lg bg-rose-600 flex items-center justify-center shadow-inner">
                     <MessageCircle className="w-5 h-5 text-white" />
                   </div>
                   <div>
@@ -346,13 +329,10 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({ currentU
             </div>
           </div>
 
-          {/* NỘI DUNG CHAT (NẾU KHÔNG BỊ THU NHỎ) */}
           {!isMinimized && (
             <div className="flex-1 flex flex-col bg-slate-50/50 overflow-hidden">
-              {/* VIEW 1: DANH SÁCH CUỘC TRÒ CHUYỆN */}
               {!selectedPartner ? (
                 <div className="flex-1 flex flex-col overflow-hidden">
-                  {/* Ô tìm kiếm liên hệ */}
                   <div className="p-3 bg-white border-b border-slate-200">
                     <div className="relative">
                       <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -366,7 +346,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({ currentU
                     </div>
                   </div>
 
-                  {/* Danh sách người chat */}
                   <div className="flex-1 overflow-y-auto divide-y divide-slate-100 p-1">
                     {filteredConversations.length === 0 ? (
                       <div className="h-full flex flex-col items-center justify-center p-6 text-center text-slate-400">
@@ -443,15 +422,12 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({ currentU
                   </div>
                 </div>
               ) : (
-                /* VIEW 2: KHUNG CHAT CHI TIẾT 1-1 */
                 <div className="flex-1 flex flex-col overflow-hidden bg-slate-50">
-                  {/* Dòng thông báo mã hóa bảo mật */}
                   <div className="px-3 py-1.5 bg-amber-50 border-b border-amber-200/60 text-[11px] text-amber-800 flex items-center justify-center gap-1.5 font-medium">
                     <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
                     Kênh trao đổi chính thức giữa HLV & Học viên PTConnect
                   </div>
 
-                  {/* Cảnh báo lỗi nếu có */}
                   {errorMessage && (
                     <div className="px-3.5 py-2 bg-red-50 border-b border-red-200 text-xs text-red-600 flex items-center justify-between">
                       <span className="font-semibold">⚠️ {errorMessage}</span>
@@ -465,7 +441,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({ currentU
                     </div>
                   )}
 
-                  {/* Lịch sử tin nhắn */}
                   <div className="flex-1 overflow-y-auto p-4 space-y-3">
                     {loading ? (
                       <div className="h-full flex items-center justify-center text-slate-400 text-xs gap-2">
@@ -503,7 +478,7 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({ currentU
                               <div
                                 className={`px-3.5 py-2 text-xs leading-relaxed shadow-xs ${
                                   isMe
-                                    ? 'bg-gradient-to-r from-red-600 to-orange-500 text-white rounded-2xl rounded-br-xs'
+                                    ? 'bg-rose-600 text-white rounded-2xl rounded-br-xs'
                                     : 'bg-white text-slate-800 rounded-2xl rounded-bl-xs border border-slate-200'
                                 }`}
                               >
@@ -523,7 +498,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({ currentU
                     <div ref={messagesEndRef} />
                   </div>
 
-                  {/* Thanh gợi ý tin nhắn nhanh (Quick Chips) */}
                   <div className="px-3 py-1.5 bg-white border-t border-slate-200 overflow-x-auto whitespace-nowrap scrollbar-none flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-orange-500 flex-shrink-0" />
                     {quickChips.map((chip, idx) => (
@@ -537,7 +511,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({ currentU
                     ))}
                   </div>
 
-                  {/* Ô nhập tin nhắn */}
                   <div className="p-3 bg-white border-t border-slate-200 flex items-center gap-2">
                     <input
                       type="text"
@@ -555,7 +528,7 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({ currentU
                     <button
                       onClick={() => handleSendMessage()}
                       disabled={!inputContent.trim() || sending}
-                      className="w-9 h-9 rounded-xl bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-700 hover:to-orange-600 disabled:opacity-40 text-white flex items-center justify-center transition-all shadow-sm flex-shrink-0 cursor-pointer disabled:cursor-not-allowed"
+                      className="w-9 h-9 rounded-xl bg-rose-600 hover:bg-rose-700 disabled:opacity-40 text-white flex items-center justify-center transition-all shadow-sm flex-shrink-0 cursor-pointer disabled:cursor-not-allowed"
                       title="Gửi (Enter)"
                     >
                       {sending ? (

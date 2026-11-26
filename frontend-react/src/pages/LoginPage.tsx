@@ -12,13 +12,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const [activeTab, setActiveTab] = useState<'LOGIN' | 'REGISTER'>('LOGIN');
   const [showPolicyModal, setShowPolicyModal] = useState(false);
 
-  // Login form
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Register form
   const [regFullName, setRegFullName] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regPhone, setRegPhone] = useState('');
@@ -105,32 +103,25 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-slate-100/60 to-slate-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      {/* Decorative ambient background glows */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-rose-500/10 blur-[100px] pointer-events-none rounded-full" />
-      <div className="absolute bottom-0 right-10 w-[400px] h-[300px] bg-orange-500/10 blur-[100px] pointer-events-none rounded-full" />
-
-      {/* Brand Header */}
+    <div className="min-h-screen bg-slate-100 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 relative">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center mb-6 relative z-10">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 border border-rose-200/80 text-rose-600 text-[11px] font-bold tracking-wide uppercase mb-3 shadow-xs">
-          <Dumbbell className="w-3.5 h-3.5 text-rose-600" /> PTConnect Elite Platform
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold uppercase mb-3">
+          <Dumbbell className="w-3.5 h-3.5 text-rose-600" /> Hệ thống Huấn luyện viên Cá nhân
         </div>
         <div className="flex items-center justify-center gap-2 mb-2">
-          <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-rose-600 via-rose-500 to-orange-500 text-white shadow-md shadow-rose-500/25 flex items-center justify-center font-black text-xl">
+          <div className="w-11 h-11 rounded-xl bg-rose-600 text-white shadow-sm flex items-center justify-center font-black text-xl">
             PT
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">PT-Connect</h1>
         </div>
-        <p className="mt-1 text-xs sm:text-sm text-slate-500 font-medium">
+        <p className="mt-1 text-xs sm:text-sm text-slate-600 font-medium">
           Nền tảng kết nối Huấn luyện viên cá nhân &amp; Đảm bảo hợp đồng minh bạch
         </p>
       </div>
 
-      {/* Main Card */}
       <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
-        <div className="bg-white/95 backdrop-blur-md py-8 px-6 sm:px-8 rounded-3xl border border-slate-200/90 shadow-xl shadow-slate-200/50">
+        <div className="bg-white py-8 px-6 sm:px-8 rounded-2xl border border-slate-200 shadow-lg">
           
-          {/* Linear / iOS Style Segmented Control */}
           <div className="flex bg-slate-100 p-1 rounded-xl mb-6">
             <button
               type="button"
@@ -236,7 +227,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 </button>
               </div>
 
-              {/* Minimalist Demo Accounts Bar */}
               <div className="mt-6 pt-5 border-t border-slate-100">
                 <div className="flex items-center justify-between text-[11px] text-slate-500 mb-2.5">
                   <span className="font-bold text-slate-700 flex items-center gap-1.5">
@@ -416,7 +406,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             </form>
           )}
 
-          {/* Footer Policy Link */}
           <div className="mt-5 pt-4 border-t border-slate-100 text-center">
             <button
               type="button"
@@ -430,7 +419,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
         </div>
       </div>
 
-      {/* Policy Modal */}
       <PolicyModal
         isOpen={showPolicyModal}
         onClose={() => setShowPolicyModal(false)}

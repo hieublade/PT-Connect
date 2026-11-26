@@ -133,7 +133,6 @@ export const CourseCard: React.FC<CourseCardProps> = ({
         )}
       </div>
 
-      {/* Course Preview & Syllabus Demo Modal */}
       <CoursePreviewModal
         course={course}
         isOpen={showPreviewModal}

@@ -100,7 +100,7 @@ public class DisputeController {
             throw new com.PTconnect.backend.exception.BadRequestException("Dung lượng tập tin ảnh không được vượt quá 5MB!");
         }
         try {
-            java.nio.file.Path uploadDir = java.nio.file.Paths.get("uploads", "disputes");
+            java.nio.file.Path uploadDir = java.nio.file.Paths.get("uploads", "disputes").toAbsolutePath().normalize();
             if (!java.nio.file.Files.exists(uploadDir)) {
                 java.nio.file.Files.createDirectories(uploadDir);
             }
@@ -111,7 +111,7 @@ public class DisputeController {
             }
             String newFilename = "evidence_" + System.currentTimeMillis() + "_" + java.util.UUID.randomUUID().toString().substring(0, 8) + extension;
             java.nio.file.Path destination = uploadDir.resolve(newFilename);
-            file.transferTo(destination.toFile());
+            java.nio.file.Files.copy(file.getInputStream(), destination, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
 
             String fileUrl = "/uploads/disputes/" + newFilename;
             return ResponseEntity.ok(ApiResponse.success("Tải ảnh bằng chứng thành công", java.util.Map.of("url", fileUrl)));

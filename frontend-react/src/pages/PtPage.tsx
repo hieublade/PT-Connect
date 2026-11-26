@@ -68,7 +68,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
   const [activeTab, setActiveTab] = useState<number>(0);
   const [showPolicyModal, setShowPolicyModal] = useState<boolean>(false);
 
-  // Giao diện Sáng / Tối (Theme Mode)
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     return (localStorage.getItem('pt_theme') as 'dark' | 'light') || 'dark';
   });
@@ -94,7 +93,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
   const [plans, setPlans] = useState<WorkoutPlan[]>([]);
   const [ptProfile, setPtProfile] = useState<PtProfile | null>(null);
 
-  // Reviews & Appeals
   const [myReviews, setMyReviews] = useState<Review[]>([]);
   const [reviewFilter, setReviewFilter] = useState<string>('ALL');
   const [appealModalReview, setAppealModalReview] = useState<Review | null>(null);
@@ -104,7 +102,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
   const [appealSubmitting, setAppealSubmitting] = useState(false);
   const [appealError, setAppealError] = useState<string | null>(null);
 
-  // Slot filter & preview evidence
   const [slotStatusFilter, setSlotStatusFilter] = useState<'ALL' | 'AVAILABLE' | 'BOOKED'>('ALL');
   const [cleaningSlots, setCleaningSlots] = useState(false);
   const [previewEvidenceImage, setPreviewEvidenceImage] = useState<{ name: string; url: string } | null>(null);
@@ -148,7 +145,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
     }
   };
 
-  // Slot open form
   const [slotDate, setSlotDate] = useState(() => {
     const today = new Date();
     const y = today.getFullYear();
@@ -234,7 +230,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
     setSlotDate(`${y}-${m}-${d}`);
   };
 
-  // Wallet states
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [ptTopupAmount, setPtTopupAmount] = useState<number>(1000000);
   const [ptTopupMethod, setPtTopupMethod] = useState<string>('BANK_TRANSFER');
@@ -245,7 +240,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
   const [ptWithdrawHolder, setPtWithdrawHolder] = useState<string>(user.fullName.toUpperCase());
   const [ptWithdrawLoading, setPtWithdrawLoading] = useState<boolean>(false);
 
-  // Course create modal
   const [showCreateCourseModal, setShowCreateCourseModal] = useState(false);
   const [newCourse, setNewCourse] = useState({
     title: '',
@@ -255,7 +249,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
     basePrice: 3600000,
   });
 
-  // Workout Plan modals
   const [showCreatePlanModal, setShowCreatePlanModal] = useState(false);
   const [newPlan, setNewPlan] = useState({
     enrollmentId: 0,
@@ -276,7 +269,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
     videoDemoUrl: '',
   });
 
-  // PT OTP Generator Modal: Huấn luyện viên tạo OTP để cung cấp cho học viên điểm danh
   const [ptOtpModalBooking, setPtOtpModalBooking] = useState<Booking | null>(null);
   const [ptGeneratedOtp, setPtGeneratedOtp] = useState<string | null>(null);
   const [ptOtpLoading, setPtOtpLoading] = useState<boolean>(false);
@@ -306,7 +298,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
     }
   };
 
-  // Absent Modal State
   const [absentModalBooking, setAbsentModalBooking] = useState<Booking | null>(null);
   const [absentReason, setAbsentReason] = useState<string>('Học viên không có mặt tại buổi tập sau 15 phút');
   const [absentSubmitting, setAbsentSubmitting] = useState<boolean>(false);
@@ -416,7 +407,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
     fetchMyReviews();
   }, []);
 
-  // Counter Statement Modal (PT phản biện)
   const [counterDisputeModal, setCounterDisputeModal] = useState<DisputeCase | null>(null);
   const [counterStatementText, setCounterStatementText] = useState('');
   const [counterFiles, setCounterFiles] = useState<SelectedEvidenceFile[]>([]);
@@ -467,7 +457,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
     }
   };
 
-  // Additional Evidence Modal (HLV nộp thêm bằng chứng theo yêu cầu của Admin)
   const [additionalEvidenceModal, setAdditionalEvidenceModal] = useState<DisputeCase | null>(null);
   const [additionalEvidenceText, setAdditionalEvidenceText] = useState('');
   const [additionalEvidenceFiles, setAdditionalEvidenceFiles] = useState<SelectedEvidenceFile[]>([]);
@@ -514,7 +503,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
     }
   };
 
-  // Quick Dispute modal from Tab
   const [showTabDisputeModal, setShowTabDisputeModal] = useState(false);
   const [tabDisputeBookingId, setTabDisputeBookingId] = useState<number | null>(null);
   const [tabDisputeType, setTabDisputeType] = useState('STUDENT_ABSENT');
@@ -592,7 +580,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
     }
   };
 
-  // Contract Termination Dispute for PT
   const [contractDisputeModal, setContractDisputeModal] = useState<Enrollment | null>(null);
   const [contractDisputeReason, setContractDisputeReason] = useState('STUDENT_GHOST');
   const [contractDisputeStatement, setContractDisputeStatement] = useState('');
@@ -646,7 +633,7 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
       setContractDisputeModal(null);
       fetchMyDisputes();
       fetchPlansAndEnrollments();
-      setActiveTab(6); // Switch to disputes tab
+      setActiveTab(6);
     } catch (err: any) {
       setContractDisputeError(err.response?.data?.message || err.message || 'Lỗi khi gửi yêu cầu hủy hợp đồng.');
     } finally {
@@ -654,7 +641,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
     }
   };
 
-  // PT Disputes State
   const [myDisputes, setMyDisputes] = useState<DisputeCase[]>([]);
   const [loadingDisputes, setLoadingDisputes] = useState(false);
 
@@ -951,13 +937,12 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
     <div className={`min-h-screen flex flex-col font-sans transition-colors duration-200 ${
     isDark ? 'dark bg-slate-950 text-slate-100' : 'bg-slate-100 text-slate-900 dark:text-white'
   }`}>
-      {/* Header */}
       <header className={`${
     isDark ? 'bg-slate-950/95 border-slate-800 text-white' : 'bg-white/95 border-slate-200 text-slate-900 dark:text-white'
   } backdrop-blur-md border-b sticky top-0 z-30 shadow-sm transition-colors`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-600 to-rose-700 text-white flex items-center justify-center font-black text-lg shadow-lg shadow-red-900/40">
+            <div className="w-10 h-10 rounded-xl bg-rose-600 text-white flex items-center justify-center font-black text-lg shadow-sm">
               PT
             </div>
             <div>
@@ -980,7 +965,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
               </span>
             </div>
 
-            {/* Policy & Rules Button */}
             <button
               onClick={() => setShowPolicyModal(true)}
               className={`px-3 py-1.5 rounded-xl border flex items-center gap-1.5 text-xs font-bold transition-all cursor-pointer shadow-xs ${
@@ -994,7 +978,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
               <span className="hidden sm:inline">Quy Tắc & Điều Khoản</span>
             </button>
 
-            {/* Nút chuyển đổi giao diện Sáng / Tối (Dark / Light Theme Toggle) */}
             <button
               onClick={toggleTheme}
               className={`px-3 py-1.5 rounded-xl border flex items-center gap-1.5 text-xs font-bold transition-all cursor-pointer shadow-xs ${
@@ -1035,50 +1018,56 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
         </div>
       </header>
 
-      {/* Hero Header Banner (HFI Dark Athletic Gym Aesthetic) */}
-      <div className={`relative overflow-hidden border-b shadow-2xl transition-colors ${
-    isDark 
-      ? 'bg-slate-950 text-white border-slate-800' 
-      : 'bg-gradient-to-r from-slate-950 via-slate-900 to-red-950 text-white border-slate-800'
-  }`}>
-        {/* Dark Gym Imagery & Red Glow Overlays */}
+      <div className={`relative overflow-hidden border-b transition-colors ${
+        isDark
+          ? 'bg-slate-950 text-white border-slate-800'
+          : 'bg-white text-slate-900 border-slate-200'
+      }`}>
         <div
-          className="absolute inset-0 bg-cover bg-center opacity-25 mix-blend-luminosity scale-105 pointer-events-none"
+          className={`absolute inset-0 bg-cover bg-center mix-blend-luminosity pointer-events-none ${
+            isDark ? 'opacity-20' : 'opacity-5'
+          }`}
           style={{
             backgroundImage: "url('https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1600&auto=format&fit=crop')",
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/90 to-red-950/70 pointer-events-none" />
-        <div className="absolute -top-32 -right-32 w-96 h-96 bg-red-600/25 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-amber-600/15 rounded-full blur-3xl pointer-events-none" />
+        <div className={`absolute inset-0 pointer-events-none ${
+          isDark ? 'bg-slate-950/80' : 'bg-white/85'
+        }`} />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
           <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-            {/* Left: Slogan & Quick Actions */}
             <div className="space-y-4 max-w-2xl">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/15 border border-red-500/30 text-red-400 text-xs font-black uppercase tracking-wider">
-                <Flame className="w-3.5 h-3.5 text-red-500" />
-                HỆ THỐNG HUẤN LUYỆN VIÊN THỂ HÌNH ĐẲNG CẤP
+              <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-bold uppercase tracking-wider ${
+                isDark
+                  ? 'bg-red-500/15 border-red-500/30 text-red-400'
+                  : 'bg-rose-50 border-rose-200 text-rose-700'
+              }`}>
+                <Flame className="w-3.5 h-3.5 text-rose-600" />
+                HỆ THỐNG HUẤN LUYỆN VIÊN THỂ HÌNH
               </div>
 
               <div>
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tight text-white leading-tight">
+                <h1 className={`text-3xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tight leading-tight ${
+                  isDark ? 'text-white' : 'text-slate-900'
+                }`}>
                   KIẾN THỨC CỦA CHÚNG TÔI <br />
-                  <span className="text-red-500 italic">KẾT QUẢ CỦA BẠN</span>
+                  <span className="text-rose-600 italic">KẾT QUẢ CỦA BẠN</span>
                 </h1>
-                <p className="text-slate-300 text-xs sm:text-sm mt-2 max-w-xl leading-relaxed">
+                <p className={`text-xs sm:text-sm mt-2 max-w-xl leading-relaxed ${
+                  isDark ? 'text-slate-300' : 'text-slate-600'
+                }`}>
                   Đồng hành cùng học viên bứt phá giới hạn thể lực &amp; vóc dáng. Quản trị lịch huấn luyện, tối ưu giáo án bài bản và phát triển doanh thu thù lao minh bạch.
                 </p>
               </div>
 
-              {/* Quick Actions (1-click shortcuts) */}
               <div className="flex flex-wrap items-center gap-2.5 pt-1">
                 <button
                   onClick={() => setActiveTab(1)}
-                  className={`px-4 py-2.5 rounded-xl font-extrabold text-xs uppercase tracking-wider flex items-center gap-2 transition transform hover:-translate-y-0.5 shadow-lg ${
+                  className={`px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center gap-2 transition shadow-sm cursor-pointer ${
                     pendingBookingsCount > 0
-                      ? 'bg-red-600 hover:bg-red-500 text-white shadow-red-600/40 animate-pulse'
-                      : 'bg-red-600 hover:bg-red-500 text-white shadow-red-600/30'
+                      ? 'bg-rose-600 hover:bg-rose-700 text-white animate-pulse'
+                      : 'bg-rose-600 hover:bg-rose-700 text-white'
                   }`}
                 >
                   <Zap className="w-4 h-4" />
@@ -1086,16 +1075,24 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
                 </button>
                 <button
                   onClick={() => setActiveTab(2)}
-                  className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs uppercase tracking-wider border border-white/20 backdrop-blur-md flex items-center gap-2 transition"
+                  className={`px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider border flex items-center gap-2 transition cursor-pointer ${
+                    isDark
+                      ? 'bg-white/10 hover:bg-white/20 text-white border-white/20'
+                      : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300'
+                  }`}
                 >
-                  <Plus className="w-4 h-4 text-amber-400" />
+                  <Plus className="w-4 h-4 text-amber-500" />
                   Mở Khung Giờ Rảnh
                 </button>
                 <button
                   onClick={() => setActiveTab(3)}
-                  className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs uppercase tracking-wider border border-white/20 backdrop-blur-md flex items-center gap-2 transition"
+                  className={`px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider border flex items-center gap-2 transition cursor-pointer ${
+                    isDark
+                      ? 'bg-white/10 hover:bg-white/20 text-white border-white/20'
+                      : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300'
+                  }`}
                 >
-                  <BookOpen className="w-4 h-4 text-sky-400" />
+                  <BookOpen className="w-4 h-4 text-blue-600" />
                   Quản Lý Khóa Học
                 </button>
                 <button
@@ -1103,70 +1100,100 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
                     setActiveTab(5);
                     fetchPtWallet();
                   }}
-                  className="px-4 py-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 font-bold text-xs uppercase tracking-wider border border-emerald-500/40 backdrop-blur-md flex items-center gap-2 transition"
+                  className={`px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider border flex items-center gap-2 transition cursor-pointer ${
+                    isDark
+                      ? 'bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border-emerald-500/40'
+                      : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200'
+                  }`}
                 >
-                  <WalletIcon className="w-4 h-4 text-emerald-400" />
+                  <WalletIcon className="w-4 h-4 text-emerald-600" />
                   Ví Thù Lao
                 </button>
               </div>
             </div>
 
-            {/* Right: Coach Profile Identity Card */}
             <div className="w-full lg:w-auto self-stretch lg:self-auto flex">
-              <div className="w-full lg:min-w-[320px] bg-slate-900/90 backdrop-blur-md border border-slate-700/60 rounded-2xl p-4 sm:p-5 shadow-2xl flex flex-col justify-between gap-4">
+              <div className={`w-full lg:min-w-[320px] border rounded-2xl p-4 sm:p-5 flex flex-col justify-between gap-4 ${
+                isDark
+                  ? 'bg-slate-900/90 border-slate-700/60 shadow-2xl'
+                  : 'bg-slate-50 border-slate-200 shadow-sm'
+              }`}>
                 <div className="flex items-center gap-4">
                   <div className="relative shrink-0">
                     <img
                       src={getAvatarUrl(user.fullName, user.avatarUrl)}
                       alt={user.fullName}
-                      className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl border-2 border-red-500 object-cover shadow-lg shadow-red-950/60"
+                      className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl border-2 border-rose-500 object-cover shadow-sm"
                     />
                     {ptProfile?.verificationStatus === 'VERIFIED' && (
-                      <span className="absolute -bottom-1 -right-1 bg-emerald-500 text-white p-1 rounded-full border-2 border-slate-900 shadow">
+                      <span className={`absolute -bottom-1 -right-1 bg-emerald-500 text-white p-1 rounded-full border-2 shadow ${
+                        isDark ? 'border-slate-900' : 'border-white'
+                      }`}>
                         <ShieldCheck className="w-3.5 h-3.5" />
                       </span>
                     )}
                   </div>
                   <div className="space-y-1 min-w-0 flex-1">
-                    <div className="text-[10px] font-black text-red-400 uppercase tracking-widest flex items-center gap-1">
-                      <Award className="w-3.5 h-3.5 text-red-500" /> HUẤN LUYỆN VIÊN PT
+                    <div className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-1 ${
+                      isDark ? 'text-red-400' : 'text-rose-600'
+                    }`}>
+                      <Award className="w-3.5 h-3.5 text-rose-500" /> HUẤN LUYỆN VIÊN PT
                     </div>
-                    <h3 className="text-base sm:text-lg font-black text-white uppercase italic tracking-tight truncate">
+                    <h3 className={`text-base sm:text-lg font-black uppercase italic tracking-tight truncate ${
+                      isDark ? 'text-white' : 'text-slate-900'
+                    }`}>
                       {user.fullName}
                     </h3>
-                    <p className="text-xs text-slate-400 truncate">{user.email}</p>
-                    <div className="flex items-center gap-1 text-xs text-amber-400 font-bold pt-0.5">
+                    <p className={`text-xs truncate ${
+                      isDark ? 'text-slate-400' : 'text-slate-500'
+                    }`}>{user.email}</p>
+                    <div className={`flex items-center gap-1 text-xs font-bold pt-0.5 ${
+                      isDark ? 'text-amber-400' : 'text-amber-600'
+                    }`}>
                       <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                       <span>5.0 / 5.0</span>
-                      <span className="text-slate-400 text-[11px] font-normal">(HLV Xuất Sắc)</span>
+                      <span className={`text-[11px] font-normal ${
+                        isDark ? 'text-slate-400' : 'text-slate-500'
+                      }`}>(HLV Xuất Sắc)</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Verification & Wallet quick metrics */}
-                <div className="pt-3 border-t border-slate-800 grid grid-cols-2 gap-2 text-xs">
-                  <div className="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
-                    <span className="text-[10px] text-slate-400 uppercase block font-semibold">Trạng thái hồ sơ</span>
+                <div className={`pt-3 border-t grid grid-cols-2 gap-2 text-xs ${
+                  isDark ? 'border-slate-800' : 'border-slate-200'
+                }`}>
+                  <div className={`p-2.5 rounded-xl border ${
+                    isDark ? 'bg-slate-950/60 border-slate-800/80' : 'bg-white border-slate-200'
+                  }`}>
+                    <span className={`text-[10px] uppercase block font-semibold ${
+                      isDark ? 'text-slate-400' : 'text-slate-500'
+                    }`}>Trạng thái hồ sơ</span>
                     <span className={`font-black text-xs inline-flex items-center gap-1 mt-0.5 ${
                       ptProfile?.verificationStatus === 'VERIFIED'
-                        ? 'text-emerald-400'
+                        ? (isDark ? 'text-emerald-400' : 'text-emerald-600')
                         : ptProfile?.verificationStatus === 'REJECTED'
-                        ? 'text-red-400'
-                        : 'text-amber-400'
+                        ? (isDark ? 'text-red-400' : 'text-red-600')
+                        : (isDark ? 'text-amber-400' : 'text-amber-600')
                     }`}>
                       {ptProfile?.verificationStatus === 'VERIFIED' ? (
-                        <><ShieldCheck className="w-3 h-3 text-emerald-400" /> ĐÃ DUYỆT</>
+                        <><ShieldCheck className="w-3 h-3" /> ĐÃ DUYỆT</>
                       ) : ptProfile?.verificationStatus === 'REJECTED' ? (
-                        <><AlertCircle className="w-3 h-3 text-red-400" /> TỪ CHỐI</>
+                        <><AlertCircle className="w-3 h-3" /> TỪ CHỐI</>
                       ) : (
-                        <><Clock className="w-3 h-3 text-amber-400" /> CHỜ DUYỆT</>
+                        <><Clock className="w-3 h-3" /> CHỜ DUYỆT</>
                       )}
                     </span>
                   </div>
 
-                  <div className="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
-                    <span className="text-[10px] text-slate-400 uppercase block font-semibold">Số dư ví khả dụng</span>
-                    <span className="font-black text-xs text-emerald-400 block mt-0.5 truncate">
+                  <div className={`p-2.5 rounded-xl border ${
+                    isDark ? 'bg-slate-950/60 border-slate-800/80' : 'bg-white border-slate-200'
+                  }`}>
+                    <span className={`text-[10px] uppercase block font-semibold ${
+                      isDark ? 'text-slate-400' : 'text-slate-500'
+                    }`}>Số dư ví khả dụng</span>
+                    <span className={`font-black text-xs block mt-0.5 truncate ${
+                      isDark ? 'text-emerald-400' : 'text-emerald-600'
+                    }`}>
                       {(wallet?.balance || 0).toLocaleString('vi-VN')} ₫
                     </span>
                   </div>
@@ -1175,59 +1202,78 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
             </div>
           </div>
 
-          {/* Bottom Counter Row (HFI Gym Style Stats Row) */}
-          <div className="mt-8 pt-6 border-t border-slate-800/80 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+          <div className={`mt-8 pt-6 border-t grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 ${
+            isDark ? 'border-slate-800/80' : 'border-slate-200'
+          }`}>
             <div
               onClick={() => setActiveTab(1)}
-              className={`p-3.5 rounded-xl border backdrop-blur-md cursor-pointer transition transform hover:-translate-y-0.5 ${
+              className={`p-3.5 rounded-xl border cursor-pointer transition ${
                 pendingBookingsCount > 0
-                  ? 'bg-red-950/40 border-red-500/60 shadow-lg shadow-red-950/50'
-                  : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
+                  ? (isDark ? 'bg-red-950/40 border-red-500/60 shadow-lg shadow-red-950/50' : 'bg-rose-50 border-rose-300 shadow-xs')
+                  : (isDark ? 'bg-slate-900/60 border-slate-800 hover:border-slate-700' : 'bg-slate-50 border-slate-200 hover:border-slate-300')
               }`}
             >
               <div className="flex items-center justify-between">
-                <span className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Ca chờ duyệt</span>
+                <span className={`text-[11px] font-bold uppercase tracking-wider ${
+                  isDark ? 'text-slate-400' : 'text-slate-500'
+                }`}>Ca chờ duyệt</span>
                 {pendingBookingsCount > 0 && (
                   <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span>
                 )}
               </div>
-              <div className={`text-2xl sm:text-3xl font-black mt-1 ${pendingBookingsCount > 0 ? 'text-red-400' : 'text-white'}`}>
-                {pendingBookingsCount} <span className="text-xs font-semibold text-slate-400">ca</span>
+              <div className={`text-2xl sm:text-3xl font-black mt-1 ${
+                pendingBookingsCount > 0
+                  ? (isDark ? 'text-red-400' : 'text-rose-600')
+                  : (isDark ? 'text-white' : 'text-slate-900')
+              }`}>
+                {pendingBookingsCount} <span className={`text-xs font-semibold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>ca</span>
               </div>
-              <span className="text-[11px] text-slate-400 block mt-0.5">Yêu cầu từ học viên</span>
+              <span className={`text-[11px] block mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Yêu cầu từ học viên</span>
             </div>
 
             <div
               onClick={() => setActiveTab(2)}
-              className="p-3.5 rounded-xl border bg-slate-900/60 border-slate-800 hover:border-slate-700 backdrop-blur-md cursor-pointer transition transform hover:-translate-y-0.5"
+              className={`p-3.5 rounded-xl border cursor-pointer transition ${
+                isDark
+                  ? 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
+                  : 'bg-slate-50 border-slate-200 hover:border-slate-300'
+              }`}
             >
-              <div className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Khung giờ rảnh</div>
-              <div className="text-2xl sm:text-3xl font-black text-emerald-400 mt-1">
-                {availableSlotsCount} <span className="text-xs font-semibold text-slate-400">slot</span>
+              <div className={`text-[11px] font-bold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Khung giờ rảnh</div>
+              <div className={`text-2xl sm:text-3xl font-black mt-1 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
+                {availableSlotsCount} <span className={`text-xs font-semibold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>slot</span>
               </div>
-              <span className="text-[11px] text-slate-400 block mt-0.5">Sẵn sàng nhận lịch</span>
+              <span className={`text-[11px] block mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Sẵn sàng nhận lịch</span>
             </div>
 
             <div
               onClick={() => setActiveTab(3)}
-              className="p-3.5 rounded-xl border bg-slate-900/60 border-slate-800 hover:border-slate-700 backdrop-blur-md cursor-pointer transition transform hover:-translate-y-0.5"
+              className={`p-3.5 rounded-xl border cursor-pointer transition ${
+                isDark
+                  ? 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
+                  : 'bg-slate-50 border-slate-200 hover:border-slate-300'
+              }`}
             >
-              <div className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Khóa huấn luyện</div>
-              <div className="text-2xl sm:text-3xl font-black text-sky-400 mt-1">
-                {courses.length} <span className="text-xs font-semibold text-slate-400">khóa</span>
+              <div className={`text-[11px] font-bold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Khóa huấn luyện</div>
+              <div className={`text-2xl sm:text-3xl font-black mt-1 ${isDark ? 'text-sky-400' : 'text-blue-600'}`}>
+                {courses.length} <span className={`text-xs font-semibold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>khóa</span>
               </div>
-              <span className="text-[11px] text-slate-400 block mt-0.5">Đang mở giảng dạy</span>
+              <span className={`text-[11px] block mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Đang mở giảng dạy</span>
             </div>
 
             <div
               onClick={() => setActiveTab(4)}
-              className="p-3.5 rounded-xl border bg-slate-900/60 border-slate-800 hover:border-slate-700 backdrop-blur-md cursor-pointer transition transform hover:-translate-y-0.5"
+              className={`p-3.5 rounded-xl border cursor-pointer transition ${
+                isDark
+                  ? 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
+                  : 'bg-slate-50 border-slate-200 hover:border-slate-300'
+              }`}
             >
-              <div className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Học viên đang dạy</div>
-              <div className="text-2xl sm:text-3xl font-black text-amber-400 mt-1">
-                {enrollments.length} <span className="text-xs font-semibold text-slate-400">người</span>
+              <div className={`text-[11px] font-bold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Học viên đang dạy</div>
+              <div className={`text-2xl sm:text-3xl font-black mt-1 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
+                {enrollments.length} <span className={`text-xs font-semibold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>người</span>
               </div>
-              <span className="text-[11px] text-slate-400 block mt-0.5">Đang theo học</span>
+              <span className={`text-[11px] block mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Đang theo học</span>
             </div>
 
             <div
@@ -1235,21 +1281,26 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
                 setActiveTab(5);
                 fetchPtWallet();
               }}
-              className="p-3.5 rounded-xl border bg-slate-900/60 border-slate-800 hover:border-slate-700 backdrop-blur-md cursor-pointer transition transform hover:-translate-y-0.5 col-span-2 sm:col-span-1"
+              className={`p-3.5 rounded-xl border cursor-pointer transition col-span-2 sm:col-span-1 ${
+                isDark
+                  ? 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
+                  : 'bg-slate-50 border-slate-200 hover:border-slate-300'
+              }`}
             >
-              <div className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Số dư ví thù lao</div>
+              <div className={`text-[11px] font-bold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Số dư ví thù lao</div>
               <div className={`text-xl sm:text-2xl font-black mt-1 ${
-                (wallet?.balance ?? 0) < 0 ? 'text-red-400' : 'text-emerald-400'
+                (wallet?.balance ?? 0) < 0
+                  ? (isDark ? 'text-red-400' : 'text-rose-600')
+                  : (isDark ? 'text-emerald-400' : 'text-emerald-600')
               }`}>
                 {(wallet?.balance || 0).toLocaleString('vi-VN')} ₫
               </div>
-              <span className="text-[11px] text-slate-400 block mt-0.5">Rút thù lao 24/7</span>
+              <span className={`text-[11px] block mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Rút thù lao 24/7</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Prominent Warning Notification Banner if PENDING or REJECTED */}
       {ptProfile?.verificationStatus === 'PENDING' && (
         <div className="bg-amber-950/40 border-b border-amber-500/40 px-4 py-3">
           <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-xs text-amber-200">
@@ -1285,10 +1336,7 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
         </div>
       )}
 
-      {/* Navigation Tabs Bar */}
-      <div className={`${
-    isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
-  } border-b sticky top-16 z-20 shadow-xs transition-colors`}>
+      <div className="bg-slate-900 border-y border-slate-800 sticky top-16 z-20 shadow-sm transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex space-x-1 sm:space-x-3 overflow-x-auto py-2.5 no-scrollbar">
             {tabs.map((t, idx) => {
@@ -1302,10 +1350,10 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
                     if (idx === 4) fetchPlansAndEnrollments();
                     if (idx === 5) fetchPtWallet();
                   }}
-                  className={`flex items-center gap-2 py-2 px-3.5 text-xs sm:text-sm font-bold rounded-xl whitespace-nowrap transition-all ${
+                  className={`flex items-center gap-2 py-2 px-3.5 text-xs sm:text-sm font-bold rounded-xl whitespace-nowrap transition-all cursor-pointer ${
                     isCur
-                      ? 'bg-red-600 text-white shadow-md shadow-red-900/40'
-                      : isDark ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:text-white hover:bg-slate-100'
+                      ? 'bg-rose-600 text-white shadow-sm'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800'
                   }`}
                 >
                   <Icon className={`w-4 h-4 ${isCur ? 'text-white' : 'text-slate-400'}`} />
@@ -1331,14 +1379,11 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
         </div>
       </div>
 
-      {/* Main Body */}
       <main className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full transition-colors ${
     isDark ? 'bg-slate-950 text-slate-100' : 'bg-slate-100 text-slate-900 dark:text-white'
   }`}>
-        {/* TAB 0: TỔNG QUAN */}
         {activeTab === 0 && (
           <div className="space-y-6">
-            {/* Thẻ Trạng Thái Phê Duyệt Hồ Sơ */}
             {ptProfile && (
               <div className={`p-5 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm ${
                 ptProfile.verificationStatus === 'VERIFIED'
@@ -1400,7 +1445,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
               </div>
             )}
 
-            {/* Quick Action: Pending Bookings needing approval */}
             {pendingBookingsCount > 0 && (
               <div className="bg-white dark:bg-slate-900 rounded-2xl border-2 border-red-500/40 dark:border-red-500/50 shadow-lg p-5 space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100">
@@ -1456,7 +1500,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
               </div>
             )}
 
-            {/* Upcoming Confirmed Bookings */}
             <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 space-y-4">
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -1501,7 +1544,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
               )}
             </div>
 
-            {/* Operational Metrics Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div
                 onClick={() => setActiveTab(1)}
@@ -1565,9 +1607,7 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
               </div>
             </div>
 
-            {/* Reviews & HFI Standard Banner */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-              {/* Real Reviews */}
               <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
                 <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
                   <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -1582,7 +1622,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
                   </button>
                 </div>
 
-                {/* Warning notice if PT has 1-3 star reviews requiring appeal */}
                 {pendingReviewsToAppeal > 0 && (
                   <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-xl flex items-center justify-between gap-3 text-xs text-amber-900 dark:text-amber-200">
                     <div className="flex items-center gap-2">
@@ -1636,8 +1675,7 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
                 </div>
               </div>
 
-              {/* HFI Philosophy Card */}
-              <div className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-red-950 text-white p-5 rounded-2xl border border-red-900/40 shadow-md flex flex-col justify-between">
+              <div className="relative overflow-hidden bg-slate-900 text-white p-5 rounded-2xl border border-slate-800 shadow-sm flex flex-col justify-between">
                 <div className="space-y-2">
                   <div className="text-[10px] font-black uppercase tracking-widest text-red-400 flex items-center gap-1">
                     <Flame className="w-3.5 h-3.5 text-red-500" /> TIÊU CHUẨN ĐÀO TẠO FITNESS
@@ -1658,7 +1696,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
           </div>
         )}
 
-        {/* TAB 1: DUYỆT LỊCH */}
         {activeTab === 1 && (
           <div className="space-y-4">
             <h3 className="text-xl font-bold text-slate-900 dark:text-white">Quản Lý & Phê Duyệt Lịch Ca Tập</h3>
@@ -1678,7 +1715,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
           </div>
         )}
 
-        {/* TAB 2: KHUNG GIỜ */}
         {activeTab === 2 && (
           <div className="space-y-6">
             <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-5 max-w-3xl">
@@ -1694,7 +1730,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
                 </div>
               </div>
 
-              {/* 1. Chọn ngày với phím tắt nhanh */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="text-xs font-bold text-slate-700 dark:text-slate-200">1. Chọn ngày rảnh:</label>
@@ -1730,13 +1765,11 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
                 />
               </div>
 
-              {/* 2. Chọn nhanh các ca phổ biến (1-chạm) */}
               <div className="space-y-2 pt-1">
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block">
                   2. Chọn nhanh ca tập chuẩn (1-chạm tự điền giờ, không cần chọn thủ công):
                 </label>
 
-                {/* Ca sáng */}
                 <div className="bg-amber-50/50 p-3 rounded-xl border border-amber-200/60">
                   <span className="text-[11px] font-bold text-amber-900 uppercase tracking-wider block mb-1.5">🌅 Buổi sáng:</span>
                   <div className="flex flex-wrap gap-2">
@@ -1765,7 +1798,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
                   </div>
                 </div>
 
-                {/* Ca chiều */}
                 <div className="bg-orange-50/50 p-3 rounded-xl border border-orange-200/60">
                   <span className="text-[11px] font-bold text-orange-900 uppercase tracking-wider block mb-1.5">☀️ Buổi chiều:</span>
                   <div className="flex flex-wrap gap-2">
@@ -1794,7 +1826,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
                   </div>
                 </div>
 
-                {/* Ca tối */}
                 <div className="bg-indigo-50/50 p-3 rounded-xl border border-indigo-200/60">
                   <span className="text-[11px] font-bold text-indigo-900 uppercase tracking-wider block mb-1.5">🌙 Buổi tối:</span>
                   <div className="flex flex-wrap gap-2">
@@ -1824,7 +1855,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
                 </div>
               </div>
 
-              {/* 3. Tùy chỉnh giờ bắt đầu & kết thúc bất kỳ */}
               <div className="pt-2 border-t border-slate-100 space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block">
@@ -1836,7 +1866,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Ô Giờ bắt đầu */}
                   <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-200 space-y-2">
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-bold text-slate-700 dark:text-slate-200">Giờ bắt đầu:</label>
@@ -1866,7 +1895,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
                     />
                   </div>
 
-                  {/* Ô Giờ kết thúc */}
                   <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-200 space-y-2">
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-bold text-slate-700 dark:text-slate-200">Giờ kết thúc:</label>
@@ -1895,11 +1923,10 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
                 </div>
               </div>
 
-              {/* Nút xác nhận */}
               <button
                 type="button"
                 onClick={handleOpenSlot}
-                className="w-full py-3 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 active:scale-[0.99] text-white text-sm font-bold rounded-xl shadow-md flex items-center justify-center gap-2 transition"
+                className="w-full py-3 bg-rose-600 hover:bg-rose-700 active:scale-[0.99] text-white text-sm font-bold rounded-xl shadow-sm flex items-center justify-center gap-2 transition cursor-pointer"
               >
                 <Plus className="w-5 h-5" /> Mở Khung Giờ: {slotStartTime} - {slotEndTime} ngày {formatSlotDateDisplay(slotDate)} ({getSlotDurationText()})
               </button>
@@ -1917,7 +1944,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
-                  {/* Bộ lọc trạng thái khung giờ */}
                   <div className="inline-flex rounded-lg border border-slate-200 dark:border-slate-700 p-0.5 bg-slate-100 dark:bg-slate-800 text-xs font-semibold">
                     <button
                       type="button"
@@ -1944,7 +1970,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
                     </button>
                   </div>
 
-                  {/* Nút dọn dẹp các khung giờ trống */}
                   {availableSlots.length > 0 && (
                     <button
                       type="button"
@@ -1978,7 +2003,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
           </div>
         )}
 
-        {/* TAB 3: QUẢN LÝ KHÓA */}
         {activeTab === 3 && (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
@@ -2026,7 +2050,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
           </div>
         )}
 
-        {/* TAB 4: GIÁO ÁN */}
         {activeTab === 4 && (
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -2048,7 +2071,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
               </button>
             </div>
 
-            {/* Thông báo hướng dẫn nghiệp vụ */}
             {enrollments.length === 0 && (
               <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3 text-amber-800 text-xs sm:text-sm">
                 <Info className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
@@ -2065,7 +2087,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
               </div>
             )}
 
-            {/* Danh sách học viên & hợp đồng */}
             {enrollments.length > 0 && (
               <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 space-y-3 shadow-xs">
                 <div className="flex items-center justify-between flex-wrap gap-2">
@@ -2103,7 +2124,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
                                 HĐ #{en.id}
                               </span>
 
-                              {/* Trạng thái hợp đồng */}
                               {pendingContractDispute ? (
                                 <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1 animate-pulse">
                                   ⏳ ĐANG CHỜ BQT THANH LÝ (#CASE-{pendingContractDispute.id})
@@ -2143,7 +2163,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
                           </div>
                         </div>
 
-                        {/* Thao tác hành động dưới chân thẻ */}
                         {isCancelled ? (
                           <div className="pt-2 border-t border-rose-200/60 dark:border-rose-900/40 flex items-center justify-between text-xs">
                             <span className="text-rose-600 dark:text-rose-400 font-bold flex items-center gap-1.5">
@@ -2193,7 +2212,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
               </div>
             )}
 
-            {/* Danh sách giáo án */}
             {plans.length === 0 ? (
               <div className="bg-white p-8 rounded-xl border border-dashed border-slate-300 text-center text-slate-500 dark:text-slate-400">
                 <ClipboardList className="w-10 h-10 mx-auto text-slate-400 mb-2" />
@@ -2240,7 +2258,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
                       </div>
                     </div>
 
-                    {/* Danh sách bài tập của plan */}
                     <div className="p-5">
                       {(!plan.workouts || plan.workouts.length === 0) ? (
                         <div className="py-4 text-center text-xs text-slate-400 italic">
@@ -2290,7 +2307,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
           </div>
         )}
 
-        {/* TAB 5: VÍ & THU NHẬP HUẤN LUYỆN VIÊN */}
         {activeTab === 5 && (
           <div className="space-y-6">
             <div>
@@ -2301,7 +2317,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* CỘT TRÁI: Số Dư & Nạp Tiền */}
               <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                   <h4 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -2316,7 +2331,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
                   Chủ tài khoản: <b className="text-slate-800 dark:text-slate-100">{wallet?.ownerName || user.fullName}</b>
                 </div>
 
-                {/* SỐ DƯ HIỆN TẠI hoặc NỢ PHẠT */}
                 {(wallet?.balance ?? 0) < 0 ? (
                   <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-xs space-y-1">
                     <div className="font-bold text-red-700">ĐANG NỢ TIỀN PHẠT VI PHẠM:</div>
@@ -2395,7 +2409,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
                 </div>
               </div>
 
-              {/* CỘT PHẢI: Rút Tiền Về Ngân Hàng */}
               <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 flex flex-col justify-between">
                 <div className="space-y-3">
                   <div className="pb-3 border-b border-slate-100">
@@ -2493,7 +2506,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
               </div>
             </div>
 
-            {/* Bảng Lịch Sử Giao Dịch Ví Điện Tử */}
             <div className="space-y-3 pt-4 border-t border-slate-200">
               <div className="flex items-center justify-between">
                 <h4 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -2595,11 +2607,9 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
           </div>
         )}
 
-        {/* TAB 6: KHIẾU NẠI & TRANH CHẤP CỦA HUẤN LUYỆN VIÊN */}
         {activeTab === 6 && (
           <div className="space-y-6 animate-fade-in">
-            {/* Banner giới thiệu */}
-            <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 sm:p-8 rounded-3xl shadow-xl border border-indigo-500/20">
+            <div className="bg-slate-900 text-white p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-800">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-3.5">
                   <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center shrink-0">
@@ -2635,7 +2645,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
               </div>
             </div>
 
-            {/* Danh sách khiếu nại */}
             <div className="space-y-4">
               <h4 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <span>Hồ sơ tranh chấp liên quan:</span>
@@ -2730,7 +2739,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
                         })()}
                       </div>
 
-                      {/* Phản biện đối chứng & Thời hạn 48 giờ */}
                       {d.counterStatement ? (
                         <div className="p-3 bg-blue-50/80 dark:bg-blue-950/40 rounded-xl border border-blue-200 dark:border-blue-800 text-xs space-y-1">
                           <span className="font-bold text-blue-900 dark:text-blue-300 block">
@@ -2804,7 +2812,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
                         </div>
                       )}
 
-                      {/* Evidence Request from Admin */}
                       {d.evidenceRequested && (d.evidenceRequestTarget === 'BOTH' || d.evidenceRequestTarget === 'PT') && (
                         <div className="p-3.5 bg-amber-50 dark:bg-amber-950/40 rounded-xl border border-amber-300 dark:border-amber-800 text-xs space-y-2">
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -2849,7 +2856,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
                         </div>
                       )}
 
-                      {/* Phán quyết của Ban Quản Trị */}
                       {d.status.startsWith('RESOLVED') && (
                         <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-2xl space-y-2">
                           <div className="flex items-center gap-2 font-bold text-xs text-emerald-900 dark:text-emerald-300">
@@ -2874,7 +2880,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
           </div>
         )}
 
-        {/* TAB 7: HỒ SƠ */}
         {activeTab === 7 && (
           <div className="space-y-6">
             <UserProfileCard
@@ -2891,7 +2896,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
         
       </main>
 
-      {/* Modal: Tạo Khóa Học Mới */}
       {showCreateCourseModal && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
@@ -2980,7 +2984,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
         </div>
       )}
 
-      {/* Modal: Tạo Giáo Án Mới */}
       {showCreatePlanModal && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
@@ -3069,7 +3072,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
         </div>
       )}
 
-      {/* Modal: Thêm Bài Tập Vào Giáo Án */}
       {addWorkoutPlanId !== null && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
@@ -3181,7 +3183,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
         </div>
       )}
 
-      {/* Counter Statement Modal for PT */}
       {counterDisputeModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
           <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl animate-scale-up border border-slate-200 dark:border-slate-800 my-auto max-h-[92vh] overflow-y-auto">
@@ -3225,7 +3226,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
                 />
               </div>
 
-              {/* Tải ảnh bằng chứng đối chứng */}
               <MultiImageUploader
                 files={counterFiles}
                 onChange={setCounterFiles}
@@ -3266,7 +3266,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
         </div>
       )}
 
-      {/* Quick Dispute Modal for PT */}
       {showTabDisputeModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
           <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl animate-scale-up border border-slate-200 dark:border-slate-800 my-auto max-h-[92vh] overflow-y-auto">
@@ -3285,7 +3284,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
             </div>
 
             <div className="space-y-3.5">
-              {/* Chọn ca tập */}
               <div>
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">
                   Chọn ca tập bạn muốn báo cáo:
@@ -3311,7 +3309,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
                 )}
               </div>
 
-              {/* Chọn lý do khiếu nại */}
               <div>
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">Lý do khiếu nại:</label>
                 <select
@@ -3330,7 +3327,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
                 </select>
               </div>
 
-              {/* Tường trình chi tiết */}
               <div>
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-1">
                   Tường trình sự việc của HLV <span className="text-red-500">*</span>:
@@ -3347,7 +3343,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
                 />
               </div>
 
-              {/* Bằng chứng bằng cách tải ảnh lên */}
               <div>
                 <MultiImageUploader
                   files={tabDisputeFiles}
@@ -3394,7 +3389,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
         </div>
       )}
 
-      {/* Modal: Nộp Bằng Chứng Bổ Sung Theo Yêu Cầu Admin cho PT */}
       {additionalEvidenceModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
           <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl animate-scale-up border border-slate-200 dark:border-slate-800 my-auto max-h-[92vh] overflow-y-auto">
@@ -3438,7 +3432,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
                 />
               </div>
 
-              {/* Tải ảnh bổ sung */}
               <MultiImageUploader
                 files={additionalEvidenceFiles}
                 onChange={setAdditionalEvidenceFiles}
@@ -3475,7 +3468,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
         </div>
       )}
 
-      {/* PT OTP Generator Modal */}
       {ptOtpModalBooking && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 text-center shadow-2xl animate-scale-up">
@@ -3521,9 +3513,9 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
                   <button
                     type="button"
                     onClick={() => handleOpenPtOtpModal(ptOtpModalBooking, true)}
-                    className="w-full py-2.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer"
+                    className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer"
                   >
-                    <span>⚡ Mở điểm danh ngay (Chế độ Kiểm thử / Demo)</span>
+                    <span>Mở điểm danh ngay (Chế độ Kiểm thử / Demo)</span>
                   </button>
                   <button
                     type="button"
@@ -3580,7 +3572,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
                   <span className="font-bold">💡 Hướng dẫn nghiệp vụ:</span> Đọc mã OTP 6 chữ số này hoặc nhấn Gửi qua Chat cho học viên. Học viên sẽ nhập mã trên màn hình của họ để xác nhận điểm danh. Sau khi học viên xác nhận, ca tập sẽ chuyển thành <b>ĐÃ HOÀN THÀNH</b> và tiền sẽ được chuyển vào ví của bạn.
                 </div>
 
-                {/* Hỗ trợ báo vắng nếu học viên vắng mặt */}
                 <div className="text-center text-xs mb-2 pt-1 border-t border-slate-100 dark:border-slate-800">
                   <button
                     type="button"
@@ -3607,7 +3598,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
         </div>
       )}
 
-      {/* Modal Báo Vắng Học Viên (No-Show) */}
       {absentModalBooking && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl animate-scale-up space-y-4">
@@ -3666,7 +3656,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
         </div>
       )}
 
-      {/* Modal phóng to xem ảnh đối chứng */}
       {previewEvidenceImage && (
         <div
           className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
@@ -3716,7 +3705,6 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
         </div>
       )}
 
-      {/* Modal Yêu Cầu Hủy Hợp Đồng Khóa Học từ PT */}
       {contractDisputeModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in-95 my-8">
@@ -3827,14 +3815,12 @@ export const PtPage: React.FC<PtPageProps> = ({ user, onLogout, onUserUpdated })
         </div>
       )}
 
-      {/* Toast Alert với z-[9999] để không bao giờ bị mờ hay che khuất */}
       {toastMsg && (
         <div className="fixed bottom-5 right-5 z-[9999] bg-slate-900/95 text-white px-4 py-3 rounded-xl shadow-2xl text-sm flex items-center gap-2 border border-slate-700 backdrop-blur-md">
           <span>{toastMsg}</span>
         </div>
       )}
 
-      {/* Modal Quy Tắc & Điều Khoản Hoạt Động */}
       <PolicyModal
         isOpen={showPolicyModal}
         onClose={() => setShowPolicyModal(false)}

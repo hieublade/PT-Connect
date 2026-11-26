@@ -49,7 +49,6 @@ export const ReviewList: React.FC<Props> = ({ ptProfileId, reloadKey = 0 }) => {
             </div>
             {r.comment && <p className="text-sm text-slate-600 mt-1.5 break-words">{r.comment}</p>}
 
-            {/* Khung phản hồi/giải trình của Huấn luyện viên (nếu có) */}
             {r.ptAppeal && (
               <div className="mt-3 p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700">
                 <div className="font-bold text-slate-800 flex items-center gap-1.5 mb-1">

@@ -35,7 +35,6 @@ export const UserProfileCard: React.FC<UserProfileCardProps> = ({ user, onUserUp
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Gợi ý ảnh đại diện thể hình mẫu để kiểm thử 1-click
   const sampleAvatars = [
     'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
     'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
@@ -43,7 +42,6 @@ export const UserProfileCard: React.FC<UserProfileCardProps> = ({ user, onUserUp
     'https://images.unsplash.com/photo-1548690312-e3b507d8c110?auto=format&fit=crop&w=400&q=80',
   ];
 
-  // Xử lý upload tập tin ảnh từ máy tính (File Picker)
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -61,7 +59,6 @@ export const UserProfileCard: React.FC<UserProfileCardProps> = ({ user, onUserUp
     setError(null);
     setUploading(true);
 
-    // Hiển thị xem trước ảnh ngay lập tức bằng local URL
     const localPreviewUrl = URL.createObjectURL(file);
     setAvatarUrl(localPreviewUrl);
 
@@ -86,7 +83,6 @@ export const UserProfileCard: React.FC<UserProfileCardProps> = ({ user, onUserUp
       setError(err.message || 'Lỗi khi tải ảnh lên máy chủ. Bạn có thể dùng đường dẫn ảnh URL bên dưới.');
     } finally {
       setUploading(false);
-      // Reset input value để có thể chọn lại cùng 1 file nếu muốn
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -115,7 +111,6 @@ export const UserProfileCard: React.FC<UserProfileCardProps> = ({ user, onUserUp
         avatarUrl: avatarUrl.trim().startsWith('blob:') ? undefined : (avatarUrl.trim() || undefined),
       })) as unknown as User;
 
-      // Đồng bộ state và bộ nhớ lưu trữ
       onUserUpdated(updatedUser);
       localStorage.setItem('ptconnect_user', JSON.stringify(updatedUser));
 
@@ -162,7 +157,6 @@ export const UserProfileCard: React.FC<UserProfileCardProps> = ({ user, onUserUp
         </div>
       )}
 
-      {/* Hidden native file input */}
       <input
         type="file"
         ref={fileInputRef}
@@ -172,10 +166,8 @@ export const UserProfileCard: React.FC<UserProfileCardProps> = ({ user, onUserUp
       />
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Phần ảnh đại diện với hỗ trợ Upload từ máy */}
         <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/90 space-y-3">
           <div className="flex flex-col sm:flex-row items-center gap-5">
-            {/* Avatar Preview with Camera Overlay */}
             <div
               onClick={() => fileInputRef.current?.click()}
               className="relative cursor-pointer group"
@@ -195,7 +187,6 @@ export const UserProfileCard: React.FC<UserProfileCardProps> = ({ user, onUserUp
               </div>
             </div>
 
-            {/* Upload Buttons & Options */}
             <div className="flex-1 space-y-2 text-center sm:text-left w-full">
               <label className="block text-xs font-bold text-slate-800">
                 Ảnh đại diện cá nhân
@@ -235,7 +226,6 @@ export const UserProfileCard: React.FC<UserProfileCardProps> = ({ user, onUserUp
             </div>
           </div>
 
-          {/* Collapsible URL Input & Sample Avatars */}
           {showUrlInput && (
             <div className="pt-3 border-t border-slate-200/80 space-y-2 animate-fade-in">
               <label className="block text-[11px] font-semibold text-slate-600">
@@ -268,7 +258,6 @@ export const UserProfileCard: React.FC<UserProfileCardProps> = ({ user, onUserUp
           )}
         </div>
 
-        {/* Thông tin định danh: Họ tên, Email, SĐT */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <label className="block text-xs font-semibold text-slate-700 flex items-center gap-1.5">
@@ -328,7 +317,6 @@ export const UserProfileCard: React.FC<UserProfileCardProps> = ({ user, onUserUp
           </div>
         </div>
 
-        {/* Nút lưu */}
         <div className="pt-2 flex justify-end">
           <button
             type="submit"

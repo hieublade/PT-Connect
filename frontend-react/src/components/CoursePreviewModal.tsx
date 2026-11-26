@@ -56,7 +56,6 @@ interface CourseSyllabusData {
   prepNotes: string[];
 }
 
-// Hàm sinh dữ liệu mẫu mặc định theo tiêu đề/mô tả khóa học
 const getDefaultSyllabus = (course: Course): CourseSyllabusData => {
   const titleLower = (course.title || '').toLowerCase();
   const descLower = (course.description || '').toLowerCase();
@@ -247,7 +246,6 @@ const getDefaultSyllabus = (course: Course): CourseSyllabusData => {
     };
   }
 
-  // Mặc định chung cho khóa khác
   return {
     categoryLabel: 'Giáo Trình Huấn Luyện Thể Hình Cá Nhân Hóa',
     stages: [
@@ -348,7 +346,6 @@ export const CoursePreviewModal: React.FC<CoursePreviewModalProps> = ({
   const [syllabusData, setSyllabusData] = useState<CourseSyllabusData | null>(null);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
 
-  // Nạp giáo trình từ localStorage nếu HLV đã từng tùy chỉnh, hoặc sinh dữ liệu mặc định
   useEffect(() => {
     if (!course) return;
     setIsEditing(false);
@@ -369,7 +366,6 @@ export const CoursePreviewModal: React.FC<CoursePreviewModalProps> = ({
 
   if (!isOpen || !course || !syllabusData) return null;
 
-  // Xử lý lưu giáo trình tùy chỉnh của Huấn luyện viên
   const handleSaveCustomSyllabus = () => {
     if (!course || !syllabusData) return;
     const storageKey = `ptconnect_course_custom_syllabus_${course.id}`;
@@ -383,7 +379,6 @@ export const CoursePreviewModal: React.FC<CoursePreviewModalProps> = ({
     }
   };
 
-  // Nạp nhanh mẫu giáo trình gợi ý theo chuyên môn
   const handleApplyTemplate = (type: 'GLUTES' | 'PILATES' | 'MUSCLE' | 'FAT_LOSS') => {
     const total = course.totalSessions || 12;
     let mockCourse = { ...course };
@@ -399,9 +394,7 @@ export const CoursePreviewModal: React.FC<CoursePreviewModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-fade-in">
       <div className="relative w-full max-w-4xl max-h-[92vh] flex flex-col rounded-3xl bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-        {/* Banner Header */}
-        <div className="px-6 py-5 bg-gradient-to-r from-rose-600 via-pink-600 to-orange-500 text-white shrink-0 relative overflow-hidden">
-          <div className="absolute right-0 top-0 translate-x-8 -translate-y-8 w-44 h-44 rounded-full bg-white/10 blur-xl pointer-events-none" />
+        <div className="px-6 py-5 bg-rose-600 text-white shrink-0 relative">
 
           <div className="flex items-start justify-between gap-4 relative z-10">
             <div className="space-y-1.5 max-w-2xl">
@@ -425,7 +418,6 @@ export const CoursePreviewModal: React.FC<CoursePreviewModalProps> = ({
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
-              {/* Nút dành riêng cho Huấn luyện viên: Biên soạn / Sửa Demo */}
               {isPtView && (
                 <button
                   type="button"
@@ -461,7 +453,6 @@ export const CoursePreviewModal: React.FC<CoursePreviewModalProps> = ({
             </div>
           </div>
 
-          {/* Quick Metrics Bar */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-4 pt-3 border-t border-white/20 text-white">
             <div className="bg-black/15 backdrop-blur-xs px-3 py-2 rounded-xl border border-white/10">
               <span className="text-[10px] text-white/80 flex items-center gap-1 font-medium">
@@ -513,7 +504,6 @@ export const CoursePreviewModal: React.FC<CoursePreviewModalProps> = ({
           </div>
         </div>
 
-        {/* Thanh thông báo trạng thái chỉnh sửa của HLV */}
         {isPtView && isEditing && (
           <div className="px-6 py-2.5 bg-amber-50 dark:bg-amber-950/40 border-b border-amber-200 dark:border-amber-900/60 flex flex-wrap items-center justify-between gap-3 text-xs text-amber-900 dark:text-amber-200 shrink-0">
             <div className="flex items-center gap-2">
@@ -556,7 +546,6 @@ export const CoursePreviewModal: React.FC<CoursePreviewModalProps> = ({
           </div>
         )}
 
-        {/* Tab Switcher */}
         <div className="px-6 py-2.5 bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2 overflow-x-auto shrink-0">
           <div className="flex items-center gap-2">
             <button
@@ -608,7 +597,6 @@ export const CoursePreviewModal: React.FC<CoursePreviewModalProps> = ({
             </button>
           </div>
 
-          {/* Nút lưu nhanh cho HLV khi đang sửa */}
           {isPtView && isEditing && (
             <button
               type="button"
@@ -621,9 +609,7 @@ export const CoursePreviewModal: React.FC<CoursePreviewModalProps> = ({
           )}
         </div>
 
-        {/* Scrollable Content Body */}
         <div className="p-6 overflow-y-auto space-y-6 text-sm flex-1">
-          {/* TAB 1: ROADMAP */}
           {activeTab === 'ROADMAP' && (
             <div className="space-y-4">
               <div className="p-3.5 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50 flex items-start gap-2.5 text-xs text-blue-900 dark:text-blue-200">
@@ -641,7 +627,6 @@ export const CoursePreviewModal: React.FC<CoursePreviewModalProps> = ({
                 </p>
               </div>
 
-              {/* Chế độ Sửa của HLV */}
               {isPtView && isEditing ? (
                 <div className="space-y-4">
                   <div>
@@ -729,7 +714,6 @@ export const CoursePreviewModal: React.FC<CoursePreviewModalProps> = ({
                   ))}
                 </div>
               ) : (
-                /* Chế độ Xem của Học viên (và PT khi không edit) */
                 <div className="space-y-3.5">
                   {syllabusData.stages.map((stg, idx) => (
                     <div
@@ -777,7 +761,6 @@ export const CoursePreviewModal: React.FC<CoursePreviewModalProps> = ({
             </div>
           )}
 
-          {/* TAB 2: EXERCISES */}
           {activeTab === 'EXERCISES' && (
             <div className="space-y-4">
               <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center justify-between">
@@ -926,10 +909,9 @@ export const CoursePreviewModal: React.FC<CoursePreviewModalProps> = ({
             </div>
           )}
 
-          {/* TAB 3: OUTCOMES */}
           {activeTab === 'OUTCOMES' && (
             <div className="space-y-4">
-              <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 to-rose-500/10 border border-amber-300/40 dark:border-amber-800/40 space-y-2">
+              <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 space-y-2">
                 <div className="flex items-center gap-2 font-bold text-amber-900 dark:text-amber-300 text-sm">
                   <Award className="w-5 h-5 text-amber-500" />
                   <span>Cam Kết Chất Lượng Đào Tạo 1-Kèm-1</span>
@@ -988,7 +970,6 @@ export const CoursePreviewModal: React.FC<CoursePreviewModalProps> = ({
             </div>
           )}
 
-          {/* TAB 4: PREP & NUTRITION */}
           {activeTab === 'PREP' && (
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1039,7 +1020,6 @@ export const CoursePreviewModal: React.FC<CoursePreviewModalProps> = ({
           )}
         </div>
 
-        {/* Modal Footer */}
         <div className="px-6 py-3.5 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
           <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
             <span className="font-semibold text-slate-700 dark:text-slate-300">Học phí:</span>

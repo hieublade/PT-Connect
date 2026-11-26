@@ -45,7 +45,6 @@ export const PtProfileForm: React.FC<Props> = ({ onSaved }) => {
     load().catch((e) => setError(e.message)); 
   }, []);
 
-  // Xử lý tải file trực tiếp từ máy tính
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -203,7 +202,6 @@ export const PtProfileForm: React.FC<Props> = ({ onSaved }) => {
           <p className="text-[11px] text-slate-400 mt-1">Học viên sẽ tìm thấy bạn khi tìm kiếm theo các khu vực này.</p>
         </div>
 
-        {/* PHẦN CHỨNG CHỈ HÀNH NGHỀ & BẰNG CẤP */}
         <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
           <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1 flex items-center gap-1.5">
             <FileText className="w-4 h-4 text-[#FF4B4B]" />
@@ -213,7 +211,6 @@ export const PtProfileForm: React.FC<Props> = ({ onSaved }) => {
             Bạn có thể tải tệp ảnh từ máy tính lên trực tiếp, hoặc dán đường dẫn ảnh chứng chỉ (Google Drive, Imgur, Cloudinary, v.v.):
           </p>
 
-          {/* Cách 1: Nút tải tệp trực tiếp từ máy tính */}
           <div className="flex flex-wrap items-center gap-2 mb-3">
             <input
               type="file"
@@ -264,7 +261,6 @@ export const PtProfileForm: React.FC<Props> = ({ onSaved }) => {
             </button>
           </div>
 
-          {/* Cách 2: Ô nhập link trực tiếp */}
           <div className="relative">
             <LinkIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
@@ -281,7 +277,6 @@ export const PtProfileForm: React.FC<Props> = ({ onSaved }) => {
             />
           </div>
 
-          {/* Card xem trước chứng chỉ hiện tại */}
           {certNow && (
             <div className="mt-2.5 p-3 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 text-xs">
               <div className="flex items-center gap-2 min-w-0">
@@ -314,7 +309,6 @@ export const PtProfileForm: React.FC<Props> = ({ onSaved }) => {
           )}
         </div>
 
-        {/* Thông báo lỗi / thành công */}
         {error && (
           <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 rounded-lg text-xs text-red-600 dark:text-red-300 flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
